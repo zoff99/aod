@@ -80,6 +80,7 @@ public class overlayservice extends AccessibilityService
 
     private SharedPreferences prefs;
     private android.app.KeyguardManager km;
+    private long lastUserPresentAt = 0L;
     private PowerManager.WakeLock partialLock;
     private PowerManager.WakeLock drawLock;
     private PowerManager.WakeLock wakeBridge;
@@ -311,6 +312,7 @@ public class overlayservice extends AccessibilityService
             else if (Intent.ACTION_USER_PRESENT.equals(a))
             {
                 screenOn = true;
+                lastUserPresentAt = SystemClock.elapsedRealtime();
                 burstPending = false;
                 stopBurst(false);
                 sendLocal(notificationobserver.ACTION_HIDE);
@@ -356,7 +358,8 @@ public class overlayservice extends AccessibilityService
                     break;
                 case notificationobserver.ACTION_AOD_GONE:
                     canvasShown = false;
-                    if (screenOn && lockedScreenOnLightWanted())
+                    if (screenOn && lockedScreenOnLightWanted()
+                            && SystemClock.elapsedRealtime() - lastUserPresentAt >= 1500L)
                     {
                         if (!lightActive)
                         {
@@ -465,6 +468,13 @@ public class overlayservice extends AccessibilityService
     private void onScreenOff()
     {
         if (!Prefs.enabled(this) || !Prefs.aodLight(this)) { return; }
+        // some devices emit a stray SCREEN_OFF during the unlock transition;
+        // never relight over an awake device right after the user unlocked
+        if (displayState() == Display.STATE_ON
+                && SystemClock.elapsedRealtime() - lastUserPresentAt < 1500L)
+        {
+            return;
+        }
         // empty items == everything dismissed: nothing may light up again
         if (items.isEmpty() || suppressed()) { return; }
         // relight_relock: after an unlock hid the light, locking or turning
@@ -511,6 +521,13 @@ public class overlayservice extends AccessibilityService
     private void startBurst(long durationMs, boolean allowCanvas)
     {
         if (view == null || !viewAdded) { return; }
+        // backstop against stale events: never light up over an awake,
+        // unlocked device, no matter which path asked for it
+        if (!testMode && displayState() == Display.STATE_ON
+                && km != null && !km.isKeyguardLocked())
+        {
+            return;
+        }
         // the light geometry is portrait-only; skip in landscape
         try
         {
