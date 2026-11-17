@@ -465,8 +465,11 @@ public class overlayservice extends AccessibilityService
     private void onScreenOff()
     {
         if (!Prefs.enabled(this) || !Prefs.aodLight(this)) { return; }
+        // empty items == everything dismissed: nothing may light up again
         if (items.isEmpty() || suppressed()) { return; }
-        if (lightActive || burstPending)
+        // relight_relock: after an unlock hid the light, locking or turning
+        // the display off again brings it back for undismissed notifications
+        if (lightActive || burstPending || Prefs.relightRelock(this))
         {
             burstPending = false;
             startBurst(Prefs.timeoutSec(this) * 1000L, true);

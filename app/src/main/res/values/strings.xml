@@ -23,6 +23,8 @@
     <string name="set_preview">Show notification text on dark canvas</string>
     <string name="set_double_tap">Double tap to wake</string>
     <string name="set_clear_unlock">Dismiss notifications on unlock</string>
+    <string name="set_relight_relock">Light again when locked again</string>
+    <string name="set_relight_relock_sum">Unlocking the phone hides the light. With this on, turning the display off or locking the phone again brings the light back for any notification you have not dismissed. Dismissed notifications never light up again.</string>
 
     <string name="sec_appearance">Appearance</string>
     <string name="set_color">Light color</string>

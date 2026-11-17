@@ -244,6 +244,7 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
         bindSwitch(R.id.sw_preview, Prefs.PREVIEW, true);
         bindSwitch(R.id.sw_double_tap, Prefs.DOUBLE_TAP_WAKE, true);
         bindSwitch(R.id.sw_clear_unlock, Prefs.CLEAR_ON_UNLOCK, false);
+        bindSwitch(R.id.sw_relight_relock, Prefs.RELIGHT_RELOCK, true);
         bindSwitch(R.id.sw_auto_color, Prefs.AUTO_COLOR, true);
         bindSwitch(R.id.sw_eco, Prefs.ECO, false);
         bindSwitch(R.id.sw_interval, Prefs.INTERVAL, false);
