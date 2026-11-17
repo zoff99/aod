@@ -1,6 +1,5 @@
 package com.zoffcc.applications.aod;
 
-import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ResolveInfo;
@@ -164,7 +163,6 @@ public class AppPickerActivity extends AppCompatActivity implements AppListAdapt
         });
     }
 
-    @SuppressLint("NotifyDataSetChanged")
     private void applyToFiltered(boolean select)
     {
         for (AppListAdapter.AppEntry e : filtered)
@@ -174,7 +172,7 @@ public class AppPickerActivity extends AppCompatActivity implements AppListAdapt
         }
         persist();
         updateCount();
-        adapter.notifyDataSetChanged();
+        adapter.submit(new ArrayList<>(filtered));
         sendReeval();
     }
 

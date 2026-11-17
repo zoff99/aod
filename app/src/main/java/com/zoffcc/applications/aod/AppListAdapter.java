@@ -63,6 +63,7 @@ class AppListAdapter extends RecyclerView.Adapter<AppListAdapter.Holder>
     private final Set<String> selected;   // shared with the activity, main thread only
     private final Listener listener;
     private final List<AppEntry> items = new ArrayList<>();
+    private List<AppEntry> submitted = new ArrayList<>();
     private final ExecutorService io = Executors.newSingleThreadExecutor();
     private final Handler main = new Handler(Looper.getMainLooper());
     private final LruCache<String, Drawable> icons = new LruCache<>(120);
@@ -75,10 +76,16 @@ class AppListAdapter extends RecyclerView.Adapter<AppListAdapter.Holder>
         this.listener = listener;
     }
 
-    /** Diffs on the worker thread, then dispatches the result on the main thread. */
+    /**
+     * Diffs on the worker thread, then dispatches the result on the main
+     * thread. Each diff is computed against the previously submitted list
+     * (not the currently displayed one): submits and dispatches are both
+     * FIFO, so queued updates can never disagree with the adapter state.
+     */
     void submit(final List<AppEntry> next)
     {
-        final List<AppEntry> old = new ArrayList<>(items);
+        final List<AppEntry> old = submitted;
+        submitted = next;
         final Set<String> selSnapshot = new HashSet<>(selected);
         io.execute(() -> {
             DiffUtil.DiffResult diff = DiffUtil.calculateDiff(new DiffUtil.Callback()
