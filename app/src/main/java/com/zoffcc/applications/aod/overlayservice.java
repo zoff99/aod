@@ -421,7 +421,10 @@ public class overlayservice extends AccessibilityService
         {
             if (!lightActive) { return; }
             boolean locked = km == null || km.isKeyguardLocked();
-            if (!locked)
+            // only an awake device can be "unlocked"; while the screen is off
+            // the keyguard may lag a fresh lock, which is not an unlock
+            boolean awake = screenOn || canvasShown;
+            if (awake && !locked)
             {
                 kmUnlockedSeen++;
                 if (kmUnlockedSeen >= 2)
@@ -475,6 +478,24 @@ public class overlayservice extends AccessibilityService
     }
 
     /** Awake on the real lock screen (not our canvas): may the light show? */
+    /**
+     * True when the device is awake and unlocked, i.e. the light must not
+     * show. The screen-off broadcast is the reliable "private" signal: some
+     * devices always report Display.STATE_ON, and the keyguard can lag a
+     * fresh lock by a second or two. While the screen is off we only treat
+     * the brief stray-screen-off window right after an unlock as awake.
+     */
+    private boolean awakeUnlocked()
+    {
+        if (km == null) { return false; }
+        if (screenOn || canvasShown)
+        {
+            return !km.isKeyguardLocked();
+        }
+        return displayState() == Display.STATE_ON
+                && SystemClock.elapsedRealtime() - lastUserPresentAt < 1500L;
+    }
+
     private boolean lockedScreenOnLightWanted()
     {
         boolean wanted = Prefs.enabled(this) && Prefs.screenOnLight(this)
@@ -563,10 +584,9 @@ public class overlayservice extends AccessibilityService
         Dbg.log("overlay", "onScreenOff (delayed eval) " + state());
         if (!Prefs.enabled(this) || !Prefs.aodLight(this))
         { Dbg.log("overlay", "onScreenOff: disabled or aodLight off"); return; }
-        if (displayState() == Display.STATE_ON
-                && SystemClock.elapsedRealtime() - lastUserPresentAt < 1500L)
+        if (awakeUnlocked())
         {
-            Dbg.log("overlay", "onScreenOff: REFUSED (stray screen-off right after unlock, display ON)");
+            Dbg.log("overlay", "onScreenOff: REFUSED (awake+unlocked / stray screen-off after unlock)");
             return;
         }
         if (items.isEmpty() || suppressed())
@@ -631,8 +651,7 @@ public class overlayservice extends AccessibilityService
         if (view == null || !viewAdded) { Dbg.log("overlay", "startBurst REFUSED: no window"); return; }
         // backstop against stale events: never light up over an awake,
         // unlocked device, no matter which path asked for it
-        if (!testMode && displayState() == Display.STATE_ON
-                && km != null && !km.isKeyguardLocked())
+        if (!testMode && awakeUnlocked())
         {
             Dbg.log("overlay", "startBurst REFUSED: awake+unlocked backstop");
             return;
