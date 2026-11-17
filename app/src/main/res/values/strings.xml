@@ -17,7 +17,9 @@
 
     <string name="set_enabled">Enabled (master)</string>
     <string name="set_aod_light">Light when screen off / AOD</string>
+    <string name="set_aod_light_sum">The main always-on light: it glows while the display is off or in the phone\u2019s own always-on mode, for the light duration set below. Notifications that arrive while you use the phone are saved and shown the next time the screen goes off.</string>
     <string name="set_screen_on_light">Light on lock screen (screen on)</string>
+    <string name="set_screen_on_light_sum">Keeps the light visible when you wake the phone but it is still locked, for example after a single press of the power button. Waking the screen is not an unlock: the light stays until you unlock the phone or the light duration ends.</string>
     <string name="set_preview">Show notification text on dark canvas</string>
     <string name="set_double_tap">Double tap to wake</string>
     <string name="set_clear_unlock">Dismiss notifications on unlock</string>

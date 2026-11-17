@@ -70,7 +70,6 @@ public class overlayservice extends AccessibilityService
      *  Normally reserved for system apps; probed once, used only if granted. */
     private static final int DRAW_WAKE_LOCK_LEVEL = 0x00000080;
 
-    private static final long SCREEN_ON_BURST_MS = 5000L;
     private static final long LOCK_GUARD_MS = 1200L;
     private static final long SHIFT_INTERVAL_MS = 58000L;
 
@@ -286,12 +285,28 @@ public class overlayservice extends AccessibilityService
             else if (Intent.ACTION_SCREEN_ON.equals(a))
             {
                 screenOn = true;
-                if (!canvasShown)
+                if (canvasShown)
+                {
+                    // our own dark canvas woke the screen; its lifecycle
+                    // (AOD_SHOWN / AOD_GONE) manages the burst
+                }
+                else if (lockedScreenOnLightWanted())
+                {
+                    // waking to the lock screen is NOT an unlock: keep an
+                    // active ring, or start one if it was not showing yet
+                    if (!lightActive)
+                    {
+                        startBurst(Prefs.timeoutSec(overlayservice.this) * 1000L, false);
+                    }
+                }
+                else
                 {
                     stopBurst(false);
                 }
-                // if our own dark canvas woke the screen, keep the burst;
-                // canvasShown is maintained by AOD_SHOWN / AOD_GONE.
+                // the keyguard state can lag the broadcast by a moment;
+                // re-check once the wake transition has settled
+                h.removeCallbacks(screenOnRecheck);
+                h.postDelayed(screenOnRecheck, 400L);
             }
             else if (Intent.ACTION_USER_PRESENT.equals(a))
             {
@@ -341,7 +356,17 @@ public class overlayservice extends AccessibilityService
                     break;
                 case notificationobserver.ACTION_AOD_GONE:
                     canvasShown = false;
-                    stopBurst(false);
+                    if (screenOn && lockedScreenOnLightWanted())
+                    {
+                        if (!lightActive)
+                        {
+                            startBurst(Prefs.timeoutSec(overlayservice.this) * 1000L, false);
+                        }
+                    }
+                    else
+                    {
+                        stopBurst(false);
+                    }
                     break;
                 case notificationobserver.ACTION_WAKE:
                     try { wakeBridge.acquire(2000L); } catch (Exception ignored) {}
@@ -356,11 +381,39 @@ public class overlayservice extends AccessibilityService
         public void run() { onScreenOff(); }
     };
 
+    private final Runnable screenOnRecheck = new Runnable()
+    {
+        @Override
+        public void run()
+        {
+            if (!screenOn || canvasShown) { return; }
+            if (lockedScreenOnLightWanted())
+            {
+                if (!lightActive)
+                {
+                    startBurst(Prefs.timeoutSec(overlayservice.this) * 1000L, false);
+                }
+            }
+            else if (lightActive && !testMode)
+            {
+                stopBurst(false);
+            }
+        }
+    };
+
     // ---- state machine -------------------------------------------------------------
 
     private boolean effectiveScreenOff()
     {
         return !screenOn || canvasShown;
+    }
+
+    /** Awake on the real lock screen (not our canvas): may the light show? */
+    private boolean lockedScreenOnLightWanted()
+    {
+        return Prefs.enabled(this) && Prefs.screenOnLight(this)
+                && !items.isEmpty() && !suppressed()
+                && km != null && km.isKeyguardLocked();
     }
 
     private boolean suppressed()
@@ -395,7 +448,7 @@ public class overlayservice extends AccessibilityService
         {
             if (Prefs.screenOnLight(this) && km != null && km.isKeyguardLocked() && !suppressed())
             {
-                startBurst(SCREEN_ON_BURST_MS, false);
+                startBurst(Prefs.timeoutSec(overlayservice.this) * 1000L, false);
             }
             else
             {
@@ -427,9 +480,26 @@ public class overlayservice extends AccessibilityService
             if (lightActive) { endBurst(); }
             return;
         }
-        if (effectiveScreenOff() && Prefs.aodLight(this) && !lightActive)
+        if (effectiveScreenOff())
         {
-            startBurst(Prefs.timeoutSec(this) * 1000L, true);
+            if (Prefs.aodLight(this) && !lightActive)
+            {
+                startBurst(Prefs.timeoutSec(this) * 1000L, true);
+            }
+        }
+        else if (km != null && km.isKeyguardLocked())
+        {
+            if (Prefs.screenOnLight(this))
+            {
+                if (!lightActive)
+                {
+                    startBurst(Prefs.timeoutSec(overlayservice.this) * 1000L, false);
+                }
+            }
+            else if (lightActive && !testMode)
+            {
+                stopBurst(false);
+            }
         }
     }
 
@@ -523,6 +593,7 @@ public class overlayservice extends AccessibilityService
 
     private void stopBurst(boolean keepCanvas)
     {
+        h.removeCallbacks(screenOnRecheck);
         cancelTimers();
         lightActive = false;
         if (view != null)
