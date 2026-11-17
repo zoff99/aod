@@ -2,9 +2,11 @@ package com.zoffcc.applications.aod;
 
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.RippleDrawable;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.LruCache;
@@ -162,7 +164,11 @@ class AppListAdapter extends RecyclerView.Adapter<AppListAdapter.Holder>
         bg.setCornerRadius(dp(16));
         bg.setStroke(dp(sel ? 3 : 1), ContextCompat.getColor(ctx,
                 sel ? R.color.hc_accent : R.color.hc_border));
-        h.itemView.setBackground(bg);
+        GradientDrawable mask = new GradientDrawable();
+        mask.setColor(0xFFFFFFFF);
+        mask.setCornerRadius(dp(16));
+        h.itemView.setBackground(new RippleDrawable(
+                ColorStateList.valueOf(0x33FFFFFF), bg, mask));
 
         h.sw.setOnCheckedChangeListener(null);
         h.sw.setChecked(sel);

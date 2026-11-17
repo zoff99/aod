@@ -7,8 +7,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.res.ColorStateList;
 import android.content.pm.PackageManager;
+import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.RippleDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -349,14 +352,17 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
         }
     }
 
-    private GradientDrawable colorCircle(int color, boolean selected)
+    private Drawable colorCircle(int color, boolean selected)
     {
         GradientDrawable gd = new GradientDrawable();
         gd.setShape(GradientDrawable.OVAL);
         gd.setColor(color);
         int ring = selected ? (color == 0xFFFFFFFF ? 0xFF00E5FF : 0xFFFFFFFF) : 0xFF6E6E73;
         gd.setStroke(dp(selected ? 4 : 2), ring);
-        return gd;
+        GradientDrawable mask = new GradientDrawable();
+        mask.setShape(GradientDrawable.OVAL);
+        mask.setColor(0xFFFFFFFF);
+        return new RippleDrawable(ColorStateList.valueOf(0x40000000), gd, mask);
     }
 
     private interface SliderWriter { void write(int progress); }

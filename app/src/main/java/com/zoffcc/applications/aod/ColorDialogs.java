@@ -1,8 +1,10 @@
 package com.zoffcc.applications.aod;
 
 import android.content.Context;
+import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.RippleDrawable;
 import android.util.TypedValue;
 import android.view.View;
 import android.widget.Button;
@@ -92,7 +94,11 @@ public final class ColorDialogs
             gd.setShape(GradientDrawable.OVAL);
             gd.setColor(color);
             gd.setStroke(dp(ctx, 2), ContextCompat.getColor(ctx, R.color.hc_text_dim));
-            circle.setBackground(gd);
+            GradientDrawable mask = new GradientDrawable();
+            mask.setShape(GradientDrawable.OVAL);
+            mask.setColor(0xFFFFFFFF);
+            circle.setBackground(new RippleDrawable(
+                    ColorStateList.valueOf(0x40000000), gd, mask));
             circle.setContentDescription(ctx.getString(PRESET_NAMES[i]));
             circle.setClickable(true);
             circle.setFocusable(true);
