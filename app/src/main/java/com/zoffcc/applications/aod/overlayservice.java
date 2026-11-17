@@ -193,6 +193,18 @@ public class overlayservice extends AccessibilityService
         lp.gravity = Gravity.TOP | Gravity.START;
         lp.x = 0;
         lp.y = 0;
+        // Cover the whole physical panel, including the status bar band and
+        // the camera cutout. The legacy LAYOUT_IN_SCREEN / NO_LIMITS flags
+        // alone are not enough on Android 11+: windows are inset to avoid
+        // system bars unless fitInsetsTypes is explicitly cleared, and the
+        // cutout mode must allow short-edge extension.
+        lp.layoutInDisplayCutoutMode =
+                WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+        if (Build.VERSION.SDK_INT >= 30)
+        {
+            lp.setFitInsetsTypes(0);
+            lp.setFitInsetsSides(0);
+        }
         view.setVisibility(android.view.View.GONE);
         try
         {
