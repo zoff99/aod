@@ -81,6 +81,8 @@ public class overlayservice extends AccessibilityService
     private SharedPreferences prefs;
     private android.app.KeyguardManager km;
     private long lastUserPresentAt = 0L;
+    private boolean lastKmLocked = true;
+    private int kmUnlockedSeen = 0;
     private PowerManager.WakeLock partialLock;
     private PowerManager.WakeLock drawLock;
     private PowerManager.WakeLock wakeBridge;
@@ -315,16 +317,7 @@ public class overlayservice extends AccessibilityService
             else if (Intent.ACTION_USER_PRESENT.equals(a))
             {
                 Dbg.log("overlay", "recv USER_PRESENT (unlock) " + state());
-                screenOn = true;
-                lastUserPresentAt = SystemClock.elapsedRealtime();
-                burstPending = false;
-                stopBurst(false, "userPresent");
-                sendLocal(notificationobserver.ACTION_HIDE);
-                if (Prefs.clearOnUnlock(overlayservice.this))
-                {
-                    Dbg.log("overlay", "USER_PRESENT: clearOnUnlock -> CLEAR");
-                    sendLocal(notificationobserver.ACTION_CLEAR);
-                }
+                handleUnlock("USER_PRESENT");
             }
         }
     };
@@ -417,6 +410,36 @@ public class overlayservice extends AccessibilityService
         }
     };
 
+    // Some devices never deliver ACTION_USER_PRESENT. While the light is on,
+    // watch the keyguard directly: a locked -> unlocked transition is an
+    // unlock no matter which broadcast did or did not arrive. Two consecutive
+    // readings debounce any momentary flicker during wake/doze transitions.
+    private final Runnable keyguardWatch = new Runnable()
+    {
+        @Override
+        public void run()
+        {
+            if (!lightActive) { return; }
+            boolean locked = km == null || km.isKeyguardLocked();
+            if (!locked)
+            {
+                kmUnlockedSeen++;
+                if (kmUnlockedSeen >= 2)
+                {
+                    kmUnlockedSeen = 0;
+                    handleUnlock("keyguardWatch");
+                    return;
+                }
+            }
+            else
+            {
+                kmUnlockedSeen = 0;
+            }
+            lastKmLocked = locked;
+            h.postDelayed(this, 300L);
+        }
+    };
+
     // ---- state machine -------------------------------------------------------------
 
     private String state()
@@ -466,6 +489,21 @@ public class overlayservice extends AccessibilityService
         Calendar now = Calendar.getInstance();
         int minute = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE);
         return Prefs.inNightWindow(this, minute);
+    }
+
+    private void handleUnlock(String via)
+    {
+        Dbg.log("overlay", "handleUnlock via=" + via + " " + state());
+        screenOn = true;
+        lastUserPresentAt = SystemClock.elapsedRealtime();
+        burstPending = false;
+        stopBurst(false, "unlock:" + via);
+        sendLocal(notificationobserver.ACTION_HIDE);
+        if (Prefs.clearOnUnlock(this))
+        {
+            Dbg.log("overlay", "handleUnlock: clearOnUnlock -> CLEAR");
+            sendLocal(notificationobserver.ACTION_CLEAR);
+        }
     }
 
     private void onItemsChanged()
@@ -619,6 +657,10 @@ public class overlayservice extends AccessibilityService
         shiftIndex = 0;
         view.setShift(0f, 0f);
         h.postDelayed(shiftRunnable, SHIFT_INTERVAL_MS);
+        lastKmLocked = km == null || km.isKeyguardLocked();
+        kmUnlockedSeen = 0;
+        h.removeCallbacks(keyguardWatch);
+        h.postDelayed(keyguardWatch, 300L);
 
         long lockFor = durationMs + 4000L;
         try { partialLock.acquire(lockFor); } catch (Exception ignored) {}
@@ -719,6 +761,7 @@ public class overlayservice extends AccessibilityService
     {
         if (timeoutTimer != null) { timeoutTimer.cancel(); timeoutTimer = null; }
         h.removeCallbacks(shiftRunnable);
+        h.removeCallbacks(keyguardWatch);
     }
 
     private final Runnable shiftRunnable = new Runnable()
