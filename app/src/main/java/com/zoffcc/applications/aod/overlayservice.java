@@ -161,6 +161,7 @@ public class overlayservice extends AccessibilityService
             screenOn = displayState() == Display.STATE_ON;
             Log.i(TAG, "bootstrap done, screenOn=" + screenOn + " drawCapable=" + drawCapable);
             Dbg.log("overlay", "bootstrap done drawCapable=" + drawCapable + " " + state());
+            syncOverlay();
         }
         catch (Exception e)
         {
@@ -288,6 +289,7 @@ public class overlayservice extends AccessibilityService
             {
                 Dbg.log("overlay", "recv SCREEN_OFF " + state());
                 screenOn = false;
+                syncOverlay();
                 h.removeCallbacks(relockWatch);
                 h.removeCallbacks(evaluateRunnable);
                 h.postDelayed(evaluateRunnable, 450L); // let the system settle into doze
@@ -316,6 +318,7 @@ public class overlayservice extends AccessibilityService
                 }
                 h.removeCallbacks(screenOnRecheck);
                 h.postDelayed(screenOnRecheck, 400L);
+                syncOverlay();
             }
             else if (Intent.ACTION_USER_PRESENT.equals(a))
             {
@@ -358,6 +361,7 @@ public class overlayservice extends AccessibilityService
                     canvasShown = true;
                     Dbg.log("overlay", "AOD_SHOWN: canvasShown=true lightActive=" + lightActive);
                     if (!lightActive) { reevaluate(); }
+                    syncOverlay();
                     break;
                 case notificationobserver.ACTION_AOD_GONE:
                     canvasShown = false;
@@ -375,6 +379,7 @@ public class overlayservice extends AccessibilityService
                     {
                         stopBurst(false, "aodGone");
                     }
+                    syncOverlay();
                     break;
                 case notificationobserver.ACTION_WAKE:
                     Dbg.log("overlay", "WAKE: acquire wakeBridge 2s");
@@ -728,15 +733,15 @@ public class overlayservice extends AccessibilityService
             try { drawLock.acquire(lockFor); } catch (Exception ignored) {}
         }
 
-        if (allowCanvas && !canvasShown && displayState() != Display.STATE_ON)
+        if (allowCanvas && Prefs.preview(this) && !canvasShown && !screenOn)
         {
-            Dbg.log("overlay", "startBurst -> launchCanvas");
+            Dbg.log("overlay", "startBurst -> launchCanvas (preview)");
             launchCanvas();
         }
         else if (allowCanvas)
         {
-            Dbg.log("overlay", "startBurst canvas skipped: canvasShown=" + canvasShown
-                    + " disp=" + dispName(displayState()));
+            Dbg.log("overlay", "startBurst canvas skipped: preview=" + Prefs.preview(this)
+                    + " canvasShown=" + canvasShown + " screenOn=" + screenOn);
         }
 
         timeoutTimer = new CountDownTimer(durationMs, 1000L)
@@ -777,6 +782,7 @@ public class overlayservice extends AccessibilityService
             }
         };
         timeoutTimer.start();
+        syncOverlay();
         Dbg.log("overlay", "burst STARTED dur=" + durationMs + " canvas=" + allowCanvas
                 + " color=#" + Integer.toHexString(color) + " " + state());
     }
@@ -805,8 +811,8 @@ public class overlayservice extends AccessibilityService
         if (view != null)
         {
             view.stop();
-            view.setVisibility(android.view.View.GONE);
         }
+        syncOverlay();
         release(partialLock);
         release(drawLock);
         if (!keepCanvas && canvasShown)
@@ -836,6 +842,36 @@ public class overlayservice extends AccessibilityService
             h.postDelayed(this, SHIFT_INTERVAL_MS);
         }
     };
+
+    /**
+     * Opaque black over the system AOD whenever the screen is off, so the
+     * clock/widgets are hidden even with no notification. The ring draws on
+     * top only while a burst is active. When idle this is a static black
+     * field: no animation, no wake locks -> minimal CPU and battery. When
+     * the screen is awake the overlay is transparent (or gone) so it never
+     * covers the lock screen or launcher.
+     */
+    private void syncOverlay()
+    {
+        if (view == null || !viewAdded) { return; }
+        boolean off = effectiveScreenOff();
+        Dbg.log("overlay", "syncOverlay blackout=" + off + " lightActive=" + lightActive);
+        view.setBlackout(off);
+        if (off)
+        {
+            view.setVisibility(android.view.View.VISIBLE);
+            if (!lightActive) { view.stop(); }
+        }
+        else if (!lightActive)
+        {
+            view.stop();
+            view.setVisibility(android.view.View.GONE);
+        }
+        else
+        {
+            view.setVisibility(android.view.View.VISIBLE);
+        }
+    }
 
     private void applyAppearance()
     {

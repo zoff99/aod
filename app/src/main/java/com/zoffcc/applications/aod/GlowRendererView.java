@@ -27,7 +27,11 @@ import android.view.View;
  */
 public class GlowRendererView extends View
 {
+    /** Safety: black out only this fraction of the display height (top);
+     *  the remainder at the bottom is left untouched. */
+    private static final float BLACKOUT_HEIGHT_FRACTION = 0.66f;
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint blackPaint = new Paint();
     private final Path edgePath = new Path();
     private final RectF edgeRect = new RectF();
     private final RectF ringRect = new RectF();
@@ -46,6 +50,7 @@ public class GlowRendererView extends View
     private float shiftX = 0f;
     private float shiftY = 0f;
 
+    private boolean blackout = false;
     private boolean running = false;
     private long startElapsed = 0L;
     private long lastFrame = 0L;
@@ -60,6 +65,8 @@ public class GlowRendererView extends View
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeCap(Paint.Cap.ROUND);
         paint.setStrokeJoin(Paint.Join.ROUND);
+        blackPaint.setStyle(Paint.Style.FILL);
+        blackPaint.setColor(Color.BLACK);
     }
 
     // ---- configuration ----------------------------------------------------
@@ -111,6 +118,18 @@ public class GlowRendererView extends View
 
     public boolean isRunning() { return running; }
 
+    /** Opaque black background (hides the system AOD clock). Drawn even
+     *  when the animation is stopped, so an idle screen-off overlay is a
+     *  static, near-zero-cost black field. */
+    public void setBlackout(boolean on)
+    {
+        if (blackout != on)
+        {
+            blackout = on;
+            invalidate();
+        }
+    }
+
     private void rebuildPaths()
     {
         float inset = strokePx * 1.5f + 2f;
@@ -125,6 +144,14 @@ public class GlowRendererView extends View
     @Override
     protected void onDraw(Canvas canvas)
     {
+        if (blackout)
+        {
+            // Safety: cover only the top two-thirds of the display; the bottom
+            // third is left as-is. Opaque black hides the system AOD clock; on
+            // OLED these pixels are effectively off, so a static blackout costs
+            // almost nothing.
+            canvas.drawRect(0f, 0f, screenW, screenH * BLACKOUT_HEIGHT_FRACTION, blackPaint);
+        }
         if (!running) { return; }
 
         long now = SystemClock.elapsedRealtime();
