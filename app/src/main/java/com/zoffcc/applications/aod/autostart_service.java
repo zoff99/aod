@@ -6,7 +6,8 @@ import android.content.Intent;
 import android.util.Log;
 
 /**
- * Re-arms the pipeline after boot and forwards night-boundary alarms.
+ * Re-arms the pipeline after boot and after app updates, and forwards
+ * night-boundary alarms.
  * Both system-bound services (notification listener, accessibility) are
  * re-created by the system automatically once enabled; we only nudge the
  * listener to rebind and ask everyone to re-evaluate state.
@@ -21,12 +22,16 @@ public class autostart_service extends BroadcastReceiver
         final String action = intent != null ? intent.getAction() : null;
         Log.i(TAG, "onReceive: " + action);
 
-        if (Intent.ACTION_BOOT_COMPLETED.equals(action))
+        // After an update install the system rebinds enabled listeners on
+        // its own, but on some builds that rebind is lost; ask explicitly.
+        if (Intent.ACTION_BOOT_COMPLETED.equals(action) ||
+            Intent.ACTION_MY_PACKAGE_REPLACED.equals(action))
         {
             notificationobserver.requestRebind(context);
         }
 
         if (Intent.ACTION_BOOT_COMPLETED.equals(action) ||
+            Intent.ACTION_MY_PACKAGE_REPLACED.equals(action) ||
             notificationobserver.ACTION_REEVAL.equals(action))
         {
             Intent reeval = new Intent(notificationobserver.ACTION_REEVAL);
