@@ -1,0 +1,10 @@
+<resources>
+    <!-- Base application theme (night variant). -->
+    <style name="Theme.AoD" parent="Theme.AppCompat.DayNight.DarkActionBar">
+        <item name="colorPrimary">@color/purple_200</item>
+        <item name="colorPrimaryDark">@color/purple_700</item>
+        <item name="colorAccent">@color/teal_200</item>
+        <item name="android:statusBarColor">@color/purple_700</item>
+        <item name="android:windowBackground">@color/black</item>
+    </style>
+</resources>

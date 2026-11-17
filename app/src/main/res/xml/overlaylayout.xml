@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Minimal static config; at runtime the service further restricts itself
+     to a non-existent package so it receives effectively zero events. -->
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/overlay_service_description"
+    android:canRetrieveWindowContent="false"
+    android:accessibilityEventTypes="typeViewScrolled"
+    android:notificationTimeout="600000" />

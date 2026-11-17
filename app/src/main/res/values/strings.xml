@@ -1,0 +1,82 @@
+<resources>
+    <string name="app_name">AoD</string>
+    <string name="yes">yes</string>
+    <string name="no">no</string>
+    <string name="overlay_service_description">Draws the notification light above the lock screen. No screen content is read.</string>
+    <string name="notification_listener_service">Notification access</string>
+    <string name="notification_listener_service_explanation">To see your notifications as a light, the app needs notification access. Enable it now?</string>
+
+    <string name="btn_notif_access">Notifications</string>
+    <string name="btn_accessibility">Accessibility</string>
+    <string name="btn_battery">Battery</string>
+    <string name="btn_auto_enable">Auto-enable accessibility (ADB permission granted)</string>
+    <string name="btn_select_apps">Apps…</string>
+    <string name="btn_detect_cutout">Detect camera cutout</string>
+    <string name="btn_test">Test light</string>
+    <string name="btn_hide">Hide</string>
+
+    <string name="set_enabled">Enabled (master)</string>
+    <string name="set_aod_light">Light when screen off / AOD</string>
+    <string name="set_screen_on_light">Light on lock screen (screen on)</string>
+    <string name="set_preview">Show notification text on dark canvas</string>
+    <string name="set_double_tap">Double tap to wake</string>
+    <string name="set_clear_unlock">Dismiss notifications on unlock</string>
+
+    <string name="sec_appearance">Appearance</string>
+    <string name="set_style">Style</string>
+    <string name="set_anim">Animation</string>
+    <string name="set_auto_color">Auto color from app icon</string>
+    <string name="set_eco">ECO mode (fewer frames)</string>
+    <string name="set_interval">Interval mode (on/off cycling)</string>
+    <string name="set_interval_on">On (s)</string>
+    <string name="set_interval_off">Off (s)</string>
+
+    <string name="sec_behavior">Behavior</string>
+    <string name="set_night">Night quiet hours</string>
+    <string name="set_night_start">From</string>
+    <string name="set_night_end">To</string>
+    <string name="set_dnd">Respect Do Not Disturb</string>
+    <string name="set_battery_light">Charging / full / low battery light</string>
+    <string name="set_ignore_persistent">Ignore persistent notifications</string>
+    <string name="set_filter">Apps</string>
+
+    <string name="sec_cutout">Camera ring calibration</string>
+
+    <string name="lbl_timeout">Light duration: %1$d s</string>
+    <string name="lbl_brightness">Dark canvas brightness: %1$d%%</string>
+    <string name="lbl_stroke">Light thickness: %1$d dp</string>
+    <string name="lbl_speed">Animation cycle: %1$d ms</string>
+    <string name="lbl_cutout_x">Ring offset X: %1$d px</string>
+    <string name="lbl_cutout_y">Ring offset Y: %1$d px</string>
+    <string name="lbl_cutout_scale">Ring size: %1$d%%</string>
+
+    <string name="battery_charging">Charging · %1$d%%</string>
+    <string name="battery_full">Battery full</string>
+    <string name="battery_low">Battery low · %1$d%%</string>
+
+    <string name="status_line">listener: %1$s · accessibility: %2$s · battery exempt: %3$s</string>
+    <string name="on">ON</string>
+    <string name="off">off</string>
+
+    <string name="dlg_select_apps">Show light for these apps</string>
+    <string name="dlg_app_color">Light color for %1$s</string>
+    <string name="color_auto">Auto / default</string>
+    <string name="cutout_detected">Cutout position saved</string>
+    <string name="cutout_none">No cutout reported — using fallback position</string>
+
+    <string-array name="style_entries">
+        <item>Camera ring</item>
+        <item>Screen edge</item>
+        <item>LED dot</item>
+    </string-array>
+    <string-array name="anim_entries">
+        <item>Pulse</item>
+        <item>Rotate</item>
+        <item>Flash</item>
+        <item>Steady</item>
+    </string-array>
+    <string-array name="filter_entries">
+        <item>All apps</item>
+        <item>Selected apps only</item>
+    </string-array>
+</resources>

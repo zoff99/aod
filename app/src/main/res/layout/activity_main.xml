@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/black"
+    android:orientation="vertical">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="14dp">
+
+            <TextView
+                android:id="@+id/status_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/white"
+                android:textSize="12sp"
+                android:typeface="monospace" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/btn_notif_access"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textSize="11sp"
+                    android:text="@string/btn_notif_access" />
+
+                <Button
+                    android:id="@+id/btn_accessibility"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textSize="11sp"
+                    android:text="@string/btn_accessibility" />
+
+                <Button
+                    android:id="@+id/btn_battery"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textSize="11sp"
+                    android:text="@string/btn_battery" />
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/btn_auto_enable"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="11sp"
+                android:visibility="gone"
+                android:text="@string/btn_auto_enable" />
+
+            <View android:layout_width="match_parent" android:layout_height="1dp"
+                android:layout_marginTop="8dp" android:layout_marginBottom="8dp"
+                android:background="#333333" />
+
+            <Switch android:id="@+id/sw_enabled" style="@style/SettingSwitch"
+                android:text="@string/set_enabled" />
+            <Switch android:id="@+id/sw_aod_light" style="@style/SettingSwitch"
+                android:text="@string/set_aod_light" />
+            <Switch android:id="@+id/sw_screen_on_light" style="@style/SettingSwitch"
+                android:text="@string/set_screen_on_light" />
+            <Switch android:id="@+id/sw_preview" style="@style/SettingSwitch"
+                android:text="@string/set_preview" />
+            <Switch android:id="@+id/sw_double_tap" style="@style/SettingSwitch"
+                android:text="@string/set_double_tap" />
+            <Switch android:id="@+id/sw_clear_unlock" style="@style/SettingSwitch"
+                android:text="@string/set_clear_unlock" />
+
+            <View android:layout_width="match_parent" android:layout_height="1dp"
+                android:layout_marginTop="8dp" android:layout_marginBottom="8dp"
+                android:background="#333333" />
+
+            <TextView style="@style/SectionLabel" android:text="@string/sec_appearance" />
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:gravity="center_vertical">
+                <TextView style="@style/InlineLabel" android:text="@string/set_style" />
+                <Spinner android:id="@+id/sp_style" android:layout_width="0dp"
+                    android:layout_height="wrap_content" android:layout_weight="1" />
+            </LinearLayout>
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:gravity="center_vertical">
+                <TextView style="@style/InlineLabel" android:text="@string/set_anim" />
+                <Spinner android:id="@+id/sp_anim" android:layout_width="0dp"
+                    android:layout_height="wrap_content" android:layout_weight="1" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/color_row"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="6dp" />
+
+            <Switch android:id="@+id/sw_auto_color" style="@style/SettingSwitch"
+                android:text="@string/set_auto_color" />
+            <Switch android:id="@+id/sw_eco" style="@style/SettingSwitch"
+                android:text="@string/set_eco" />
+
+            <TextView android:id="@+id/lbl_timeout" style="@style/SliderLabel" />
+            <SeekBar android:id="@+id/sb_timeout" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:max="290" />
+
+            <TextView android:id="@+id/lbl_brightness" style="@style/SliderLabel" />
+            <SeekBar android:id="@+id/sb_brightness" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:max="95" />
+
+            <TextView android:id="@+id/lbl_stroke" style="@style/SliderLabel" />
+            <SeekBar android:id="@+id/sb_stroke" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:max="14" />
+
+            <TextView android:id="@+id/lbl_speed" style="@style/SliderLabel" />
+            <SeekBar android:id="@+id/sb_speed" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:max="37" />
+
+            <Switch android:id="@+id/sw_interval" style="@style/SettingSwitch"
+                android:text="@string/set_interval" />
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:gravity="center_vertical">
+                <TextView style="@style/InlineLabel" android:text="@string/set_interval_on" />
+                <EditText android:id="@+id/et_interval_on" style="@style/NumberInput" />
+                <TextView style="@style/InlineLabel" android:text="@string/set_interval_off" />
+                <EditText android:id="@+id/et_interval_off" style="@style/NumberInput" />
+            </LinearLayout>
+
+            <View android:layout_width="match_parent" android:layout_height="1dp"
+                android:layout_marginTop="8dp" android:layout_marginBottom="8dp"
+                android:background="#333333" />
+
+            <TextView style="@style/SectionLabel" android:text="@string/sec_behavior" />
+
+            <Switch android:id="@+id/sw_night" style="@style/SettingSwitch"
+                android:text="@string/set_night" />
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:gravity="center_vertical">
+                <TextView style="@style/InlineLabel" android:text="@string/set_night_start" />
+                <EditText android:id="@+id/et_night_start" style="@style/TimeInput" />
+                <TextView style="@style/InlineLabel" android:text="@string/set_night_end" />
+                <EditText android:id="@+id/et_night_end" style="@style/TimeInput" />
+            </LinearLayout>
+
+            <Switch android:id="@+id/sw_dnd" style="@style/SettingSwitch"
+                android:text="@string/set_dnd" />
+            <Switch android:id="@+id/sw_battery_light" style="@style/SettingSwitch"
+                android:text="@string/set_battery_light" />
+            <Switch android:id="@+id/sw_ignore_persistent" style="@style/SettingSwitch"
+                android:text="@string/set_ignore_persistent" />
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:gravity="center_vertical">
+                <TextView style="@style/InlineLabel" android:text="@string/set_filter" />
+                <Spinner android:id="@+id/sp_filter" android:layout_width="0dp"
+                    android:layout_height="wrap_content" android:layout_weight="1" />
+                <Button android:id="@+id/btn_select_apps" android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:textSize="11sp"
+                    android:text="@string/btn_select_apps" />
+            </LinearLayout>
+
+            <View android:layout_width="match_parent" android:layout_height="1dp"
+                android:layout_marginTop="8dp" android:layout_marginBottom="8dp"
+                android:background="#333333" />
+
+            <TextView style="@style/SectionLabel" android:text="@string/sec_cutout" />
+
+            <Button android:id="@+id/btn_detect_cutout" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:textSize="11sp"
+                android:text="@string/btn_detect_cutout" />
+
+            <TextView android:id="@+id/lbl_cutout_x" style="@style/SliderLabel" />
+            <SeekBar android:id="@+id/sb_cutout_x" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:max="200" />
+
+            <TextView android:id="@+id/lbl_cutout_y" style="@style/SliderLabel" />
+            <SeekBar android:id="@+id/sb_cutout_y" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:max="200" />
+
+            <TextView android:id="@+id/lbl_cutout_scale" style="@style/SliderLabel" />
+            <SeekBar android:id="@+id/sb_cutout_scale" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:max="150" />
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:layout_marginTop="10dp">
+                <Button android:id="@+id/btn_test" android:layout_width="0dp"
+                    android:layout_height="wrap_content" android:layout_weight="1"
+                    android:text="@string/btn_test" />
+                <Button android:id="@+id/btn_hide" android:layout_width="0dp"
+                    android:layout_height="wrap_content" android:layout_weight="1"
+                    android:text="@string/btn_hide" />
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+
+    <TextView
+        android:id="@+id/debug_text"
+        android:layout_width="match_parent"
+        android:layout_height="110dp"
+        android:text=""
+        android:textAlignment="textStart"
+        android:textColor="@color/white"
+        android:textSize="10sp"
+        android:typeface="monospace"
+        android:gravity="bottom"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="32dp"
+        android:layout_gravity="start"
+        android:nestedScrollingEnabled="false"
+        android:overScrollMode="never" />
+
+</LinearLayout>
