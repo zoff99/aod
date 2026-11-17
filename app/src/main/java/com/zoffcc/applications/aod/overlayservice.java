@@ -114,6 +114,7 @@ public class overlayservice extends AccessibilityService
     {
         super.onServiceConnected();
         Log.i(TAG, "onServiceConnected");
+        Dbg.log("overlay", "onServiceConnected");
         h.postDelayed(this::bootstrap, 600L);
     }
 
@@ -156,6 +157,7 @@ public class overlayservice extends AccessibilityService
 
             screenOn = displayState() == Display.STATE_ON;
             Log.i(TAG, "bootstrap done, screenOn=" + screenOn + " drawCapable=" + drawCapable);
+            Dbg.log("overlay", "bootstrap done drawCapable=" + drawCapable + " " + state());
         }
         catch (Exception e)
         {
@@ -224,6 +226,7 @@ public class overlayservice extends AccessibilityService
         screen.addAction(Intent.ACTION_SCREEN_ON);
         screen.addAction(Intent.ACTION_USER_PRESENT);
         ContextCompat.registerReceiver(this, screenReceiver, screen, ContextCompat.RECEIVER_NOT_EXPORTED);
+        Dbg.log("overlay", "screen receiver registered (OFF/ON/USER_PRESENT)");
 
         IntentFilter cmd = new IntentFilter();
         cmd.addAction(notificationobserver.ACTION_ITEMS);
@@ -246,12 +249,13 @@ public class overlayservice extends AccessibilityService
     @Override
     public void onDestroy()
     {
+        Dbg.log("overlay", "onDestroy " + state());
         h.removeCallbacksAndMessages(null);
         try { unregisterReceiver(screenReceiver); } catch (Exception ignored) {}
         try { unregisterReceiver(commandReceiver); } catch (Exception ignored) {}
         try { if (prefs != null) { prefs.unregisterOnSharedPreferenceChangeListener(this); } }
         catch (Exception ignored) {}
-        stopBurst(false);
+        stopBurst(false, "serviceDestroy");
         if (viewAdded && view != null)
         {
             try { wm.removeViewImmediate(view); } catch (Exception ignored) {}
@@ -267,7 +271,7 @@ public class overlayservice extends AccessibilityService
     }
 
     @Override
-    public void onInterrupt() {}
+    public void onInterrupt() { Dbg.log("overlay", "onInterrupt"); }
 
     // ---- receivers -------------------------------------------------------------
 
@@ -279,22 +283,22 @@ public class overlayservice extends AccessibilityService
             String a = intent.getAction();
             if (Intent.ACTION_SCREEN_OFF.equals(a))
             {
+                Dbg.log("overlay", "recv SCREEN_OFF " + state());
                 screenOn = false;
                 h.removeCallbacks(evaluateRunnable);
                 h.postDelayed(evaluateRunnable, 450L); // let the system settle into doze
             }
             else if (Intent.ACTION_SCREEN_ON.equals(a))
             {
+                Dbg.log("overlay", "recv SCREEN_ON " + state());
                 screenOn = true;
                 if (canvasShown)
                 {
-                    // our own dark canvas woke the screen; its lifecycle
-                    // (AOD_SHOWN / AOD_GONE) manages the burst
+                    Dbg.log("overlay", "SCREEN_ON: canvas shown -> leave burst to canvas lifecycle");
                 }
                 else if (lockedScreenOnLightWanted())
                 {
-                    // waking to the lock screen is NOT an unlock: keep an
-                    // active ring, or start one if it was not showing yet
+                    Dbg.log("overlay", "SCREEN_ON: locked+wanted -> keep/start ring (lightActive=" + lightActive + ")");
                     if (!lightActive)
                     {
                         startBurst(Prefs.timeoutSec(overlayservice.this) * 1000L, false);
@@ -302,22 +306,23 @@ public class overlayservice extends AccessibilityService
                 }
                 else
                 {
-                    stopBurst(false);
+                    Dbg.log("overlay", "SCREEN_ON: not wanted -> stop");
+                    stopBurst(false, "screenOn-notWanted");
                 }
-                // the keyguard state can lag the broadcast by a moment;
-                // re-check once the wake transition has settled
                 h.removeCallbacks(screenOnRecheck);
                 h.postDelayed(screenOnRecheck, 400L);
             }
             else if (Intent.ACTION_USER_PRESENT.equals(a))
             {
+                Dbg.log("overlay", "recv USER_PRESENT (unlock) " + state());
                 screenOn = true;
                 lastUserPresentAt = SystemClock.elapsedRealtime();
                 burstPending = false;
-                stopBurst(false);
+                stopBurst(false, "userPresent");
                 sendLocal(notificationobserver.ACTION_HIDE);
                 if (Prefs.clearOnUnlock(overlayservice.this))
                 {
+                    Dbg.log("overlay", "USER_PRESENT: clearOnUnlock -> CLEAR");
                     sendLocal(notificationobserver.ACTION_CLEAR);
                 }
             }
@@ -331,6 +336,7 @@ public class overlayservice extends AccessibilityService
         {
             String a = intent.getAction();
             if (a == null) { return; }
+            Dbg.log("overlay", "recv cmd " + a + " " + state());
             switch (a)
             {
                 case notificationobserver.ACTION_ITEMS:
@@ -347,19 +353,22 @@ public class overlayservice extends AccessibilityService
                     startBurst(6000L, false);
                     break;
                 case notificationobserver.ACTION_HIDE:
-                    stopBurst(false);
+                    stopBurst(false, "cmdHide");
                     break;
                 case notificationobserver.ACTION_REEVAL:
                     reevaluate();
                     break;
                 case notificationobserver.ACTION_AOD_SHOWN:
                     canvasShown = true;
+                    Dbg.log("overlay", "AOD_SHOWN: canvasShown=true lightActive=" + lightActive);
                     if (!lightActive) { reevaluate(); }
                     break;
                 case notificationobserver.ACTION_AOD_GONE:
                     canvasShown = false;
-                    if (screenOn && lockedScreenOnLightWanted()
-                            && SystemClock.elapsedRealtime() - lastUserPresentAt >= 1500L)
+                    boolean keep = screenOn && lockedScreenOnLightWanted()
+                            && SystemClock.elapsedRealtime() - lastUserPresentAt >= 1500L;
+                    Dbg.log("overlay", "AOD_GONE: keepOnLockScreen=" + keep);
+                    if (keep)
                     {
                         if (!lightActive)
                         {
@@ -368,10 +377,11 @@ public class overlayservice extends AccessibilityService
                     }
                     else
                     {
-                        stopBurst(false);
+                        stopBurst(false, "aodGone");
                     }
                     break;
                 case notificationobserver.ACTION_WAKE:
+                    Dbg.log("overlay", "WAKE: acquire wakeBridge 2s");
                     try { wakeBridge.acquire(2000L); } catch (Exception ignored) {}
                     break;
             }
@@ -389,22 +399,52 @@ public class overlayservice extends AccessibilityService
         @Override
         public void run()
         {
-            if (!screenOn || canvasShown) { return; }
+            Dbg.log("overlay", "screenOnRecheck " + state());
+            if (!screenOn || canvasShown) { Dbg.log("overlay", "recheck: skip (screenOff or canvas)"); return; }
             if (lockedScreenOnLightWanted())
             {
                 if (!lightActive)
                 {
+                    Dbg.log("overlay", "recheck: locked+wanted, start ring");
                     startBurst(Prefs.timeoutSec(overlayservice.this) * 1000L, false);
                 }
             }
             else if (lightActive && !testMode)
             {
-                stopBurst(false);
+                Dbg.log("overlay", "recheck: not wanted, stop ring");
+                stopBurst(false, "recheck-notWanted");
             }
         }
     };
 
     // ---- state machine -------------------------------------------------------------
+
+    private String state()
+    {
+        return "screenOn=" + screenOn + " canvas=" + canvasShown + " light=" + lightActive
+                + " pending=" + burstPending + " items=" + items.size()
+                + " kmLocked=" + (km == null ? "n/a" : km.isKeyguardLocked())
+                + " disp=" + dispName(displayState())
+                + " sinceUnlock=" + (lastUserPresentAt == 0 ? "never"
+                        : (SystemClock.elapsedRealtime() - lastUserPresentAt) + "ms")
+                + " test=" + testMode
+                + " enabled=" + Prefs.enabled(this) + " aodLight=" + Prefs.aodLight(this)
+                + " screenOnLight=" + Prefs.screenOnLight(this)
+                + " relight=" + Prefs.relightRelock(this);
+    }
+
+    private static String dispName(int st)
+    {
+        switch (st)
+        {
+            case Display.STATE_OFF: return "OFF";
+            case Display.STATE_ON: return "ON";
+            case Display.STATE_DOZE: return "DOZE";
+            case Display.STATE_DOZE_SUSPEND: return "DOZE_SUSPEND";
+            case Display.STATE_VR: return "VR";
+            default: return "?" + st;
+        }
+    }
 
     private boolean effectiveScreenOff()
     {
@@ -414,9 +454,11 @@ public class overlayservice extends AccessibilityService
     /** Awake on the real lock screen (not our canvas): may the light show? */
     private boolean lockedScreenOnLightWanted()
     {
-        return Prefs.enabled(this) && Prefs.screenOnLight(this)
+        boolean wanted = Prefs.enabled(this) && Prefs.screenOnLight(this)
                 && !items.isEmpty() && !suppressed()
                 && km != null && km.isKeyguardLocked();
+        Dbg.log("overlay", "lockedScreenOnLightWanted=" + wanted + " " + state());
+        return wanted;
     }
 
     private boolean suppressed()
@@ -428,75 +470,96 @@ public class overlayservice extends AccessibilityService
 
     private void onItemsChanged()
     {
-        if (!Prefs.enabled(this)) { stopBurst(false); return; }
+        Dbg.log("overlay", "onItemsChanged " + state());
+        if (!Prefs.enabled(this)) { Dbg.log("overlay", "items: disabled -> stop"); stopBurst(false, "masterOff-items"); return; }
 
         if (items.isEmpty())
         {
+            Dbg.log("overlay", "items: empty (all dismissed)");
             burstPending = false;
-            if (lightActive) { endBurst(); }
+            if (lightActive) { endBurst("itemsEmpty"); }
             return;
         }
 
         String newestKey = items.get(0).key;
         boolean fresh = !newestKey.equals(lastBurstKey);
+        Dbg.log("overlay", "items: newest=" + newestKey + " lastBurst=" + lastBurstKey
+                + " fresh=" + fresh + " effScreenOff=" + effectiveScreenOff());
 
         if (effectiveScreenOff())
         {
             if (Prefs.aodLight(this) && !suppressed() && (fresh || !lightActive))
             {
+                Dbg.log("overlay", "items: screen-off branch -> startBurst");
                 startBurst(Prefs.timeoutSec(this) * 1000L, true);
+            }
+            else
+            {
+                Dbg.log("overlay", "items: screen-off branch skipped (aodLight="
+                        + Prefs.aodLight(this) + " suppressed=" + suppressed()
+                        + " fresh=" + fresh + " lightActive=" + lightActive + ")");
             }
         }
         else if (fresh)
         {
             if (Prefs.screenOnLight(this) && km != null && km.isKeyguardLocked() && !suppressed())
             {
-                startBurst(Prefs.timeoutSec(overlayservice.this) * 1000L, false);
+                Dbg.log("overlay", "items: screen-on locked branch -> startBurst");
+                startBurst(Prefs.timeoutSec(this) * 1000L, false);
             }
             else
             {
+                Dbg.log("overlay", "items: screen-on unlocked -> burstPending=true");
                 burstPending = true; // show when the screen next turns off
             }
         }
         else if (lightActive)
         {
-            // same notification updated: refresh color live
+            Dbg.log("overlay", "items: same notification updated -> refresh appearance");
             applyAppearance();
         }
     }
 
     private void onScreenOff()
     {
-        if (!Prefs.enabled(this) || !Prefs.aodLight(this)) { return; }
-        // some devices emit a stray SCREEN_OFF during the unlock transition;
-        // never relight over an awake device right after the user unlocked
+        Dbg.log("overlay", "onScreenOff (delayed eval) " + state());
+        if (!Prefs.enabled(this) || !Prefs.aodLight(this))
+        { Dbg.log("overlay", "onScreenOff: disabled or aodLight off"); return; }
         if (displayState() == Display.STATE_ON
                 && SystemClock.elapsedRealtime() - lastUserPresentAt < 1500L)
         {
+            Dbg.log("overlay", "onScreenOff: REFUSED (stray screen-off right after unlock, display ON)");
             return;
         }
-        // empty items == everything dismissed: nothing may light up again
-        if (items.isEmpty() || suppressed()) { return; }
-        // relight_relock: after an unlock hid the light, locking or turning
-        // the display off again brings it back for undismissed notifications
+        if (items.isEmpty() || suppressed())
+        { Dbg.log("overlay", "onScreenOff: no items or night-suppressed"); return; }
         if (lightActive || burstPending || Prefs.relightRelock(this))
         {
+            Dbg.log("overlay", "onScreenOff: -> startBurst (lightActive=" + lightActive
+                    + " pending=" + burstPending + " relight=" + Prefs.relightRelock(this) + ")");
             burstPending = false;
             startBurst(Prefs.timeoutSec(this) * 1000L, true);
+        }
+        else
+        {
+            Dbg.log("overlay", "onScreenOff: no relight condition met");
         }
     }
 
     private void reevaluate()
     {
+        Dbg.log("overlay", "reevaluate " + state());
         if (!Prefs.enabled(this) || suppressed() || items.isEmpty())
         {
-            if (lightActive) { endBurst(); }
+            Dbg.log("overlay", "reevaluate: blocked (enabled/suppressed/items)");
+            if (lightActive) { endBurst("reeval-blocked"); }
             return;
         }
         if (effectiveScreenOff())
         {
             if (Prefs.aodLight(this) && !lightActive)
             {
+                Dbg.log("overlay", "reevaluate: screen-off -> startBurst");
                 startBurst(Prefs.timeoutSec(this) * 1000L, true);
             }
         }
@@ -506,13 +569,19 @@ public class overlayservice extends AccessibilityService
             {
                 if (!lightActive)
                 {
-                    startBurst(Prefs.timeoutSec(overlayservice.this) * 1000L, false);
+                    Dbg.log("overlay", "reevaluate: screen-on locked -> startBurst");
+                    startBurst(Prefs.timeoutSec(this) * 1000L, false);
                 }
             }
             else if (lightActive && !testMode)
             {
-                stopBurst(false);
+                Dbg.log("overlay", "reevaluate: screenOnLight off -> stop");
+                stopBurst(false, "reeval-screenOnLightOff");
             }
+        }
+        else
+        {
+            Dbg.log("overlay", "reevaluate: screen-on unlocked -> no action");
         }
     }
 
@@ -520,18 +589,21 @@ public class overlayservice extends AccessibilityService
 
     private void startBurst(long durationMs, boolean allowCanvas)
     {
-        if (view == null || !viewAdded) { return; }
+        Dbg.log("overlay", "startBurst req dur=" + durationMs + " allowCanvas=" + allowCanvas + " " + state());
+        if (view == null || !viewAdded) { Dbg.log("overlay", "startBurst REFUSED: no window"); return; }
         // backstop against stale events: never light up over an awake,
         // unlocked device, no matter which path asked for it
         if (!testMode && displayState() == Display.STATE_ON
                 && km != null && !km.isKeyguardLocked())
         {
+            Dbg.log("overlay", "startBurst REFUSED: awake+unlocked backstop");
             return;
         }
         // the light geometry is portrait-only; skip in landscape
         try
         {
-            if (wm.getDefaultDisplay().getRotation() != android.view.Surface.ROTATION_0) { return; }
+            if (wm.getDefaultDisplay().getRotation() != android.view.Surface.ROTATION_0)
+            { Dbg.log("overlay", "startBurst REFUSED: landscape"); return; }
         }
         catch (Exception ignored) {}
         cancelTimers();
@@ -557,7 +629,13 @@ public class overlayservice extends AccessibilityService
 
         if (allowCanvas && !canvasShown && displayState() != Display.STATE_ON)
         {
+            Dbg.log("overlay", "startBurst -> launchCanvas");
             launchCanvas();
+        }
+        else if (allowCanvas)
+        {
+            Dbg.log("overlay", "startBurst canvas skipped: canvasShown=" + canvasShown
+                    + " disp=" + dispName(displayState()));
         }
 
         timeoutTimer = new CountDownTimer(durationMs, 1000L)
@@ -576,11 +654,13 @@ public class overlayservice extends AccessibilityService
                         boolean visible = phase < on;
                         if (visible && !view.isRunning())
                         {
+                            Dbg.log("overlay", "interval -> visible");
                             view.setVisibility(android.view.View.VISIBLE);
                             view.start();
                         }
                         else if (!visible && view.isRunning())
                         {
+                            Dbg.log("overlay", "interval -> hidden");
                             view.stop();
                             view.setVisibility(android.view.View.GONE);
                         }
@@ -591,28 +671,33 @@ public class overlayservice extends AccessibilityService
             @Override
             public void onFinish()
             {
-                endBurst();
+                Dbg.log("overlay", "burst timeout finished");
+                endBurst("timeout");
             }
         };
         timeoutTimer.start();
-        Log.i(TAG, "burst start: " + durationMs + "ms canvas=" + allowCanvas);
+        Dbg.log("overlay", "burst STARTED dur=" + durationMs + " canvas=" + allowCanvas
+                + " color=#" + Integer.toHexString(color) + " " + state());
     }
 
-    private void endBurst()
+    private void endBurst(String reason)
     {
         boolean wasOff = effectiveScreenOff();
         boolean wasTest = testMode;
-        stopBurst(false);
+        Dbg.log("overlay", "endBurst reason=" + reason + " wasOff=" + wasOff + " wasTest=" + wasTest + " " + state());
+        stopBurst(false, "endBurst:" + reason);
         testMode = false;
         if (wasOff && !wasTest)
         {
+            Dbg.log("overlay", "endBurst -> HIDE + lockScreen");
             sendLocal(notificationobserver.ACTION_HIDE);
             lockScreen();
         }
     }
 
-    private void stopBurst(boolean keepCanvas)
+    private void stopBurst(boolean keepCanvas, String reason)
     {
+        Dbg.log("overlay", "stopBurst reason=" + reason + " keepCanvas=" + keepCanvas + " " + state());
         h.removeCallbacks(screenOnRecheck);
         cancelTimers();
         lightActive = false;
@@ -625,6 +710,7 @@ public class overlayservice extends AccessibilityService
         release(drawLock);
         if (!keepCanvas && canvasShown)
         {
+            Dbg.log("overlay", "stopBurst -> send HIDE (canvas shown)");
             sendLocal(notificationobserver.ACTION_HIDE);
         }
     }
@@ -690,7 +776,7 @@ public class overlayservice extends AccessibilityService
             PendingIntent pi = PendingIntent.getActivity(this, 1, intent,
                     PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
             pi.send();
-            Log.i(TAG, "canvas launch requested");
+            Dbg.log("overlay", "launchCanvas: PendingIntent.send()");
         }
         catch (Exception e)
         {
@@ -701,8 +787,10 @@ public class overlayservice extends AccessibilityService
     private void lockScreen()
     {
         long now = SystemClock.elapsedRealtime();
-        if (now - lastLockAt < LOCK_GUARD_MS) { return; }
+        if (now - lastLockAt < LOCK_GUARD_MS)
+        { Dbg.log("overlay", "lockScreen: guarded (too soon)"); return; }
         lastLockAt = now;
+        Dbg.log("overlay", "lockScreen: GLOBAL_ACTION_LOCK_SCREEN");
         try
         {
             performGlobalAction(AccessibilityService.GLOBAL_ACTION_LOCK_SCREEN);
@@ -734,11 +822,12 @@ public class overlayservice extends AccessibilityService
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key)
     {
+        Dbg.log("overlay", "pref changed: " + key);
         if (Prefs.ENABLED.equals(key))
         {
             if (!Prefs.enabled(this))
             {
-                stopBurst(false);
+                stopBurst(false, "masterOff-pref");
                 sendLocal(notificationobserver.ACTION_HIDE);
                 try { disableSelf(); } catch (Exception ignored) {}
             }

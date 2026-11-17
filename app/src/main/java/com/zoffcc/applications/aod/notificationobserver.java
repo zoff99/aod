@@ -83,6 +83,7 @@ public class notificationobserver extends NotificationListenerService
         super.onListenerConnected();
         connected = true;
         Log.i(TAG, "onListenerConnected");
+        Dbg.log("observer", "onListenerConnected");
 
         briefLock = ((PowerManager) getSystemService(POWER_SERVICE))
                 .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "aod:ntf");
@@ -117,6 +118,7 @@ public class notificationobserver extends NotificationListenerService
     @Override
     public void onListenerDisconnected()
     {
+        Dbg.log("observer", "onListenerDisconnected");
         connected = false;
         super.onListenerDisconnected();
         try { if (batteryReceiver != null) { unregisterReceiver(batteryReceiver); } }
@@ -140,7 +142,10 @@ public class notificationobserver extends NotificationListenerService
     public void onNotificationPosted(StatusBarNotification sbn)
     {
         acquireBrief();
-        if (consider(sbn))
+        boolean accepted = consider(sbn);
+        Dbg.log("observer", "posted pkg=" + sbn.getPackageName() + " key=" + sbn.getKey()
+                + " accepted=" + accepted);
+        if (accepted)
         {
             handler.removeCallbacks(publishRunnable);
             handler.post(publishRunnable);
@@ -156,6 +161,8 @@ public class notificationobserver extends NotificationListenerService
         {
             changed = items.remove(sbn.getKey()) != null;
         }
+        Dbg.log("observer", "removed pkg=" + sbn.getPackageName() + " key=" + sbn.getKey()
+                + " changed=" + changed);
         if (changed)
         {
             handler.removeCallbacks(publishRunnable);
@@ -296,6 +303,7 @@ public class notificationobserver extends NotificationListenerService
             String newState = !Prefs.batteryLight(this) ? "" : full ? PKG_FULL : charging ? PKG_CHARGING : low ? PKG_LOW : "";
             if (newState.equals(batteryState)) { return; }
             batteryState = newState;
+            Dbg.log("observer", "batteryState=" + (newState.isEmpty() ? "(none)" : newState));
 
             synchronized (items)
             {
@@ -364,6 +372,8 @@ public class notificationobserver extends NotificationListenerService
         intent.putParcelableArrayListExtra(EXTRA_ITEMS, list);
         sendBroadcast(intent);
         Log.i(TAG, "publish: " + list.size() + " item(s)");
+        Dbg.log("observer", "publish n=" + list.size() + " dnd=" + dndSuppressed()
+                + " newest=" + (list.isEmpty() ? "-" : list.get(0).key));
     }
 
     // ---- night boundary alarm ---------------------------------------------------------
@@ -416,6 +426,7 @@ public class notificationobserver extends NotificationListenerService
         public void onReceive(Context context, Intent intent)
         {
             String a = intent.getAction();
+            Dbg.log("observer", "recv cmd " + a);
             if (ACTION_CLEAR.equals(a))
             {
                 clearAllNotifications();
@@ -434,6 +445,7 @@ public class notificationobserver extends NotificationListenerService
     /** Registered by the overlay service; handled here via a static helper. */
     public void clearAllNotifications()
     {
+        Dbg.log("observer", "clearAllNotifications");
         try
         {
             cancelAllNotifications();

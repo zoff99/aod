@@ -59,7 +59,7 @@ public class AodScreenActivity extends Activity
     private final Runnable selfTimeout = new Runnable()
     {
         @Override
-        public void run() { finish(); }
+        public void run() { Dbg.log("canvas", "selfTimeout -> finish"); finish(); }
     };
 
     private final Runnable shiftRunnable = new Runnable()
@@ -84,10 +84,12 @@ public class AodScreenActivity extends Activity
             String a = intent.getAction();
             if (notificationobserver.ACTION_HIDE.equals(a))
             {
+                Dbg.log("canvas", "recv HIDE -> finish");
                 finish();
             }
             else if (notificationobserver.ACTION_ITEMS.equals(a))
             {
+                Dbg.log("canvas", "recv ITEMS -> updatePreview");
                 updatePreview();
             }
         }
@@ -97,6 +99,7 @@ public class AodScreenActivity extends Activity
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
+        Dbg.log("canvas", "onCreate");
 
         setShowWhenLocked(true);
         setTurnScreenOn(true);
@@ -216,6 +219,7 @@ public class AodScreenActivity extends Activity
 
     private void wakeUp()
     {
+        Dbg.log("canvas", "wakeUp (double tap) -> WAKE + finish");
         Intent wake = new Intent(notificationobserver.ACTION_WAKE);
         wake.setPackage(getPackageName());
         sendBroadcast(wake);
@@ -233,6 +237,7 @@ public class AodScreenActivity extends Activity
     protected void onNewIntent(Intent intent)
     {
         super.onNewIntent(intent);
+        Dbg.log("canvas", "onNewIntent");
         resetTimeout();
         updatePreview();
     }
@@ -267,6 +272,7 @@ public class AodScreenActivity extends Activity
             }
         });
         h.postDelayed(shiftRunnable, SHIFT_INTERVAL_MS);
+        Dbg.log("canvas", "onResume -> AOD_SHOWN");
         sendLocal(notificationobserver.ACTION_AOD_SHOWN);
     }
 
@@ -276,6 +282,7 @@ public class AodScreenActivity extends Activity
         super.onPause();
         // one-shot canvas: whenever something else takes the foreground
         // (unlock, power key, our own lock-screen action), we are done.
+        Dbg.log("canvas", "onPause -> AOD_GONE + finish");
         sendLocal(notificationobserver.ACTION_AOD_GONE);
         h.removeCallbacks(selfTimeout);
         h.removeCallbacks(shiftRunnable);
@@ -286,6 +293,7 @@ public class AodScreenActivity extends Activity
     @Override
     protected void onDestroy()
     {
+        Dbg.log("canvas", "onDestroy");
         if (receiversRegistered)
         {
             try { unregisterReceiver(receiver); } catch (Exception ignored) {}
