@@ -1,11 +1,24 @@
 <resources>
-    <!-- Base application theme (appcompat only, no material dependency). -->
+    <!-- High-contrast theme: pure white on black (21:1), large text,
+         bright controls. Respects the system font scale (all sizes in sp). -->
     <style name="Theme.AoD" parent="Theme.AppCompat.DayNight.DarkActionBar">
-        <item name="colorPrimary">@color/purple_500</item>
-        <item name="colorPrimaryDark">@color/purple_700</item>
-        <item name="colorAccent">@color/teal_200</item>
-        <item name="android:statusBarColor">@color/purple_700</item>
-        <item name="android:windowBackground">@color/black</item>
+        <item name="colorPrimary">@color/hc_accent</item>
+        <item name="colorPrimaryDark">@color/black</item>
+        <item name="colorAccent">@color/hc_accent</item>
+        <item name="android:textColorPrimary">@color/hc_text</item>
+        <item name="android:textColorSecondary">@color/hc_text_dim</item>
+        <item name="android:statusBarColor">@color/black</item>
+        <item name="android:navigationBarColor">@color/black</item>
+        <item name="android:windowBackground">@color/hc_bg</item>
+        <item name="alertDialogTheme">@style/Theme.AoD.Dialog</item>
+    </style>
+
+    <style name="Theme.AoD.Dialog" parent="Theme.AppCompat.Dialog.Alert">
+        <item name="android:background">@color/hc_surface</item>
+        <item name="android:textColorPrimary">@color/hc_text</item>
+        <item name="android:textColor">@color/hc_text</item>
+        <item name="colorAccent">@color/hc_accent</item>
+        <item name="android:textSize">17sp</item>
     </style>
 
     <!-- The dark replacement-AOD canvas: opaque black, no chrome, draws into
@@ -21,55 +34,77 @@
         <item name="android:windowAnimationStyle">@null</item>
     </style>
 
+    <!-- Settings widgets: >= 17sp, white, generous touch targets -->
     <style name="SettingSwitch">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:textColor">@color/white</item>
-        <item name="android:textSize">14sp</item>
-        <item name="android:paddingTop">6dp</item>
-        <item name="android:paddingBottom">6dp</item>
+        <item name="android:textColor">@color/hc_text</item>
+        <item name="android:textSize">17sp</item>
+        <item name="android:paddingTop">12dp</item>
+        <item name="android:paddingBottom">12dp</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:switchPadding">12dp</item>
     </style>
 
     <style name="SectionLabel">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:textColor">@color/teal_200</item>
-        <item name="android:textSize">13sp</item>
+        <item name="android:textColor">@color/hc_accent</item>
+        <item name="android:textSize">19sp</item>
         <item name="android:textStyle">bold</item>
-        <item name="android:paddingBottom">4dp</item>
+        <item name="android:paddingTop">10dp</item>
+        <item name="android:paddingBottom">6dp</item>
     </style>
 
     <style name="InlineLabel">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:textColor">@color/white</item>
-        <item name="android:textSize">13sp</item>
-        <item name="android:paddingEnd">8dp</item>
+        <item name="android:textColor">@color/hc_text</item>
+        <item name="android:textSize">17sp</item>
+        <item name="android:paddingEnd">10dp</item>
     </style>
 
     <style name="SliderLabel">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:textColor">#BBBBBB</item>
-        <item name="android:textSize">12sp</item>
-        <item name="android:paddingTop">6dp</item>
+        <item name="android:textColor">@color/hc_text</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:paddingTop">10dp</item>
     </style>
 
     <style name="NumberInput">
-        <item name="android:layout_width">64dp</item>
-        <item name="android:layout_height">wrap_content</item>
-        <item name="android:inputType">number</item>
-        <item name="android:textColor">@color/white</item>
-        <item name="android:textSize">13sp</item>
-        <item name="android:maxLength">3</item>
-    </style>
-
-    <style name="TimeInput">
         <item name="android:layout_width">72dp</item>
         <item name="android:layout_height">wrap_content</item>
+        <item name="android:inputType">number</item>
+        <item name="android:textColor">@color/hc_text</item>
+        <item name="android:textSize">17sp</item>
+        <item name="android:maxLength">3</item>
+        <item name="android:background">@drawable/bg_edit</item>
+        <item name="android:padding">10dp</item>
+        <item name="android:minHeight">48dp</item>
+    </style>
+
+    <style name="TimeInput" parent="NumberInput">
+        <item name="android:layout_width">88dp</item>
         <item name="android:inputType">time</item>
-        <item name="android:textColor">@color/white</item>
-        <item name="android:textSize">13sp</item>
         <item name="android:maxLength">5</item>
+    </style>
+
+    <style name="BtnPrimary">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:background">@drawable/bg_btn_primary</item>
+        <item name="android:textColor">@color/hc_on_accent</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:minHeight">52dp</item>
+        <item name="android:paddingStart">16dp</item>
+        <item name="android:paddingEnd">16dp</item>
+        <item name="android:stateListAnimator">@null</item>
+    </style>
+
+    <style name="BtnSecondary" parent="BtnPrimary">
+        <item name="android:background">@drawable/bg_btn_secondary</item>
+        <item name="android:textColor">@color/hc_text</item>
     </style>
 </resources>

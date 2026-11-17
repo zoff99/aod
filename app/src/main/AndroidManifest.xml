@@ -30,6 +30,14 @@
             </intent-filter>
         </activity>
 
+        <!-- Full-screen, searchable app selection. -->
+        <activity
+            android:name=".AppPickerActivity"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:exported="false"
+            android:label="@string/picker_title"
+            android:parentActivityName=".MainActivity" />
+
         <!-- Dark, dim, lock-screen-visible replacement AOD canvas. -->
         <activity
             android:name=".AodScreenActivity"

@@ -10,7 +10,7 @@
     <string name="btn_accessibility">Accessibility</string>
     <string name="btn_battery">Battery</string>
     <string name="btn_auto_enable">Auto-enable accessibility (ADB permission granted)</string>
-    <string name="btn_select_apps">Apps…</string>
+    <string name="btn_select_apps">Choose apps…</string>
     <string name="btn_detect_cutout">Detect camera cutout</string>
     <string name="btn_test">Test light</string>
     <string name="btn_hide">Hide</string>
@@ -23,6 +23,7 @@
     <string name="set_clear_unlock">Dismiss notifications on unlock</string>
 
     <string name="sec_appearance">Appearance</string>
+    <string name="set_color">Light color</string>
     <string name="set_style">Style</string>
     <string name="set_anim">Animation</string>
     <string name="set_auto_color">Auto color from app icon</string>
@@ -79,4 +80,24 @@
         <item>All apps</item>
         <item>Selected apps only</item>
     </string-array>
+
+    <string name="picker_title">Show light for these apps</string>
+    <string name="picker_search_hint">Search apps…</string>
+    <string name="picker_selected_count">%1$d of %2$d selected</string>
+    <string name="picker_all">Select all</string>
+    <string name="picker_none">Clear</string>
+    <string name="picker_empty">No apps match your search</string>
+    <string name="picker_loading">Loading apps…</string>
+    <string name="btn_back">Back</string>
+    <string name="app_icon_desc">App icon</string>
+    <string name="log_show">Show debug log</string>
+    <string name="log_hide">Hide debug log</string>
+    <string name="color_cyan">Cyan</string>
+    <string name="color_green">Green</string>
+    <string name="color_red">Red</string>
+    <string name="color_amber">Amber</string>
+    <string name="color_purple">Purple</string>
+    <string name="color_blue">Blue</string>
+    <string name="color_white">White</string>
+    <string name="custom_color_set">Custom color</string>
 </resources>

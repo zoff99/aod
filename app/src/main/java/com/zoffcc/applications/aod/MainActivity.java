@@ -8,8 +8,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.content.pm.ResolveInfo;
-import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Build;
@@ -18,7 +16,10 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.PowerManager;
 import android.provider.Settings;
+import android.text.SpannableString;
+import android.text.Spanned;
 import android.text.TextUtils;
+import android.text.style.ForegroundColorSpan;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.View;
@@ -29,24 +30,21 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.Spinner;
-import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.SwitchCompat;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 
 /*
  * Test notifications without a second device:
@@ -67,11 +65,6 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
     private SharedPreferences prefs;
     private TextView status_text;
     private items_receiver itemsReceiver;
-
-    private static final int[] PRESET_COLORS = {
-            0xFF00E5FF, 0xFF00E676, 0xFFFF3D00, 0xFFFFC400,
-            0xFFD500F9, 0xFF2979FF, 0xFFFFFFFF
-    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -208,18 +201,34 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
             bat = ((PowerManager) getSystemService(POWER_SERVICE)).isIgnoringBatteryOptimizations(getPackageName());
         }
         catch (Exception e) { bat = false; }
-        status_text.setText(getString(R.string.status_line,
-                isNotificationServiceEnabled() ? getString(R.string.on) : getString(R.string.off),
-                isAccessibilityEnabled() ? getString(R.string.on) : getString(R.string.off),
-                bat ? getString(R.string.on) : getString(R.string.off)));
+        String on = getString(R.string.on);
+        String off = getString(R.string.off);
+        boolean listener = isNotificationServiceEnabled();
+        boolean access = isAccessibilityEnabled();
+        String text = getString(R.string.status_line,
+                listener ? on : off, access ? on : off, bat ? on : off);
+        SpannableString sp = new SpannableString(text);
+        int from = 0;
+        for (boolean ok : new boolean[]{listener, access, bat})
+        {
+            String token = ok ? on : off;
+            int idx = text.indexOf(token, from);
+            if (idx >= 0)
+            {
+                sp.setSpan(new ForegroundColorSpan(ContextCompat.getColor(this,
+                                ok ? R.color.hc_good : R.color.hc_bad)),
+                        idx, idx + token.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                from = idx + token.length();
+            }
+        }
+        status_text.setText(sp);
     }
 
     // ---- settings wiring ------------------------------------------------------
 
-    @SuppressLint("UseSwitchCompatOrMaterialCode")
     private void bindSwitch(int id, String key, boolean def)
     {
-        Switch sw = findViewById(id);
+        SwitchCompat sw = findViewById(id);
         sw.setChecked(prefs.getBoolean(key, def));
         sw.setOnCheckedChangeListener((b, checked) -> prefs.edit().putBoolean(key, checked).apply());
     }
@@ -245,8 +254,8 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
     {
         Spinner style = findViewById(R.id.sp_style);
         ArrayAdapter<CharSequence> sa = ArrayAdapter.createFromResource(this,
-                R.array.style_entries, android.R.layout.simple_spinner_item);
-        sa.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                R.array.style_entries, R.layout.item_spinner);
+        sa.setDropDownViewResource(R.layout.item_spinner_dropdown);
         style.setAdapter(sa);
         String[] styleVals = {Prefs.STYLE_RING, Prefs.STYLE_EDGE, Prefs.STYLE_DOT};
         style.setSelection(indexOf(styleVals, prefs.getString(Prefs.STYLE, Prefs.STYLE_RING)));
@@ -261,8 +270,8 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
 
         Spinner anim = findViewById(R.id.sp_anim);
         ArrayAdapter<CharSequence> aa = ArrayAdapter.createFromResource(this,
-                R.array.anim_entries, android.R.layout.simple_spinner_item);
-        aa.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                R.array.anim_entries, R.layout.item_spinner);
+        aa.setDropDownViewResource(R.layout.item_spinner_dropdown);
         anim.setAdapter(aa);
         String[] animVals = {Prefs.ANIM_PULSE, Prefs.ANIM_ROTATE, Prefs.ANIM_FLASH, Prefs.ANIM_STEADY};
         anim.setSelection(indexOf(animVals, prefs.getString(Prefs.ANIM, Prefs.ANIM_PULSE)));
@@ -277,8 +286,8 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
 
         Spinner filter = findViewById(R.id.sp_filter);
         ArrayAdapter<CharSequence> fa = ArrayAdapter.createFromResource(this,
-                R.array.filter_entries, android.R.layout.simple_spinner_item);
-        fa.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                R.array.filter_entries, R.layout.item_spinner);
+        fa.setDropDownViewResource(R.layout.item_spinner_dropdown);
         filter.setAdapter(fa);
         filter.setSelection(Prefs.filterSelected(this) ? 1 : 0);
         filter.setOnItemSelectedListener(new SimpleItemSelected()
@@ -315,22 +324,39 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
     private void bindColorRow()
     {
         LinearLayout row = findViewById(R.id.color_row);
-        int size = dp(30);
-        int margin = dp(6);
-        for (int color : PRESET_COLORS)
+        int size = dp(40);
+        int margin = dp(5);
+        int current = prefs.getInt(Prefs.COLOR, ColorDialogs.PRESET_COLORS[0]);
+        for (int i = 0; i < ColorDialogs.PRESET_COLORS.length; i++)
         {
+            final int color = ColorDialogs.PRESET_COLORS[i];
             Button b = new Button(this);
-            GradientDrawable gd = new GradientDrawable();
-            gd.setShape(GradientDrawable.OVAL);
-            gd.setColor(color);
-            gd.setStroke(dp(2), 0xFF444444);
-            b.setBackground(gd);
+            b.setBackground(colorCircle(color, color == current));
+            b.setContentDescription(getString(ColorDialogs.PRESET_NAMES[i]));
+            b.setStateListAnimator(null);
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(size, size);
             lp.setMargins(margin, margin, margin, margin);
             b.setLayoutParams(lp);
-            b.setOnClickListener(v -> prefs.edit().putInt(Prefs.COLOR, color).apply());
+            b.setOnClickListener(v -> {
+                prefs.edit().putInt(Prefs.COLOR, color).apply();
+                for (int j = 0; j < row.getChildCount(); j++)
+                {
+                    row.getChildAt(j).setBackground(colorCircle(ColorDialogs.PRESET_COLORS[j],
+                            ColorDialogs.PRESET_COLORS[j] == color));
+                }
+            });
             row.addView(b);
         }
+    }
+
+    private GradientDrawable colorCircle(int color, boolean selected)
+    {
+        GradientDrawable gd = new GradientDrawable();
+        gd.setShape(GradientDrawable.OVAL);
+        gd.setColor(color);
+        int ring = selected ? (color == 0xFFFFFFFF ? 0xFF00E5FF : 0xFFFFFFFF) : 0xFF6E6E73;
+        gd.setStroke(dp(selected ? 4 : 2), ring);
+        return gd;
     }
 
     private interface SliderWriter { void write(int progress); }
@@ -441,7 +467,14 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
             sendBroadcast(i);
         });
         findViewById(R.id.btn_hide).setOnClickListener(v -> sendLocal(notificationobserver.ACTION_HIDE));
-        findViewById(R.id.btn_select_apps).setOnClickListener(v -> showAppSelector());
+        findViewById(R.id.btn_select_apps).setOnClickListener(v ->
+                startActivity(new Intent(this, AppPickerActivity.class)));
+        Button logBtn = findViewById(R.id.btn_toggle_log);
+        logBtn.setOnClickListener(v -> {
+            boolean show = debug_text.getVisibility() != View.VISIBLE;
+            debug_text.setVisibility(show ? View.VISIBLE : View.GONE);
+            logBtn.setText(show ? R.string.log_hide : R.string.log_show);
+        });
         findViewById(R.id.btn_detect_cutout).setOnClickListener(v -> {
             try
             {
@@ -457,49 +490,7 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
         });
     }
 
-    // ---- app selector / per-app colors -------------------------------------------
-
-    private void showAppSelector()
-    {
-        Intent main = new Intent(Intent.ACTION_MAIN);
-        main.addCategory(Intent.CATEGORY_LAUNCHER);
-        List<ResolveInfo> apps = getPackageManager().queryIntentActivities(main, 0);
-        List<String> labels = new ArrayList<>();
-        List<String> pkgs = new ArrayList<>();
-        Set<String> selected = prefs.getStringSet(Prefs.FILTER_APPS, new HashSet<>());
-        for (ResolveInfo ri : apps)
-        {
-            String pkg = ri.activityInfo.packageName;
-            if (pkgs.contains(pkg) || pkg.equals(getPackageName())) { continue; }
-            pkgs.add(pkg);
-            labels.add(ri.loadLabel(getPackageManager()) + " (" + pkg + ")");
-        }
-        Collections.sort(labels);
-        // keep pkgs aligned with sorted labels
-        List<String> sortedPkgs = new ArrayList<>();
-        for (String label : labels)
-        {
-            sortedPkgs.add(label.substring(label.lastIndexOf('(') + 1, label.length() - 1));
-        }
-        boolean[] checked = new boolean[sortedPkgs.size()];
-        for (int i = 0; i < sortedPkgs.size(); i++) { checked[i] = selected.contains(sortedPkgs.get(i)); }
-
-        new AlertDialog.Builder(this)
-                .setTitle(R.string.dlg_select_apps)
-                .setMultiChoiceItems(labels.toArray(new String[0]), checked,
-                        (dialog, which, isChecked) -> checked[which] = isChecked)
-                .setPositiveButton(R.string.yes, (d, w) -> {
-                    Set<String> out = new HashSet<>();
-                    for (int i = 0; i < sortedPkgs.size(); i++)
-                    {
-                        if (checked[i]) { out.add(sortedPkgs.get(i)); }
-                    }
-                    prefs.edit().putStringSet(Prefs.FILTER_APPS, out).apply();
-                    sendLocal(notificationobserver.ACTION_REEVAL);
-                })
-                .setNegativeButton(R.string.no, null)
-                .show();
-    }
+    // ---- per-app colors ------------------------------------------------------
 
     @Override
     public void onItemLongClick(String pkg)
@@ -512,18 +503,8 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
         }
         catch (Exception ignored) {}
 
-        List<String> options = new ArrayList<>();
-        options.add(getString(R.string.color_auto));
-        for (int c : PRESET_COLORS) { options.add(String.format("#%06X", 0xFFFFFF & c)); }
-
-        new AlertDialog.Builder(this)
-                .setTitle(getString(R.string.dlg_app_color, label))
-                .setItems(options.toArray(new String[0]), (d, which) -> {
-                    int color = which == 0 ? Color.TRANSPARENT : PRESET_COLORS[which - 1];
-                    Prefs.setAppColor(this, pkg, color);
-                    sendLocal(notificationobserver.ACTION_REEVAL);
-                })
-                .show();
+        ColorDialogs.showAppColor(this, pkg, label,
+                () -> sendLocal(notificationobserver.ACTION_REEVAL));
     }
 
     // ---- live items -----------------------------------------------------------------

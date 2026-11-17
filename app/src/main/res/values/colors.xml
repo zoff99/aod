@@ -7,4 +7,18 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- High-contrast palette. All text colors meet WCAG AAA (>= 7:1)
+         on the black background; accents are used for large/bold text
+         and controls, never for small body text. -->
+    <color name="hc_bg">#FF000000</color>
+    <color name="hc_surface">#FF1C1C1E</color>
+    <color name="hc_surface2">#FF2A2A2E</color>
+    <color name="hc_text">#FFFFFFFF</color>
+    <color name="hc_text_dim">#FFE0E0E0</color>
+    <color name="hc_accent">#FF00E5FF</color>
+    <color name="hc_on_accent">#FF000000</color>
+    <color name="hc_good">#FF69F0AE</color>
+    <color name="hc_bad">#FFFF8A80</color>
+    <color name="hc_border">#FF6E6E73</color>
 </resources>

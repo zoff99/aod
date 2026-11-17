@@ -1,29 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/black"
+    android:background="@color/hc_bg"
     android:orientation="vertical">
 
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:fillViewport="true">
+        android:fillViewport="true"
+        android:scrollbarStyle="outsideOverlay">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="14dp">
+            android:padding="16dp">
 
             <TextView
                 android:id="@+id/status_text"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textColor="@color/white"
-                android:textSize="12sp"
-                android:typeface="monospace" />
+                android:textColor="@color/hc_text"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:typeface="monospace"
+                android:paddingBottom="10dp" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -32,199 +36,262 @@
 
                 <Button
                     android:id="@+id/btn_notif_access"
+                    style="@style/BtnSecondary"
                     android:layout_width="0dp"
-                    android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:textSize="11sp"
+                    android:layout_marginEnd="6dp"
                     android:text="@string/btn_notif_access" />
 
                 <Button
                     android:id="@+id/btn_accessibility"
+                    style="@style/BtnSecondary"
                     android:layout_width="0dp"
-                    android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:textSize="11sp"
+                    android:layout_marginStart="3dp"
+                    android:layout_marginEnd="3dp"
                     android:text="@string/btn_accessibility" />
 
                 <Button
                     android:id="@+id/btn_battery"
+                    style="@style/BtnSecondary"
                     android:layout_width="0dp"
-                    android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:textSize="11sp"
+                    android:layout_marginStart="6dp"
                     android:text="@string/btn_battery" />
             </LinearLayout>
 
             <Button
                 android:id="@+id/btn_auto_enable"
+                style="@style/BtnPrimary"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textSize="11sp"
+                android:layout_marginTop="8dp"
                 android:visibility="gone"
                 android:text="@string/btn_auto_enable" />
 
-            <View android:layout_width="match_parent" android:layout_height="1dp"
-                android:layout_marginTop="8dp" android:layout_marginBottom="8dp"
-                android:background="#333333" />
+            <View android:layout_width="match_parent" android:layout_height="2dp"
+                android:layout_marginTop="14dp" android:layout_marginBottom="6dp"
+                android:background="@color/hc_border" />
 
-            <Switch android:id="@+id/sw_enabled" style="@style/SettingSwitch"
+            <androidx.appcompat.widget.SwitchCompat android:id="@+id/sw_enabled" style="@style/SettingSwitch"
+                app:thumbTint="@color/switch_thumb" app:trackTint="@color/switch_track"
                 android:text="@string/set_enabled" />
-            <Switch android:id="@+id/sw_aod_light" style="@style/SettingSwitch"
+            <androidx.appcompat.widget.SwitchCompat android:id="@+id/sw_aod_light" style="@style/SettingSwitch"
+                app:thumbTint="@color/switch_thumb" app:trackTint="@color/switch_track"
                 android:text="@string/set_aod_light" />
-            <Switch android:id="@+id/sw_screen_on_light" style="@style/SettingSwitch"
+            <androidx.appcompat.widget.SwitchCompat android:id="@+id/sw_screen_on_light" style="@style/SettingSwitch"
+                app:thumbTint="@color/switch_thumb" app:trackTint="@color/switch_track"
                 android:text="@string/set_screen_on_light" />
-            <Switch android:id="@+id/sw_preview" style="@style/SettingSwitch"
+            <androidx.appcompat.widget.SwitchCompat android:id="@+id/sw_preview" style="@style/SettingSwitch"
+                app:thumbTint="@color/switch_thumb" app:trackTint="@color/switch_track"
                 android:text="@string/set_preview" />
-            <Switch android:id="@+id/sw_double_tap" style="@style/SettingSwitch"
+            <androidx.appcompat.widget.SwitchCompat android:id="@+id/sw_double_tap" style="@style/SettingSwitch"
+                app:thumbTint="@color/switch_thumb" app:trackTint="@color/switch_track"
                 android:text="@string/set_double_tap" />
-            <Switch android:id="@+id/sw_clear_unlock" style="@style/SettingSwitch"
+            <androidx.appcompat.widget.SwitchCompat android:id="@+id/sw_clear_unlock" style="@style/SettingSwitch"
+                app:thumbTint="@color/switch_thumb" app:trackTint="@color/switch_track"
                 android:text="@string/set_clear_unlock" />
 
-            <View android:layout_width="match_parent" android:layout_height="1dp"
-                android:layout_marginTop="8dp" android:layout_marginBottom="8dp"
-                android:background="#333333" />
+            <View android:layout_width="match_parent" android:layout_height="2dp"
+                android:layout_marginTop="10dp" android:layout_marginBottom="6dp"
+                android:background="@color/hc_border" />
 
             <TextView style="@style/SectionLabel" android:text="@string/sec_appearance" />
 
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:orientation="horizontal" android:gravity="center_vertical">
-                <TextView style="@style/InlineLabel" android:text="@string/set_style" />
+                android:orientation="horizontal" android:gravity="center_vertical"
+                android:minHeight="48dp">
+                <TextView style="@style/InlineLabel" android:text="@string/set_style"
+                    android:labelFor="@+id/sp_style" />
                 <Spinner android:id="@+id/sp_style" android:layout_width="0dp"
-                    android:layout_height="wrap_content" android:layout_weight="1" />
+                    android:layout_height="wrap_content" android:layout_weight="1"
+                    android:backgroundTint="@color/hc_accent" />
             </LinearLayout>
 
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:orientation="horizontal" android:gravity="center_vertical">
-                <TextView style="@style/InlineLabel" android:text="@string/set_anim" />
+                android:orientation="horizontal" android:gravity="center_vertical"
+                android:minHeight="48dp">
+                <TextView style="@style/InlineLabel" android:text="@string/set_anim"
+                    android:labelFor="@+id/sp_anim" />
                 <Spinner android:id="@+id/sp_anim" android:layout_width="0dp"
-                    android:layout_height="wrap_content" android:layout_weight="1" />
+                    android:layout_height="wrap_content" android:layout_weight="1"
+                    android:backgroundTint="@color/hc_accent" />
             </LinearLayout>
 
+            <TextView style="@style/SliderLabel" android:text="@string/set_color" />
             <LinearLayout
                 android:id="@+id/color_row"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:layout_marginTop="6dp" />
+                android:layout_marginTop="4dp" />
 
-            <Switch android:id="@+id/sw_auto_color" style="@style/SettingSwitch"
+            <androidx.appcompat.widget.SwitchCompat android:id="@+id/sw_auto_color" style="@style/SettingSwitch"
+                app:thumbTint="@color/switch_thumb" app:trackTint="@color/switch_track"
                 android:text="@string/set_auto_color" />
-            <Switch android:id="@+id/sw_eco" style="@style/SettingSwitch"
+            <androidx.appcompat.widget.SwitchCompat android:id="@+id/sw_eco" style="@style/SettingSwitch"
+                app:thumbTint="@color/switch_thumb" app:trackTint="@color/switch_track"
                 android:text="@string/set_eco" />
 
-            <TextView android:id="@+id/lbl_timeout" style="@style/SliderLabel" />
+            <TextView android:id="@+id/lbl_timeout" style="@style/SliderLabel"
+                android:labelFor="@+id/sb_timeout" />
             <SeekBar android:id="@+id/sb_timeout" android:layout_width="match_parent"
-                android:layout_height="wrap_content" android:max="290" />
+                android:layout_height="wrap_content" android:minHeight="48dp"
+                android:max="290"
+                android:progressTint="@color/hc_accent" android:thumbTint="@color/hc_accent"
+                android:secondaryProgressTint="@color/hc_border" />
 
-            <TextView android:id="@+id/lbl_brightness" style="@style/SliderLabel" />
+            <TextView android:id="@+id/lbl_brightness" style="@style/SliderLabel"
+                android:labelFor="@+id/sb_brightness" />
             <SeekBar android:id="@+id/sb_brightness" android:layout_width="match_parent"
-                android:layout_height="wrap_content" android:max="95" />
+                android:layout_height="wrap_content" android:minHeight="48dp"
+                android:max="95"
+                android:progressTint="@color/hc_accent" android:thumbTint="@color/hc_accent"
+                android:secondaryProgressTint="@color/hc_border" />
 
-            <TextView android:id="@+id/lbl_stroke" style="@style/SliderLabel" />
+            <TextView android:id="@+id/lbl_stroke" style="@style/SliderLabel"
+                android:labelFor="@+id/sb_stroke" />
             <SeekBar android:id="@+id/sb_stroke" android:layout_width="match_parent"
-                android:layout_height="wrap_content" android:max="14" />
+                android:layout_height="wrap_content" android:minHeight="48dp"
+                android:max="14"
+                android:progressTint="@color/hc_accent" android:thumbTint="@color/hc_accent"
+                android:secondaryProgressTint="@color/hc_border" />
 
-            <TextView android:id="@+id/lbl_speed" style="@style/SliderLabel" />
+            <TextView android:id="@+id/lbl_speed" style="@style/SliderLabel"
+                android:labelFor="@+id/sb_speed" />
             <SeekBar android:id="@+id/sb_speed" android:layout_width="match_parent"
-                android:layout_height="wrap_content" android:max="37" />
+                android:layout_height="wrap_content" android:minHeight="48dp"
+                android:max="37"
+                android:progressTint="@color/hc_accent" android:thumbTint="@color/hc_accent"
+                android:secondaryProgressTint="@color/hc_border" />
 
-            <Switch android:id="@+id/sw_interval" style="@style/SettingSwitch"
+            <androidx.appcompat.widget.SwitchCompat android:id="@+id/sw_interval" style="@style/SettingSwitch"
+                app:thumbTint="@color/switch_thumb" app:trackTint="@color/switch_track"
                 android:text="@string/set_interval" />
 
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
                 android:orientation="horizontal" android:gravity="center_vertical">
-                <TextView style="@style/InlineLabel" android:text="@string/set_interval_on" />
+                <TextView style="@style/InlineLabel" android:text="@string/set_interval_on"
+                    android:labelFor="@+id/et_interval_on" />
                 <EditText android:id="@+id/et_interval_on" style="@style/NumberInput" />
-                <TextView style="@style/InlineLabel" android:text="@string/set_interval_off" />
+                <TextView style="@style/InlineLabel" android:text="@string/set_interval_off"
+                    android:labelFor="@+id/et_interval_off" android:paddingStart="16dp" />
                 <EditText android:id="@+id/et_interval_off" style="@style/NumberInput" />
             </LinearLayout>
 
-            <View android:layout_width="match_parent" android:layout_height="1dp"
-                android:layout_marginTop="8dp" android:layout_marginBottom="8dp"
-                android:background="#333333" />
+            <View android:layout_width="match_parent" android:layout_height="2dp"
+                android:layout_marginTop="14dp" android:layout_marginBottom="6dp"
+                android:background="@color/hc_border" />
 
             <TextView style="@style/SectionLabel" android:text="@string/sec_behavior" />
 
-            <Switch android:id="@+id/sw_night" style="@style/SettingSwitch"
+            <androidx.appcompat.widget.SwitchCompat android:id="@+id/sw_night" style="@style/SettingSwitch"
+                app:thumbTint="@color/switch_thumb" app:trackTint="@color/switch_track"
                 android:text="@string/set_night" />
 
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
                 android:orientation="horizontal" android:gravity="center_vertical">
-                <TextView style="@style/InlineLabel" android:text="@string/set_night_start" />
+                <TextView style="@style/InlineLabel" android:text="@string/set_night_start"
+                    android:labelFor="@+id/et_night_start" />
                 <EditText android:id="@+id/et_night_start" style="@style/TimeInput" />
-                <TextView style="@style/InlineLabel" android:text="@string/set_night_end" />
+                <TextView style="@style/InlineLabel" android:text="@string/set_night_end"
+                    android:labelFor="@+id/et_night_end" android:paddingStart="16dp" />
                 <EditText android:id="@+id/et_night_end" style="@style/TimeInput" />
             </LinearLayout>
 
-            <Switch android:id="@+id/sw_dnd" style="@style/SettingSwitch"
+            <androidx.appcompat.widget.SwitchCompat android:id="@+id/sw_dnd" style="@style/SettingSwitch"
+                app:thumbTint="@color/switch_thumb" app:trackTint="@color/switch_track"
                 android:text="@string/set_dnd" />
-            <Switch android:id="@+id/sw_battery_light" style="@style/SettingSwitch"
+            <androidx.appcompat.widget.SwitchCompat android:id="@+id/sw_battery_light" style="@style/SettingSwitch"
+                app:thumbTint="@color/switch_thumb" app:trackTint="@color/switch_track"
                 android:text="@string/set_battery_light" />
-            <Switch android:id="@+id/sw_ignore_persistent" style="@style/SettingSwitch"
+            <androidx.appcompat.widget.SwitchCompat android:id="@+id/sw_ignore_persistent" style="@style/SettingSwitch"
+                app:thumbTint="@color/switch_thumb" app:trackTint="@color/switch_track"
                 android:text="@string/set_ignore_persistent" />
 
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:orientation="horizontal" android:gravity="center_vertical">
-                <TextView style="@style/InlineLabel" android:text="@string/set_filter" />
+                android:orientation="horizontal" android:gravity="center_vertical"
+                android:minHeight="48dp">
+                <TextView style="@style/InlineLabel" android:text="@string/set_filter"
+                    android:labelFor="@+id/sp_filter" />
                 <Spinner android:id="@+id/sp_filter" android:layout_width="0dp"
-                    android:layout_height="wrap_content" android:layout_weight="1" />
-                <Button android:id="@+id/btn_select_apps" android:layout_width="wrap_content"
-                    android:layout_height="wrap_content" android:textSize="11sp"
-                    android:text="@string/btn_select_apps" />
+                    android:layout_height="wrap_content" android:layout_weight="1"
+                    android:backgroundTint="@color/hc_accent" />
             </LinearLayout>
 
-            <View android:layout_width="match_parent" android:layout_height="1dp"
-                android:layout_marginTop="8dp" android:layout_marginBottom="8dp"
-                android:background="#333333" />
+            <Button android:id="@+id/btn_select_apps" style="@style/BtnPrimary"
+                android:layout_width="match_parent" android:layout_marginTop="6dp"
+                android:text="@string/btn_select_apps" />
+
+            <View android:layout_width="match_parent" android:layout_height="2dp"
+                android:layout_marginTop="14dp" android:layout_marginBottom="6dp"
+                android:background="@color/hc_border" />
 
             <TextView style="@style/SectionLabel" android:text="@string/sec_cutout" />
 
-            <Button android:id="@+id/btn_detect_cutout" android:layout_width="match_parent"
-                android:layout_height="wrap_content" android:textSize="11sp"
+            <Button android:id="@+id/btn_detect_cutout" style="@style/BtnSecondary"
+                android:layout_width="match_parent"
                 android:text="@string/btn_detect_cutout" />
 
-            <TextView android:id="@+id/lbl_cutout_x" style="@style/SliderLabel" />
+            <TextView android:id="@+id/lbl_cutout_x" style="@style/SliderLabel"
+                android:labelFor="@+id/sb_cutout_x" />
             <SeekBar android:id="@+id/sb_cutout_x" android:layout_width="match_parent"
-                android:layout_height="wrap_content" android:max="200" />
+                android:layout_height="wrap_content" android:minHeight="48dp"
+                android:max="200"
+                android:progressTint="@color/hc_accent" android:thumbTint="@color/hc_accent" />
 
-            <TextView android:id="@+id/lbl_cutout_y" style="@style/SliderLabel" />
+            <TextView android:id="@+id/lbl_cutout_y" style="@style/SliderLabel"
+                android:labelFor="@+id/sb_cutout_y" />
             <SeekBar android:id="@+id/sb_cutout_y" android:layout_width="match_parent"
-                android:layout_height="wrap_content" android:max="200" />
+                android:layout_height="wrap_content" android:minHeight="48dp"
+                android:max="200"
+                android:progressTint="@color/hc_accent" android:thumbTint="@color/hc_accent" />
 
-            <TextView android:id="@+id/lbl_cutout_scale" style="@style/SliderLabel" />
+            <TextView android:id="@+id/lbl_cutout_scale" style="@style/SliderLabel"
+                android:labelFor="@+id/sb_cutout_scale" />
             <SeekBar android:id="@+id/sb_cutout_scale" android:layout_width="match_parent"
-                android:layout_height="wrap_content" android:max="150" />
+                android:layout_height="wrap_content" android:minHeight="48dp"
+                android:max="150"
+                android:progressTint="@color/hc_accent" android:thumbTint="@color/hc_accent" />
 
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:orientation="horizontal" android:layout_marginTop="10dp">
-                <Button android:id="@+id/btn_test" android:layout_width="0dp"
-                    android:layout_height="wrap_content" android:layout_weight="1"
+                android:orientation="horizontal" android:layout_marginTop="16dp">
+                <Button android:id="@+id/btn_test" style="@style/BtnPrimary"
+                    android:layout_width="0dp" android:layout_weight="1"
+                    android:layout_marginEnd="6dp"
                     android:text="@string/btn_test" />
-                <Button android:id="@+id/btn_hide" android:layout_width="0dp"
-                    android:layout_height="wrap_content" android:layout_weight="1"
+                <Button android:id="@+id/btn_hide" style="@style/BtnSecondary"
+                    android:layout_width="0dp" android:layout_weight="1"
+                    android:layout_marginStart="6dp"
                     android:text="@string/btn_hide" />
             </LinearLayout>
+
+            <Button android:id="@+id/btn_toggle_log" style="@style/BtnSecondary"
+                android:layout_width="match_parent" android:layout_marginTop="10dp"
+                android:text="@string/log_show" />
         </LinearLayout>
     </ScrollView>
 
     <TextView
         android:id="@+id/debug_text"
         android:layout_width="match_parent"
-        android:layout_height="110dp"
+        android:layout_height="130dp"
+        android:visibility="gone"
         android:text=""
         android:textAlignment="textStart"
-        android:textColor="@color/white"
-        android:textSize="10sp"
+        android:textColor="@color/hc_text_dim"
+        android:textSize="13sp"
         android:typeface="monospace"
         android:gravity="bottom"
-        android:paddingStart="8dp"
-        android:paddingEnd="8dp" />
+        android:paddingStart="10dp"
+        android:paddingEnd="10dp"
+        android:background="@color/hc_surface" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerView"
         android:layout_width="match_parent"
-        android:layout_height="32dp"
+        android:layout_height="48dp"
         android:layout_gravity="start"
+        android:background="@color/hc_surface"
         android:nestedScrollingEnabled="false"
         android:overScrollMode="never" />
 

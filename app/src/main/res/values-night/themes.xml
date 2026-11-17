@@ -1,10 +1,14 @@
 <resources>
-    <!-- Base application theme (night variant). -->
+    <!-- Night variant keeps the same high-contrast look. -->
     <style name="Theme.AoD" parent="Theme.AppCompat.DayNight.DarkActionBar">
-        <item name="colorPrimary">@color/purple_200</item>
-        <item name="colorPrimaryDark">@color/purple_700</item>
-        <item name="colorAccent">@color/teal_200</item>
-        <item name="android:statusBarColor">@color/purple_700</item>
-        <item name="android:windowBackground">@color/black</item>
+        <item name="colorPrimary">@color/hc_accent</item>
+        <item name="colorPrimaryDark">@color/black</item>
+        <item name="colorAccent">@color/hc_accent</item>
+        <item name="android:textColorPrimary">@color/hc_text</item>
+        <item name="android:textColorSecondary">@color/hc_text_dim</item>
+        <item name="android:statusBarColor">@color/black</item>
+        <item name="android:navigationBarColor">@color/black</item>
+        <item name="android:windowBackground">@color/hc_bg</item>
+        <item name="alertDialogTheme">@style/Theme.AoD.Dialog</item>
     </style>
 </resources>
