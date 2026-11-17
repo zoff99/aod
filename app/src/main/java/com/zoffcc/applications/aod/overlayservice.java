@@ -83,6 +83,7 @@ public class overlayservice extends AccessibilityService
     private long lastUserPresentAt = 0L;
     private boolean lastKmLocked = true;
     private int kmUnlockedSeen = 0;
+    private long relockWatchStart = 0L;
     private PowerManager.WakeLock partialLock;
     private PowerManager.WakeLock drawLock;
     private PowerManager.WakeLock wakeBridge;
@@ -287,6 +288,7 @@ public class overlayservice extends AccessibilityService
             {
                 Dbg.log("overlay", "recv SCREEN_OFF " + state());
                 screenOn = false;
+                h.removeCallbacks(relockWatch);
                 h.removeCallbacks(evaluateRunnable);
                 h.postDelayed(evaluateRunnable, 450L); // let the system settle into doze
             }
@@ -294,6 +296,7 @@ public class overlayservice extends AccessibilityService
             {
                 Dbg.log("overlay", "recv SCREEN_ON " + state());
                 screenOn = true;
+                h.removeCallbacks(relockWatch);
                 if (canvasShown)
                 {
                     Dbg.log("overlay", "SCREEN_ON: canvas shown -> leave burst to canvas lifecycle");
@@ -488,10 +491,8 @@ public class overlayservice extends AccessibilityService
     private boolean awakeUnlocked()
     {
         if (km == null) { return false; }
-        if (screenOn || canvasShown)
-        {
-            return !km.isKeyguardLocked();
-        }
+        if (km.isKeyguardLocked()) { return false; }
+        if (screenOn || canvasShown) { return true; }
         return displayState() == Display.STATE_ON
                 && SystemClock.elapsedRealtime() - lastUserPresentAt < 1500L;
     }
@@ -510,6 +511,43 @@ public class overlayservice extends AccessibilityService
         Calendar now = Calendar.getInstance();
         int minute = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE);
         return Prefs.inNightWindow(this, minute);
+    }
+
+    // After a recent unlock the keyguard can lag a fresh lock by a second or
+    // two. Rather than guess from a time window, wait for the keyguard to
+    // engage (a real relock). If the screen simply stays off and never wakes,
+    // treat it as private/locked and light anyway; a genuinely awake device
+    // would have produced a SCREEN_ON, which aborts this watch.
+    private final Runnable relockWatch = new Runnable()
+    {
+        @Override
+        public void run()
+        {
+            if (screenOn || canvasShown)
+            { Dbg.log("overlay", "relockWatch: screen awake -> abort"); return; }
+            if (items.isEmpty() || !Prefs.enabled(overlayservice.this) || !Prefs.aodLight(overlayservice.this))
+            { Dbg.log("overlay", "relockWatch: nothing to show -> abort"); return; }
+            if (km == null || km.isKeyguardLocked())
+            {
+                Dbg.log("overlay", "relockWatch: keyguard engaged -> startBurst");
+                startBurst(Prefs.timeoutSec(overlayservice.this) * 1000L, true);
+                return;
+            }
+            if (SystemClock.elapsedRealtime() - relockWatchStart > 1500L)
+            {
+                Dbg.log("overlay", "relockWatch: screen stayed off (keyguard lag) -> startBurst");
+                startBurst(Prefs.timeoutSec(overlayservice.this) * 1000L, true);
+                return;
+            }
+            h.postDelayed(this, 300L);
+        }
+    };
+
+    private void armRelockWatch()
+    {
+        relockWatchStart = SystemClock.elapsedRealtime();
+        h.removeCallbacks(relockWatch);
+        h.postDelayed(relockWatch, 300L);
     }
 
     private void handleUnlock(String via)
@@ -584,24 +622,26 @@ public class overlayservice extends AccessibilityService
         Dbg.log("overlay", "onScreenOff (delayed eval) " + state());
         if (!Prefs.enabled(this) || !Prefs.aodLight(this))
         { Dbg.log("overlay", "onScreenOff: disabled or aodLight off"); return; }
-        if (awakeUnlocked())
-        {
-            Dbg.log("overlay", "onScreenOff: REFUSED (awake+unlocked / stray screen-off after unlock)");
-            return;
-        }
         if (items.isEmpty() || suppressed())
         { Dbg.log("overlay", "onScreenOff: no items or night-suppressed"); return; }
-        if (lightActive || burstPending || Prefs.relightRelock(this))
+        if (!(lightActive || burstPending || Prefs.relightRelock(this)))
+        { Dbg.log("overlay", "onScreenOff: no relight condition met"); return; }
+
+        boolean locked = km == null || km.isKeyguardLocked();
+        long since = SystemClock.elapsedRealtime() - lastUserPresentAt;
+        if (!locked && since < 1500L)
         {
-            Dbg.log("overlay", "onScreenOff: -> startBurst (lightActive=" + lightActive
-                    + " pending=" + burstPending + " relight=" + Prefs.relightRelock(this) + ")");
+            // just after an unlock the keyguard may still be lagging a real
+            // relock; wait for it to engage instead of guessing
+            Dbg.log("overlay", "onScreenOff: keyguard lagging after recent unlock -> wait for relock");
             burstPending = false;
-            startBurst(Prefs.timeoutSec(this) * 1000L, true);
+            armRelockWatch();
+            return;
         }
-        else
-        {
-            Dbg.log("overlay", "onScreenOff: no relight condition met");
-        }
+        Dbg.log("overlay", "onScreenOff: -> startBurst (lightActive=" + lightActive
+                + " pending=" + burstPending + " relight=" + Prefs.relightRelock(this) + ")");
+        burstPending = false;
+        startBurst(Prefs.timeoutSec(this) * 1000L, true);
     }
 
     private void reevaluate()
@@ -781,6 +821,7 @@ public class overlayservice extends AccessibilityService
         if (timeoutTimer != null) { timeoutTimer.cancel(); timeoutTimer = null; }
         h.removeCallbacks(shiftRunnable);
         h.removeCallbacks(keyguardWatch);
+        h.removeCallbacks(relockWatch);
     }
 
     private final Runnable shiftRunnable = new Runnable()
