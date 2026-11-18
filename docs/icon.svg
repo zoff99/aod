@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  AoD - app icon, master artwork (vector, scalable to any size).
+
+  Geometry is written in the icon's own 58-unit "card space" and then scaled,
+  so every number below is a design number, not a pixel measurement:
+
+      card      58 x 58, corner radius 15
+      ring      centre (29,29), radius 16, stroke 3.4
+      dot       radius 4.6, sitting on the ring at -45 degrees
+                (29 + 16*cos45, 29 - 16*sin45) = (40.3137085, 17.6862915)
+      hairline  0.6 wide, white at 10.2 % opacity, on the card edge
+
+  The group transform maps that 58-unit card onto a 512 px canvas at 96 %
+  (card side 491.52 px, 10.24 px transparent margin on every side):
+      scale = 512 * 0.96 / 58 = 8.47448276
+
+  Corners are transparent: this file is the rounded-square icon, meant to be
+  dropped onto any background. For the Google Play listing icon (which must
+  be a full square with no rounding) use icon-square.svg instead.
+
+  Colours: card #171C28 -> #0B0E15, ring #35D6F0, dot #FFFFFF.
+  Original artwork for the AoD project. See docs/brand.md for usage rules.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512"
+     role="img" aria-labelledby="aodTitle aodDesc">
+  <title id="aodTitle">AoD app icon</title>
+  <desc id="aodDesc">A dark rounded square holding a thin cyan ring with a white dot at its upper right.</desc>
+
+  <defs>
+    <linearGradient id="aodCard" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="58" y2="58">
+      <stop offset="0" stop-color="#171C28"/>
+      <stop offset="1" stop-color="#0B0E15"/>
+    </linearGradient>
+  </defs>
+
+  <g transform="translate(10.24 10.24) scale(8.47448276)">
+    <!-- card -->
+    <rect width="58" height="58" rx="15" ry="15" fill="url(#aodCard)"/>
+    <!-- hairline: keeps the card readable on near-black backgrounds -->
+    <rect width="58" height="58" rx="15" ry="15" fill="none"
+          stroke="#FFFFFF" stroke-opacity="0.102" stroke-width="0.6"/>
+    <!-- ring -->
+    <circle cx="29" cy="29" r="16" fill="none" stroke="#35D6F0" stroke-width="3.4"/>
+    <!-- dot -->
+    <circle cx="40.3137085" cy="17.6862915" r="4.6" fill="#FFFFFF"/>
+  </g>
+</svg>

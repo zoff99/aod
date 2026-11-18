@@ -1,0 +1,7 @@
+1.1.0
+• New style: the app icons of your notifications — still, no blinking
+• Optional full-panel blackout; the lower third stays untouched by default
+• Hide on unlock and light up again when the phone re-locks
+• High-contrast settings and a searchable app picker with icons
+• New minimal app icon, including themed-icon support
+• Fixed: the power button turns the display off and it stays off

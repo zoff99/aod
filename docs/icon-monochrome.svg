@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  AoD - the mark on its own, single colour, no card.
+
+  Use this for one-colour situations: watermarks, footers, stickers, laser
+  etching, dark-on-light print, or anywhere the full icon would be too heavy.
+  It is the same ring + dot as the app icon and as the Android 13+ themed
+  (monochrome) launcher layer.
+
+  Replace both #FFFFFF values with any single colour. On a light background
+  #0B0E15 works well; on a dark one keep it white or use the cyan #35D6F0.
+
+  Geometry: ring radius 16, stroke 3.4, dot radius 4.6 on the ring at -45 deg.
+  The mark is optically centred and scaled so its outer edge (17.7 units)
+  lands 240 px from the centre of a 512 px canvas, i.e. 16 px of clear space.
+      scale = 240 / 17.7 = 13.55932203
+
+  Original artwork for the AoD project. See docs/brand.md.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512"
+     role="img" aria-labelledby="aodMonoTitle aodMonoDesc">
+  <title id="aodMonoTitle">AoD mark</title>
+  <desc id="aodMonoDesc">A thin ring with a solid dot at its upper right, in a single colour.</desc>
+
+  <g transform="translate(256 256) scale(13.55932203)" fill="#FFFFFF">
+    <circle cx="0" cy="0" r="16" fill="none" stroke="#FFFFFF" stroke-width="3.4"/>
+    <circle cx="11.3137085" cy="-11.3137085" r="4.6"/>
+  </g>
+</svg>

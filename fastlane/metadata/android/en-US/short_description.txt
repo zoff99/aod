@@ -1,0 +1,1 @@
+Notification light for phones without an LED. No root, no internet, no ads.

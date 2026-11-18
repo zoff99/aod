@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  AoD - app icon, FULL SQUARE variant for store listings and press kits.
+
+  Same artwork as icon.svg, but the card fills the whole canvas edge to edge
+  and has no rounded corners, no hairline and no transparency. Google Play
+  masks listing icons itself (corner radius = 30 % of the icon size) and adds
+  its own shadow, so rounding baked into the asset would be doubled.
+
+  Card space is still 58 units; here scale = 512 / 58 = 8.82758621.
+  Ring outer radius 141.2 px and dot outer reach 181.8 px from the centre stay
+  well inside Play's 30 % mask (which reaches 298.4 px along the diagonal).
+
+  Export as 512 x 512, 32-bit PNG, sRGB, under 1024 KB.
+  Original artwork for the AoD project. See docs/brand.md.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512"
+     role="img" aria-labelledby="aodSqTitle aodSqDesc">
+  <title id="aodSqTitle">AoD app icon (full square)</title>
+  <desc id="aodSqDesc">A dark square holding a thin cyan ring with a white dot at its upper right.</desc>
+
+  <defs>
+    <linearGradient id="aodSqCard" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="58" y2="58">
+      <stop offset="0" stop-color="#171C28"/>
+      <stop offset="1" stop-color="#0B0E15"/>
+    </linearGradient>
+  </defs>
+
+  <g transform="scale(8.82758621)">
+    <rect width="58" height="58" fill="url(#aodSqCard)"/>
+    <circle cx="29" cy="29" r="16" fill="none" stroke="#35D6F0" stroke-width="3.4"/>
+    <circle cx="40.3137085" cy="17.6862915" r="4.6" fill="#FFFFFF"/>
+  </g>
+</svg>

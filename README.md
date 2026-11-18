@@ -122,6 +122,11 @@ inside the launcher mask (circle, squircle, square or teardrop) instead of
 being clipped by it. A monochrome layer is included for themed icons, plus
 legacy bitmap mipmaps for Android 7 and older.
 
+Vector masters, the palette, size rules and the asset renderer live in
+[`docs/`](docs/brand.md) — `icon.svg`, `icon-square.svg` (store listing),
+`icon-monochrome.svg` and `render_assets.py`. Store text and images are in
+`fastlane/metadata/android/en-US/`.
+
 ## Privacy
 
 No `INTERNET` permission, no analytics, no accounts. Notification content

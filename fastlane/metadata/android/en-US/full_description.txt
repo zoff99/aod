@@ -1,0 +1,43 @@
+AoD gives your phone a notification light — even if it has no LED.
+
+When a notification arrives, a light glows around the front camera, along the screen edges, as a small dot in the status bar, or as the icons of the apps that are waiting for you. It shows on the lock screen and while the display is in its always-on / doze state. No root, no Xposed, no hardware LED required.
+
+STYLES
+• Camera ring — a colored ring around the front camera cutout, with automatic cutout detection and manual calibration
+• Edge glow — light along the screen edges, covering the status-bar band as well
+• LED dot — a small dot in the status bar
+• App icons — one icon per app that has a notification, in centered rows below the camera: original colors, white or black, 24–96 dp, optional background plate. Completely still: no pulsing, no flashing, no blinking.
+
+DARK WHEN THERE IS NOTHING TO SHOW
+With no notification the screen stays completely black. The overlay hides the system always-on clock and widgets, so an idle phone is a static black field: no animation, no per-frame redraws, nothing that keeps the panel awake. By default only the top two thirds of the panel are covered and the bottom third is left untouched; covering the whole panel is an opt-in setting. Pressing the power button turns the display off and it stays off.
+
+COLORS AND BEHAVIOR
+• Per-app colors, automatic color taken from the app icon, or one global color
+• Pulse, rotate, flash or steady light, with adjustable speed, size and thickness
+• ECO mode (fewer frames) and interval mode (on/off cycling) to save battery
+• Adjustable light duration, night quiet hours, Do-Not-Disturb is respected
+• Charging, battery-full and low-battery light
+• App filter: all apps, or only the ones you pick in a searchable list with icons
+• Hide on unlock and light up again when the phone re-locks
+• Optional notification preview text, drawn by the overlay
+• Burn-in protection: the light and the icons slowly change position while shown
+
+PRIVACY
+AoD requests no INTERNET permission at all. No ads, no analytics, no accounts, no tracking. Notification content never leaves the device; it is only used to pick a color and, if you switch it on, to show a preview on your own lock screen.
+
+The accessibility service is used purely as a privilege to draw the overlay window: it subscribes to no events and reads no screen content. Notification access is what lets AoD know that a notification exists. Using an accessibility overlay also means no "display over other apps" permission is needed.
+
+SETUP
+1. Install and open AoD
+2. Grant notification access (button in the app)
+3. Enable the accessibility service (button in the app)
+4. Allow ignoring battery optimizations, so the timers survive doze
+
+GOOD TO KNOW
+• Android 9 or newer. An OLED panel is strongly recommended: black pixels are effectively off, which is what makes the idle screen cheap. On an LCD the black field still costs backlight.
+• Whether the light stays visible on top of your phone's own always-on display depends on the manufacturer. Where it does not, an opt-in dark canvas is available.
+• Any long-lived static light can contribute to burn-in. The built-in position shifting mitigates this, but use it at your own risk.
+• The light geometry is portrait-only.
+
+Open source, written in plain Java, with no Kotlin and no tracking libraries.
+Source code: https://github.com/zoff99/aod
