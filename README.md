@@ -113,6 +113,15 @@ adb shell cmd notification post -S bigtext -t 'Title' 'Tag' 'Hello light'
 - Long-term static light can contribute to burn-in; the built-in position
   shifting mitigates this, but use at your own risk.
 
+## App icon
+
+Original artwork, drawn as vectors: a dark rounded square with a single
+thin cyan ring and one white dot on it. The card sits in the adaptive
+icon *background* layer and is sized so that it stays a rounded square
+inside the launcher mask (circle, squircle, square or teardrop) instead of
+being clipped by it. A monochrome layer is included for themed icons, plus
+legacy bitmap mipmaps for Android 7 and older.
+
 ## Privacy
 
 No `INTERNET` permission, no analytics, no accounts. Notification content
