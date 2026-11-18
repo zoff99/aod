@@ -632,6 +632,16 @@ public class overlayservice extends AccessibilityService
                 Dbg.log("overlay", "items: screen-off branch skipped (aodLight="
                         + Prefs.aodLight(this) + " suppressed=" + suppressed()
                         + " fresh=" + fresh + " lightActive=" + lightActive + ")");
+                if (lightActive)
+                {
+                    // The newest notification is the same one, but the set can
+                    // still have changed: another notification from an app that
+                    // is already shown, or one was dismissed. Refresh what is
+                    // drawn (icons, counts, preview) without restarting the
+                    // burst or its timeout.
+                    Dbg.log("overlay", "items: already lit -> refresh icons and preview");
+                    applyAppearance();
+                }
             }
         }
         else if (fresh)

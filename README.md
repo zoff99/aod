@@ -71,7 +71,8 @@ icons because they cover many more pixels than a thin ring.
   "reset position" button. Offsets are limited so the block stays on the panel
 - Notification counts: optional number under each icon (from two upwards, or
   always), text size 10–28 dp, optional rounded badge; the row height reserves
-  room for it so rows never overlap the number
+  room for it so rows never overlap the number. It counts *notifications*, not
+  messages — an app that groups five messages into one notification shows 1
 - Animations (light styles): pulse, rotate, flash, steady; adjustable speed
 - ECO mode (reduced frame rate) and interval mode (on/off cycling)
 - Per-app colors (long-press an app icon in the strip), auto color from
@@ -101,6 +102,15 @@ Test without a second device:
 
 ```
 adb shell cmd notification post -S bigtext -t 'Title' 'Tag' 'Hello light'
+```
+
+The tag is the identity of the notification: posting the same tag again
+*replaces* it, so the count stays 1. Use different tags to see it rise:
+
+```
+for t in one two three; do
+  adb shell cmd notification post -S bigtext -t 'Title' "$t" 'Hello light'
+done
 ```
 
 ## Build
