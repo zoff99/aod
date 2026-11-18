@@ -2,9 +2,9 @@
     <string name="app_name">AoD</string>
     <string name="yes">yes</string>
     <string name="no">no</string>
-    <string name="overlay_service_description">Draws the notification light above the lock screen. No screen content is read.</string>
+    <string name="overlay_service_description">Draws the notification light above the lock screen. No screen content is read, and notification titles and message text are never read.</string>
     <string name="notification_listener_service">Notification access</string>
-    <string name="notification_listener_service_explanation">To see your notifications as a light, the app needs notification access. Enable it now?</string>
+    <string name="notification_listener_service_explanation">To see your notifications as a light, the app needs notification access. It only learns which app posted, when, and the counter that app publishes \u2014 it never reads titles or message text. Enable it now?</string>
 
     <string name="btn_notif_access">Notifications</string>
     <string name="btn_accessibility">Accessibility</string>
@@ -22,8 +22,6 @@
     <string name="set_blackout_full_sum">On by default: the whole display is covered with black, so nothing of the phone\u2019s own always-on screen shows through. Turn this off to cover only the top two thirds and leave the bottom third exactly as the phone draws it. Touches always pass through, so the fingerprint sensor and any shortcuts down there keep working \u2014 you just cannot see them. Applies to every style.</string>
     <string name="set_screen_on_light">Light on lock screen (screen on)</string>
     <string name="set_screen_on_light_sum">Keeps the light visible when you wake the phone but it is still locked, for example after a single press of the power button. Waking the screen is not an unlock: the light stays until you unlock the phone or the light duration ends.</string>
-    <string name="set_preview">Show notification text with the light</string>
-    <string name="set_preview_sum">Prints the app name, title and text of the newest notification into the black area, below the light or the app icons. The overlay draws it, so the display is never woken up for it. With no notification the screen stays completely black.</string>
     <string name="set_double_tap">Double tap to wake</string>
     <string name="set_double_tap_sum">Two quick taps anywhere wake the phone. This works on the fallback dark canvas below, because only that canvas can receive touches.</string>
     <string name="set_clear_unlock">Dismiss notifications on unlock</string>
@@ -109,9 +107,6 @@
     <string name="lbl_cutout_y">Ring offset Y: %1$d px</string>
     <string name="lbl_cutout_scale">Ring size: %1$d%%</string>
 
-    <string name="battery_charging">Charging · %1$d%%</string>
-    <string name="battery_full">Battery full</string>
-    <string name="battery_low">Battery low · %1$d%%</string>
 
     <string name="status_line">listener: %1$s · accessibility: %2$s · battery exempt: %3$s</string>
     <string name="on">ON</string>

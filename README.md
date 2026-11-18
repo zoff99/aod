@@ -36,7 +36,7 @@ The app combines three standard Android mechanisms:
    On OLED those pixels are effectively off, so an idle screen is a
    static, near-zero-cost black field: no animation, no wake
    locks, and **nothing at all is drawn when there is no notification**.
-   The light, the app icons and the optional notification text are painted
+   The light and the app icons are painted
    into that field, so nothing ever has to wake the panel — pressing the
    power button turns the display off and it stays off. Covering only the
    top two thirds, leaving the bottom third as the phone draws it, is an
@@ -53,7 +53,7 @@ animation timers alive during doze. The hidden `DRAW_WAKE_LOCK` level is
 probed once and used only where the OEM permits it. All wake locks are
 released when the burst ends.
 
-**Burn-in protection:** the light, the app icons and the preview text
+**Burn-in protection:** the light and the app icons
 slowly change position while shown — about once a minute, further for
 icons because they cover many more pixels than a thin ring.
 
@@ -79,7 +79,6 @@ icons because they cover many more pixels than a thin ring.
 - ECO mode (reduced frame rate) and interval mode (on/off cycling)
 - Per-app colors (long-press an app icon in the strip), auto color from
   the app icon, or one global color
-- Notification preview text, drawn by the overlay (optional)
 - Double tap to wake (on the fallback canvas)
 - Charging / battery-full / low-battery light
 - Night quiet hours, Do-Not-Disturb respect
@@ -169,7 +168,9 @@ done
 ## Build
 
 - JDK 17, Android SDK 34, Gradle 8.9 (wrapper included)
-- `./gradlew assembleDebug`
+- `./gradlew assembleDebug` (shrinking is on in both variants: unused
+  library code is dropped, no obfuscation — see `app/proguard-rules.pro`)
+- `python3 tools/check_apk_privacy.py <apk>` — verifies the finished APK
 - minSdk 28 (Android 9), targetSdk 34
 - Dependencies: appcompat, recyclerview (UI only). Everything else is
   platform API.
@@ -177,7 +178,7 @@ done
 ## Compatibility notes
 
 - Whether an overlay is visible **on top of the native AOD** depends on
-  the OEM; where it is not, the dark canvas fallback is used automatically.
+  the OEM; where it is not, an opt-in dark canvas fallback is available.
 - The light geometry is portrait-only.
 - Keeping any light active costs battery; use ECO / interval mode and
   short timeouts. The dark canvas keeps the panel technically "on" at low
@@ -201,6 +202,32 @@ Vector masters, the palette, size rules and the asset renderer live in
 
 ## Privacy
 
-No `INTERNET` permission, no analytics, no accounts. Notification content
-never leaves the device and is only used to pick a color and (optionally)
-show a preview on your own lock screen.
+No `INTERNET` permission, no analytics, no accounts, no tracking libraries.
+
+**The app never reads the title or the text of a notification.** Not
+`EXTRA_TITLE`, `EXTRA_TEXT`, `EXTRA_BIG_TEXT`, `EXTRA_SUB_TEXT`,
+`EXTRA_INFO_TEXT`, `EXTRA_SUMMARY_TEXT`, `EXTRA_TEXT_LINES`, `EXTRA_MESSAGES`,
+`tickerText` or any other message payload. Those values are never fetched,
+never parsed, never put in a variable or field, never parcelled, never
+written to disk and never logged — so they cannot leak later by accident.
+
+What is read is metadata only: the posting package, the system key, the post
+time, the clearable/foreground/group flags, `Notification.number` (the
+counter the app itself publishes), and four non-text extras keys used for
+suppression (`android.progress`, `android.progressMax`,
+`android.mediaSession`, `android.template`).
+
+This is enforced at build time, not just promised in a document: the
+`verifyNoMessageTextAccess` task (`gradle/privacy-guard.gradle`) runs before
+every compile and fails the build if any source file reads notification
+content, names a content key, keeps a text field on the parcel that travels
+between components, or opens the bundle outside the one boundary class.
+Run it on its own with `./gradlew :app:verifyNoMessageTextAccess`.
+
+The APK does not even contain the code: both build types shrink unused
+classes away, which removes AndroidX's own notification helpers
+(`NotificationCompat` and friends). `tools/check_apk_privacy.py` reads the
+string table of every dex in a finished APK and fails if any content key or
+content-reading API is present — it reports zero for the shipped build.
+
+Full details: [PRIVACY.md](PRIVACY.md).

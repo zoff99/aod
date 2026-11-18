@@ -6,13 +6,16 @@ import android.os.Parcelable;
 /**
  * One actionable notification (or a synthetic battery event) that the
  * notification listener hands over to the overlay renderer.
+ *
+ * It carries no message content at all: only which app posted, the system
+ * key, when, the light color and the counter the app itself publishes.
+ * There is deliberately no field for a title, a body or any other text, so
+ * nothing personal can be parcelled, cached or logged through this class.
  */
 public final class NotificationItem implements Parcelable
 {
     public String pkg = "";
     public String key = "";
-    public String title = "";
-    public String text = "";
     public int color = Prefs.DEFAULT_COLOR;
     public long postTime = 0L;
     public boolean batteryEvent = false;
@@ -26,8 +29,6 @@ public final class NotificationItem implements Parcelable
     {
         pkg = in.readString();
         key = in.readString();
-        title = in.readString();
-        text = in.readString();
         color = in.readInt();
         postTime = in.readLong();
         batteryEvent = in.readByte() != 0;
@@ -39,8 +40,6 @@ public final class NotificationItem implements Parcelable
     {
         dest.writeString(pkg);
         dest.writeString(key);
-        dest.writeString(title);
-        dest.writeString(text);
         dest.writeInt(color);
         dest.writeLong(postTime);
         dest.writeByte((byte) (batteryEvent ? 1 : 0));

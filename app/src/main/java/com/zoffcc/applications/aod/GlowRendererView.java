@@ -10,16 +10,6 @@ import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.SweepGradient;
-import android.graphics.Typeface;
-import android.text.Layout;
-import android.text.SpannableStringBuilder;
-import android.text.Spanned;
-import android.text.StaticLayout;
-import android.text.TextPaint;
-import android.text.TextUtils;
-import android.text.style.ForegroundColorSpan;
-import android.text.style.RelativeSizeSpan;
-import android.text.style.StyleSpan;
 import android.os.SystemClock;
 import android.view.View;
 
@@ -75,13 +65,8 @@ public class GlowRendererView extends View
     private int sweepColor = 0;
     private final android.graphics.Matrix sweepMatrix = new android.graphics.Matrix();
 
-    // Notification preview text. It is laid out once when the notification
-    // changes (never inside onDraw) and painted into the black area, so no
-    // activity and no screen wake-up is needed to show it.
-    private final TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-    private CharSequence previewText = null;
-    private String previewKey = "";
-    private StaticLayout previewLayout = null;
+    // No notification text is drawn here, or anywhere else in the app: the
+    // renderer only ever sees app icons and numbers. See PRIVACY.md.
 
     // App icons: ready-made bitmaps, laid out once, blitted without any
     // animation. This is the "no LED, no blinking" style.
@@ -115,8 +100,6 @@ public class GlowRendererView extends View
         paint.setStrokeJoin(Paint.Join.ROUND);
         blackPaint.setStyle(Paint.Style.FILL);
         blackPaint.setColor(Color.BLACK);
-        textPaint.setColor(0xFFEEEEEE);
-        textPaint.setTextSize(15f * getResources().getDisplayMetrics().scaledDensity);
         countPaint.setColor(0xFFF2F2F2);
         countPaint.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
         countPaint.setTextSize(13f * getResources().getDisplayMetrics().scaledDensity);
@@ -147,7 +130,6 @@ public class GlowRendererView extends View
         this.screenW = screenSize.x;
         this.screenH = screenSize.y;
         rebuildPaths();
-        rebuildPreview();
         layoutIcons();
         invalidate();
     }
@@ -199,66 +181,6 @@ public class GlowRendererView extends View
         {
             blackout = on;
             invalidate();
-        }
-    }
-
-    /**
-     * Notification text shown next to the light while a burst runs. Pass
-     * three nulls to clear it: an idle black field must stay completely
-     * empty. The layout is built here, on change, not per frame.
-     */
-    public void setPreview(String app, String title, String body)
-    {
-        String a = app == null ? "" : app;
-        String t = title == null ? "" : title;
-        String b = body == null ? "" : body;
-        String key = a + '\u0001' + t + '\u0001' + b;
-        if (key.equals(previewKey)) { return; }
-        previewKey = key;
-
-        SpannableStringBuilder sb = new SpannableStringBuilder();
-        appendPart(sb, a, 0.78f, 0xFF9E9E9E, false);
-        appendPart(sb, t, 1.25f, 0xFFEEEEEE, true);
-        appendPart(sb, b, 0.95f, 0xFFBDBDBD, false);
-        while (sb.length() > 0 && sb.charAt(sb.length() - 1) == '\n')
-        {
-            sb.delete(sb.length() - 1, sb.length());
-        }
-        previewText = sb.length() == 0 ? null : sb;
-        rebuildPreview();
-        invalidate();
-    }
-
-    private void appendPart(SpannableStringBuilder sb, String s, float size, int color, boolean bold)
-    {
-        if (s == null || s.trim().isEmpty()) { return; }
-        int start = sb.length();
-        sb.append(s.trim());
-        int end = sb.length();
-        sb.setSpan(new RelativeSizeSpan(size), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        sb.setSpan(new ForegroundColorSpan(color), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        if (bold) { sb.setSpan(new StyleSpan(Typeface.BOLD), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE); }
-        sb.append('\n');
-    }
-
-    private void rebuildPreview()
-    {
-        previewLayout = null;
-        if (previewText == null) { return; }
-        try
-        {
-            int width = Math.max(64, Math.round(screenW * 0.82f));
-            previewLayout = StaticLayout.Builder
-                    .obtain(previewText, 0, previewText.length(), textPaint, width)
-                    .setAlignment(Layout.Alignment.ALIGN_CENTER)
-                    .setIncludePad(false)
-                    .setMaxLines(6)
-                    .setEllipsize(TextUtils.TruncateAt.END)
-                    .build();
-        }
-        catch (Throwable t)
-        {
-            previewLayout = null;
         }
     }
 
@@ -453,35 +375,12 @@ public class GlowRendererView extends View
     {
         if (blackout)
         {
-            // Cover the top two thirds by default, or the whole panel when
-            // the user asks for it. Opaque black hides the system AOD clock
+            // Cover the whole panel by default, or only the top two thirds
+            // when the user asks for it. Opaque black hides the system AOD clock
             // and widgets; on OLED these pixels are effectively off, so a
             // static blackout costs almost nothing.
             canvas.drawRect(0f, 0f, screenW, screenH * blackoutFraction, blackPaint);
-            if (running)
-            {
-                float density = getResources().getDisplayMetrics().density;
-                float textTop = screenH * blackoutFraction * 0.5f;
-                if (icons != null)
-                {
-                    drawIcons(canvas);
-                    textTop = iconsBottom + 18f * density;
-                }
-                if (previewLayout != null)
-                {
-                    // centered, below the light or the icons, and moving with
-                    // the same slow burn-in shift; skipped if it would not fit
-                    float bottom = screenH * blackoutFraction - 4f * density;
-                    if (textTop + previewLayout.getHeight() <= bottom)
-                    {
-                        float x = (screenW - previewLayout.getWidth()) / 2f + shiftX;
-                        canvas.save();
-                        canvas.translate(x, textTop + shiftY);
-                        previewLayout.draw(canvas);
-                        canvas.restore();
-                    }
-                }
-            }
+            if (running && icons != null) { drawIcons(canvas); }
         }
         else if (running && icons != null && iconCfg.overUi)
         {

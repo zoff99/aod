@@ -97,6 +97,10 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
         recyclerView.setAdapter(adapter);
 
         bindPermissions();
+        // The notification-text preview is gone for good: this app never
+        // reads titles or message bodies. Drop the flag old installs kept.
+        prefs.edit().remove("preview").apply();
+
         bindSwitches();
         bindSpinners();
         bindColorRow();
@@ -246,7 +250,6 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
         bindSwitch(R.id.sw_enabled, Prefs.ENABLED, true);
         bindSwitch(R.id.sw_aod_light, Prefs.AOD_LIGHT, true);
         bindSwitch(R.id.sw_screen_on_light, Prefs.SCREEN_ON_LIGHT, true);
-        bindSwitch(R.id.sw_preview, Prefs.PREVIEW, false);
         bindSwitch(R.id.sw_double_tap, Prefs.DOUBLE_TAP_WAKE, false);
         bindSwitch(R.id.sw_clear_unlock, Prefs.CLEAR_ON_UNLOCK, false);
         bindSwitch(R.id.sw_relight_relock, Prefs.RELIGHT_RELOCK, true);

@@ -1,0 +1,157 @@
+/*
+ * Build-time privacy guard.
+ *
+ * Rule of the project: the app must never read, parse, keep or log the title
+ * or the text of a notification. Not EXTRA_TITLE, EXTRA_TEXT, EXTRA_BIG_TEXT,
+ * EXTRA_SUB_TEXT, EXTRA_INFO_TEXT, EXTRA_SUMMARY_TEXT, EXTRA_TEXT_LINES,
+ * EXTRA_MESSAGES, tickerText, and not any other message payload.
+ *
+ * The notification bundle may be opened, but only for the four metadata keys
+ * listed below (progress numbers, the media-session token, the style class
+ * name). Everything else is refused by this task, which runs before every
+ * compile:  ./gradlew :app:verifyNoMessageTextAccess
+ *
+ * The checks are deliberately blunt. Adding a new notification field means
+ * editing this file on purpose, which is exactly the review step that should
+ * happen before such a change. See PRIVACY.md.
+ */
+
+/** Split Java source into code (comments and literals blanked) and literals. */
+def stripJava = { String src ->
+    char[] a = src.toCharArray()
+    StringBuilder code = new StringBuilder()
+    List<String> literals = []
+    char slash = '/' as char, star = '*' as char, dq = '"' as char
+    char sq = "'" as char, bs = '\\' as char, nl = '\n' as char
+    int i = 0, n = a.length
+    while (i < n)
+    {
+        char c = a[i]
+        if (c == slash && i + 1 < n && a[i + 1] == slash)
+        {
+            while (i < n && a[i] != nl) { i++ }
+        }
+        else if (c == slash && i + 1 < n && a[i + 1] == star)
+        {
+            i += 2
+            while (i + 1 < n && !(a[i] == star && a[i + 1] == slash)) { i++ }
+            i = Math.min(n, i + 2)
+            code.append(' ')
+        }
+        else if (c == dq || c == sq)
+        {
+            char q = c
+            StringBuilder lit = new StringBuilder()
+            i++
+            while (i < n && a[i] != q)
+            {
+                if (a[i] == bs && i + 1 < n) { lit.append(a[i + 1]); i += 2 }
+                else { lit.append(a[i]); i++ }
+            }
+            i++
+            if (q == dq) { literals.add(lit.toString()) }
+            code.append(q == dq ? '""' : "''")
+        }
+        else
+        {
+            code.append(c)
+            i++
+        }
+    }
+    return [code.toString(), literals]
+}
+
+def privacyGuard = tasks.register('verifyNoMessageTextAccess') {
+    description = 'Fails the build if any notification title or message text could be read.'
+    group = 'verification'
+
+    def srcRoot = file('src/main/java')
+    // The single class allowed to look at a notification object at all.
+    def boundary = 'notificationobserver.java'
+    // The parcel handed between components: metadata only, no text fields.
+    def carrier = 'NotificationItem.java'
+    def allowedKeys = ['android.progress', 'android.progressMax',
+                       'android.mediaSession', 'android.template'] as Set
+    def allowedBundleCalls = ['containsKey', 'getInt', 'getParcelable', 'getString'] as Set
+    def allowedCarrierStrings = ['pkg', 'key'] as Set
+    def banned = [
+            [~/Notification\s*\.\s*EXTRA_/, 'Notification.EXTRA_* constants give access to notification content'],
+            [~/\btickerText\b/, 'Notification.tickerText is message text'],
+            [~/\b(?:MessagingStyle|NotificationCompat|RemoteInput)\b/, 'messaging/compat APIs expose message text'],
+            [~/\bandroid\s*\.\s*app\s*\.\s*Person\b/, 'Person carries names and addresses'],
+            [~/\bgetCharSequence(?:Array|ArrayList)?\s*\(/, 'CharSequence values out of a bundle are text'],
+    ]
+
+    inputs.dir(srcRoot)
+
+    doLast {
+        def problems = []
+        def checked = 0
+        srcRoot.eachFileRecurse { f ->
+            if (!f.isFile() || !f.name.endsWith('.java')) { return }
+            checked++
+            def (String code, List<String> literals) = stripJava(f.text)
+            // package/import lines are not member accesses on anything
+            def body = code.readLines().findAll { !it.trim().startsWith('import ') && !it.trim().startsWith('package ') }.join('\n')
+            def where = { String what -> problems << ("${f.name}: " + what) }
+
+            banned.each { rule ->
+                if (rule[0].matcher(body).find()) { where(rule[1]) }
+            }
+
+            if (f.name != boundary)
+            {
+                if (body =~ /\.\s*extras\b/) { where('only ' + boundary + ' may open Notification.extras') }
+                if (body =~ /\bgetNotification\s*\(/) { where('only ' + boundary + ' may call getNotification()') }
+            }
+
+            // every use of a Bundle variable must be one of the metadata reads
+            def bundleVars = []
+            def decl = ~/\bBundle\s+(\w+)/
+            def dm = decl.matcher(body)
+            while (dm.find()) { bundleVars << dm.group(1) }
+            bundleVars.unique().each { v ->
+                def use = ~(/\b/ + java.util.regex.Pattern.quote(v) + /\s*\.\s*(\w+)/)
+                def um = use.matcher(body)
+                while (um.find())
+                {
+                    if (!allowedBundleCalls.contains(um.group(1)))
+                    {
+                        where('Bundle.' + um.group(1) + '() is not an allowed metadata read ' +
+                                '(allowed: ' + allowedBundleCalls.join(', ') + ')')
+                    }
+                }
+            }
+
+            // no content key may even be named in a string
+            literals.each { lit ->
+                if (lit.startsWith('android.') && !lit.startsWith('android.permission.') && !allowedKeys.contains(lit))
+                {
+                    where('"' + lit + '" is not an allowed notification key (allowed: ' + allowedKeys.join(', ') + ')')
+                }
+            }
+
+            if (f.name == carrier)
+            {
+                def sm = ~/\bString\s+(\w+)\s*[=;]/
+                def mm = sm.matcher(body)
+                while (mm.find())
+                {
+                    if (!allowedCarrierStrings.contains(mm.group(1)))
+                    {
+                        where('NotificationItem may not carry a String field "' + mm.group(1) +
+                                '" - only ' + allowedCarrierStrings.join(', ') + ' (no text can be stored or parcelled)')
+                    }
+                }
+            }
+        }
+        if (!problems.isEmpty())
+        {
+            throw new GradleException('PRIVACY GUARD FAILED - notification content must never be read:\n  ' +
+                    problems.unique().join('\n  ') + '\nSee PRIVACY.md.')
+        }
+        logger.lifecycle('privacy guard: ' + checked + ' source files checked, no notification title or message text is read')
+    }
+}
+
+tasks.matching { it.name == 'preBuild' }.configureEach { it.dependsOn(privacyGuard) }

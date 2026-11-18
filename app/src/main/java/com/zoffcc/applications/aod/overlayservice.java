@@ -639,9 +639,9 @@ public class overlayservice extends AccessibilityService
                     // The newest notification is the same one, but the set can
                     // still have changed: another notification from an app that
                     // is already shown, or one was dismissed. Refresh what is
-                    // drawn (icons, counts, preview) without restarting the
-                    // burst or its timeout.
-                    Dbg.log("overlay", "items: already lit -> refresh icons and preview");
+                    // drawn (icons and counts) without restarting the burst
+                    // or its timeout.
+                    Dbg.log("overlay", "items: already lit -> refresh icons");
                     applyAppearance();
                 }
             }
@@ -862,15 +862,14 @@ public class overlayservice extends AccessibilityService
         lightActive = false;
         if (testMode)
         {
-            // otherwise the test color, the demo icon and the "no preview"
-            // rule would leak into every later real notification
+            // otherwise the test color and the demo icon would leak into
+            // every later real notification
             Dbg.log("overlay", "test mode cleared by stopBurst (" + reason + ")");
             testMode = false;
         }
         if (view != null)
         {
             view.stop();
-            view.setPreview(null, null, null);
             view.clearIcons();
         }
         syncOverlay();
@@ -943,14 +942,12 @@ public class overlayservice extends AccessibilityService
             if (!lightActive)
             {
                 view.stop();
-                view.setPreview(null, null, null);
                 view.clearIcons();
             }
         }
         else if (!lightActive)
         {
             view.stop();
-            view.setPreview(null, null, null);
             view.clearIcons();
             view.setVisibility(android.view.View.GONE);
         }
@@ -967,7 +964,6 @@ public class overlayservice extends AccessibilityService
         float strokePx = Prefs.strokeDp(this) * getResources().getDisplayMetrics().density;
         view.configure(Prefs.style(this), Prefs.anim(this), color, Prefs.eco(this),
                 Prefs.speedMs(this), strokePx, Prefs.dotX(this));
-        syncPreview();
         syncIcons();
     }
 
@@ -1076,51 +1072,6 @@ public class overlayservice extends AccessibilityService
         Integer summary = appNumbers.get(pkg);
         if (summary != null) { app = Math.max(app, summary); }
         return Math.max(app, notifications);
-    }
-
-    /**
-     * Notification text is painted by the overlay itself. No activity is
-     * started for it, so showing text never wakes the display and never
-     * needs an extra wake lock. With no notification the field stays empty.
-     */
-    private void syncPreview()
-    {
-        if (view == null) { return; }
-        if (!Prefs.preview(this) || Prefs.canvasFallback(this) || testMode || items.isEmpty())
-        {
-            view.setPreview(null, null, null);
-            return;
-        }
-        NotificationItem item = null;
-        for (NotificationItem n : items)
-        {
-            if (!n.batteryEvent) { item = n; break; }
-        }
-        if (item == null)
-        {
-            view.setPreview(null, null, null);
-            return;
-        }
-        view.setPreview(appLabel(item.pkg), item.title, item.text);
-    }
-
-    private String labelPkg = "";
-    private String labelCache = "";
-
-    private String appLabel(String pkg)
-    {
-        if (pkg == null) { return ""; }
-        if (pkg.equals(labelPkg)) { return labelCache; }
-        String label = pkg;
-        try
-        {
-            android.content.pm.PackageManager pm = getPackageManager();
-            label = pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString();
-        }
-        catch (Exception ignored) {}
-        labelPkg = pkg;
-        labelCache = label;
-        return label;
     }
 
     private void refreshGeometry()
@@ -1239,14 +1190,13 @@ public class overlayservice extends AccessibilityService
             refreshGeometry();
             if (lightActive) { armShift(); }
         }
-        if (Prefs.PREVIEW.equals(key) || Prefs.CANVAS_FALLBACK.equals(key))
+        if (Prefs.CANVAS_FALLBACK.equals(key))
         {
             if (!Prefs.canvasFallback(this) && canvasShown)
             {
                 Dbg.log("overlay", "fallback canvas switched off -> HIDE");
                 sendLocal(notificationobserver.ACTION_HIDE);
             }
-            syncPreview();
         }
         if (lightActive)
         {

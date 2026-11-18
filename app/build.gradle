@@ -2,6 +2,9 @@ plugins {
     id 'com.android.application'
 }
 
+// Fails the build if any notification title or message text could be read.
+apply from: "$rootDir/gradle/privacy-guard.gradle"
+
 def getGitHash = { ->
     try
     {
@@ -46,15 +49,21 @@ android {
     }
 
     buildTypes {
+        // Shrinking is on in both variants on purpose: it drops the unused
+        // AndroidX notification helpers, so the code that could read a
+        // notification title or message body is not in the APK at all.
+        // No obfuscation, no optimisation - see app/proguard-rules.pro.
         release {
             crunchPngs false
-            minifyEnabled false
+            minifyEnabled true
             shrinkResources false
+            proguardFiles 'proguard-rules.pro'
         }
         debug {
             crunchPngs false
-            minifyEnabled false
+            minifyEnabled true
             shrinkResources false
+            proguardFiles 'proguard-rules.pro'
         }
     }
 

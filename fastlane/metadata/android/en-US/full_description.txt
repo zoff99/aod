@@ -21,11 +21,12 @@ COLORS AND BEHAVIOR
 • Place the icon block wherever you want it: centered or left-aligned, horizontal offset, vertical start below the camera or measured from the top or bottom edge, icons per row, spacing between icons and rows, and a limit on how many are shown
 • Optional number under each icon: either how many notifications that app has, or the app's own unread counter when it publishes one, with adjustable text size and an optional badge
 • Hide on unlock and light up again when the phone re-locks
-• Optional notification preview text, drawn by the overlay
 • Burn-in protection: the light and the icons slowly change position while shown
 
 PRIVACY
-AoD requests no INTERNET permission at all. No ads, no analytics, no accounts, no tracking. Notification content never leaves the device; it is only used to pick a color and, if you switch it on, to show a preview on your own lock screen.
+AoD requests no INTERNET permission at all. No ads, no analytics, no accounts, no tracking.
+
+AoD never reads your notification titles or message text: no headline, no body, no expanded, summary or sub text, no chat messages. They are never fetched, never kept, never stored, never logged. It only sees which app posted, when, and the app's own unread counter. A build-time check blocks any code that tries to read message content.
 
 The accessibility service is used purely as a privilege to draw the overlay window: it subscribes to no events and reads no screen content. Notification access is what lets AoD know that a notification exists. Using an accessibility overlay also means no "display over other apps" permission is needed.
 

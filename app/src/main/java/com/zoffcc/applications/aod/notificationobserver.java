@@ -38,6 +38,19 @@ import java.util.Map;
  * progress updates, media sessions, group summaries, system packages,
  * the app filter, and Do-Not-Disturb. Night hours are applied by the
  * overlay service (it also owns the screen state).
+ *
+ * PRIVACY BOUNDARY. This is the only class that ever touches a notification
+ * object, and it reads metadata only: package name, key, post time, the
+ * clearable/foreground/group flags, Notification.number, and - out of the
+ * extras bundle - the progress numbers, the media-session token and the
+ * style class name. It never reads, parses, copies, logs or stores any
+ * notification title or message text: not EXTRA_TITLE, EXTRA_TEXT,
+ * EXTRA_BIG_TEXT, EXTRA_SUB_TEXT, EXTRA_INFO_TEXT, EXTRA_SUMMARY_TEXT,
+ * EXTRA_TEXT_LINES, EXTRA_MESSAGES, tickerText or anything similar. No such
+ * value is ever put in a variable, a field, a parcel or a log line, so it
+ * cannot leak later by accident. A build task (verifyNoMessageTextAccess,
+ * see gradle/privacy-guard.gradle) fails the build if that ever changes.
+ * See PRIVACY.md.
  */
 public class notificationobserver extends NotificationListenerService
 {
@@ -224,6 +237,8 @@ public class notificationobserver extends NotificationListenerService
                 return false;
             }
 
+            // Metadata only. The bundle is opened for three non-text values;
+            // no title, body or message key is ever requested from it.
             Bundle extras = n.extras;
             if (extras != null)
             {
@@ -236,22 +251,16 @@ public class notificationobserver extends NotificationListenerService
                 }
                 // skip media players
                 if (extras.getParcelable("android.mediaSession") != null) { return false; }
-                String template = extras.getString("android.template");
-                if (template != null && template.contains("MediaStyle")) { return false; }
+                // the style class name, e.g. "android.app.Notification$MediaStyle":
+                // a class name, not content, and it is used inline and never kept
+                if (extras.getString("android.template") != null
+                        && extras.getString("android.template").contains("MediaStyle")) { return false; }
             }
 
             NotificationItem item = new NotificationItem();
             item.pkg = pkg;
             item.key = sbn.getKey();
             item.postTime = sbn.getPostTime();
-            if (extras != null)
-            {
-                CharSequence t = extras.getCharSequence(Notification.EXTRA_TITLE);
-                CharSequence x = extras.getCharSequence(Notification.EXTRA_TEXT);
-                if (x == null) { x = extras.getCharSequence(Notification.EXTRA_BIG_TEXT); }
-                item.title = t == null ? "" : t.toString().trim();
-                item.text = x == null ? "" : x.toString().trim();
-            }
             item.number = Math.max(0, n.number);
             item.color = resolveColor(pkg);
 
@@ -370,21 +379,9 @@ public class notificationobserver extends NotificationListenerService
                     b.key = newState;
                     b.batteryEvent = true;
                     b.postTime = System.currentTimeMillis();
-                    if (PKG_FULL.equals(newState))
-                    {
-                        b.title = getString(R.string.battery_full);
-                        b.color = 0xFF7CFC00;
-                    }
-                    else if (PKG_CHARGING.equals(newState))
-                    {
-                        b.title = getString(R.string.battery_charging, pct);
-                        b.color = 0xFF00E676;
-                    }
-                    else
-                    {
-                        b.title = getString(R.string.battery_low, pct);
-                        b.color = 0xFFFF3D00;
-                    }
+                    if (PKG_FULL.equals(newState)) { b.color = 0xFF7CFC00; }
+                    else if (PKG_CHARGING.equals(newState)) { b.color = 0xFF00E676; }
+                    else { b.color = 0xFFFF3D00; }
                     items.put(b.key, b);
                 }
             }

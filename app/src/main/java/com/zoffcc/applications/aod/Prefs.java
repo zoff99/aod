@@ -18,7 +18,6 @@ public final class Prefs
     public static final String ENABLED = "enabled";                 // master switch
     public static final String AOD_LIGHT = "aod_light";             // light while screen off / AOD
     public static final String SCREEN_ON_LIGHT = "screen_on_light"; // light on the lock screen while locked
-    public static final String PREVIEW = "preview";                 // notification text on the dark canvas
     public static final String DOUBLE_TAP_WAKE = "double_tap_wake";
     public static final String CLEAR_ON_UNLOCK = "clear_on_unlock"; // dismiss notifications on unlock
     public static final String RELIGHT_RELOCK = "relight_relock";   // light again after unlock + re-lock
@@ -132,7 +131,6 @@ public final class Prefs
     }
     public static boolean aodLight(Context c) { return get(c).getBoolean(AOD_LIGHT, true); }
     public static boolean screenOnLight(Context c) { return get(c).getBoolean(SCREEN_ON_LIGHT, true); }
-    public static boolean preview(Context c) { return get(c).getBoolean(PREVIEW, false); }
     public static boolean doubleTapWake(Context c) { return get(c).getBoolean(DOUBLE_TAP_WAKE, false); }
     public static boolean clearOnUnlock(Context c) { return get(c).getBoolean(CLEAR_ON_UNLOCK, false); }
     public static boolean relightRelock(Context c) { return get(c).getBoolean(RELIGHT_RELOCK, true); }

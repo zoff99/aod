@@ -11,17 +11,12 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
 import android.util.TypedValue;
-import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
-import android.widget.LinearLayout;
-import android.widget.TextView;
 
 import androidx.core.content.ContextCompat;
-
-import java.util.List;
 
 /**
  * A pure-black, very dim, lock-screen-visible activity that acts as a
@@ -32,48 +27,29 @@ import java.util.List;
  *  - setShowWhenLocked(true) + setTurnScreenOn(true): visible over the keyguard;
  *  - FLAG_KEEP_SCREEN_ON: the panel stays lit while the burst runs, but the
  *    window brightness is turned far down and every pixel except the light
- *    and the optional preview text is black — on OLED this is nearly free;
+ *    is black — on OLED this is nearly free;
  *  - the notification light itself is drawn by the accessibility overlay
  *    window, which sits above this activity;
  *  - double tap anywhere wakes the device properly;
- *  - the preview text slowly changes position to protect against burn-in;
  *  - when the burst ends the overlay service locks the screen again, which
  *    pauses and finishes this activity, letting the device doze.
+ *
+ * This canvas shows no notification text: the app never reads titles or
+ * message bodies (see PRIVACY.md). It is a black field, nothing more.
  */
 public class AodScreenActivity extends Activity
 {
     private static final long DOUBLE_TAP_MS = 450L;
-    private static final long SHIFT_INTERVAL_MS = 58000L;
-    private static final float[][] SHIFTS = {{0, 0}, {24, 14}, {-20, 26}, {18, -16}, {-24, -12}};
 
     private final Handler h = new Handler(Looper.getMainLooper());
     private FrameLayout root;
-    private LinearLayout previewBox;
-    private TextView appText;
-    private TextView titleText;
-    private TextView bodyText;
     private long lastTap = 0L;
-    private int shiftIndex = 0;
     private boolean receiversRegistered = false;
 
     private final Runnable selfTimeout = new Runnable()
     {
         @Override
         public void run() { Dbg.log("canvas", "selfTimeout -> finish"); finish(); }
-    };
-
-    private final Runnable shiftRunnable = new Runnable()
-    {
-        @Override
-        public void run()
-        {
-            if (previewBox == null) { return; }
-            shiftIndex = (shiftIndex + 1) % SHIFTS.length;
-            float d = getResources().getDisplayMetrics().density;
-            previewBox.setTranslationX(SHIFTS[shiftIndex][0] * d);
-            previewBox.setTranslationY(SHIFTS[shiftIndex][1] * d);
-            h.postDelayed(this, SHIFT_INTERVAL_MS);
-        }
     };
 
     private final BroadcastReceiver receiver = new BroadcastReceiver()
@@ -86,11 +62,6 @@ public class AodScreenActivity extends Activity
             {
                 Dbg.log("canvas", "recv HIDE -> finish");
                 finish();
-            }
-            else if (notificationobserver.ACTION_ITEMS.equals(a))
-            {
-                Dbg.log("canvas", "recv ITEMS -> updatePreview");
-                updatePreview();
             }
         }
     };
@@ -129,27 +100,7 @@ public class AodScreenActivity extends Activity
                 View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
                 View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
 
-        previewBox = new LinearLayout(this);
-        previewBox.setOrientation(LinearLayout.VERTICAL);
-        previewBox.setGravity(Gravity.CENTER_HORIZONTAL);
-        int pad = dp(24);
-        previewBox.setPadding(pad, pad, pad, pad);
-        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT);
-        lp.gravity = Gravity.CENTER;
-        previewBox.setLayoutParams(lp);
-
-        appText = makeText(12, 0xFF9E9E9E);
-        titleText = makeText(20, 0xFFEEEEEE);
-        bodyText = makeText(15, 0xFFBDBDBD);
-        bodyText.setMaxLines(3);
-        previewBox.addView(appText);
-        previewBox.addView(titleText);
-        previewBox.addView(bodyText);
-        root.addView(previewBox);
-
         setContentView(root);
-        updatePreview();
 
         if (Prefs.doubleTapWake(this))
         {
@@ -174,49 +125,6 @@ public class AodScreenActivity extends Activity
         }
     }
 
-    private TextView makeText(float sp, int color)
-    {
-        TextView t = new TextView(this);
-        t.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp);
-        t.setTextColor(color);
-        t.setGravity(Gravity.CENTER);
-        t.setMaxLines(2);
-        t.setEllipsize(android.text.TextUtils.TruncateAt.END);
-        return t;
-    }
-
-    private void updatePreview()
-    {
-        boolean show = Prefs.preview(this);
-        List<NotificationItem> list = notificationobserver.latest;
-        NotificationItem item = null;
-        if (list != null)
-        {
-            for (NotificationItem n : list)
-            {
-                if (!n.batteryEvent) { item = n; break; }
-            }
-        }
-        if (!show || item == null)
-        {
-            previewBox.setVisibility(View.GONE);
-            return;
-        }
-        previewBox.setVisibility(View.VISIBLE);
-        String label = item.pkg;
-        try
-        {
-            label = getPackageManager()
-                    .getApplicationLabel(getPackageManager().getApplicationInfo(item.pkg, 0))
-                    .toString();
-        }
-        catch (Exception ignored) {}
-        appText.setText(label);
-        titleText.setText(item.title == null || item.title.isEmpty() ? label : item.title);
-        bodyText.setText(item.text == null ? "" : item.text);
-        bodyText.setVisibility(item.text == null || item.text.isEmpty() ? View.GONE : View.VISIBLE);
-    }
-
     private void wakeUp()
     {
         Dbg.log("canvas", "wakeUp (double tap) -> WAKE + finish");
@@ -239,7 +147,6 @@ public class AodScreenActivity extends Activity
         super.onNewIntent(intent);
         Dbg.log("canvas", "onNewIntent");
         resetTimeout();
-        updatePreview();
     }
 
     @Override
@@ -252,7 +159,6 @@ public class AodScreenActivity extends Activity
         {
             IntentFilter f = new IntentFilter();
             f.addAction(notificationobserver.ACTION_HIDE);
-            f.addAction(notificationobserver.ACTION_ITEMS);
             ContextCompat.registerReceiver(this, receiver, f, ContextCompat.RECEIVER_NOT_EXPORTED);
             receiversRegistered = true;
         }
@@ -271,7 +177,6 @@ public class AodScreenActivity extends Activity
                 catch (Exception ignored) {}
             }
         });
-        h.postDelayed(shiftRunnable, SHIFT_INTERVAL_MS);
         Dbg.log("canvas", "onResume -> AOD_SHOWN");
         sendLocal(notificationobserver.ACTION_AOD_SHOWN);
     }
@@ -285,7 +190,6 @@ public class AodScreenActivity extends Activity
         Dbg.log("canvas", "onPause -> AOD_GONE + finish");
         sendLocal(notificationobserver.ACTION_AOD_GONE);
         h.removeCallbacks(selfTimeout);
-        h.removeCallbacks(shiftRunnable);
         finish();
         overridePendingTransition(0, 0);
     }
