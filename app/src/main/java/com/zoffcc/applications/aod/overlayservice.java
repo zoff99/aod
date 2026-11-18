@@ -123,6 +123,7 @@ public class overlayservice extends AccessibilityService
         super.onServiceConnected();
         Log.i(TAG, "onServiceConnected");
         Dbg.log("overlay", "onServiceConnected");
+        Prefs.markAccessSeen(this);
         h.postDelayed(this::bootstrap, 600L);
     }
 

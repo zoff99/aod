@@ -24,9 +24,10 @@ public final class Prefs
     public static final String RELIGHT_RELOCK = "relight_relock";   // light again after unlock + re-lock
     public static final String CANVAS_FALLBACK = "canvas_fallback"; // dim activity canvas, phones without AOD
     public static final String BLACKOUT_FULL = "blackout_full";     // also cover the bottom third
+    public static final String ACCESS_SEEN = "access_seen";         // service was enabled here once
 
     // ---- appearance -----------------------------------------------------
-    public static final String STYLE = "style";                     // ring | edge | dot
+    public static final String STYLE = "style";                     // ring | edge | dot | icons
     public static final String ANIM = "anim";                       // pulse | rotate | flash | steady
     public static final String ECO = "eco";                         // reduced frame rate
     public static final String COLOR = "color";
@@ -117,19 +118,32 @@ public final class Prefs
     }
 
     public static boolean enabled(Context c) { return get(c).getBoolean(ENABLED, true); }
+
+    /** True once the accessibility service has been seen enabled on this
+     *  device. Guards the automatic restore: a first install still asks. */
+    public static boolean accessSeen(Context c) { return get(c).getBoolean(ACCESS_SEEN, false); }
+    public static void markAccessSeen(Context c)
+    {
+        if (!accessSeen(c))
+        {
+            get(c).edit().putBoolean(ACCESS_SEEN, true).apply();
+            Dbg.log("restore", "accessibility seen enabled: automatic restore armed");
+        }
+    }
     public static boolean aodLight(Context c) { return get(c).getBoolean(AOD_LIGHT, true); }
     public static boolean screenOnLight(Context c) { return get(c).getBoolean(SCREEN_ON_LIGHT, true); }
-    public static boolean preview(Context c) { return get(c).getBoolean(PREVIEW, true); }
-    public static boolean doubleTapWake(Context c) { return get(c).getBoolean(DOUBLE_TAP_WAKE, true); }
+    public static boolean preview(Context c) { return get(c).getBoolean(PREVIEW, false); }
+    public static boolean doubleTapWake(Context c) { return get(c).getBoolean(DOUBLE_TAP_WAKE, false); }
     public static boolean clearOnUnlock(Context c) { return get(c).getBoolean(CLEAR_ON_UNLOCK, false); }
     public static boolean relightRelock(Context c) { return get(c).getBoolean(RELIGHT_RELOCK, true); }
     /** Opt-in only: the fallback canvas is an activity that turns the panel
      *  on, so it must never be used on a phone that has its own AOD. */
     public static boolean canvasFallback(Context c) { return get(c).getBoolean(CANVAS_FALLBACK, false); }
-    /** Off by default: the bottom third of the panel is left untouched. */
-    public static boolean blackoutFull(Context c) { return get(c).getBoolean(BLACKOUT_FULL, false); }
+    /** On by default: the whole panel is covered. Switching it off leaves
+     *  the bottom third exactly as the phone draws it. */
+    public static boolean blackoutFull(Context c) { return get(c).getBoolean(BLACKOUT_FULL, true); }
 
-    public static String style(Context c) { return get(c).getString(STYLE, STYLE_RING); }
+    public static String style(Context c) { return get(c).getString(STYLE, STYLE_ICONS); }
     public static String anim(Context c) { return get(c).getString(ANIM, ANIM_PULSE); }
     public static boolean eco(Context c) { return get(c).getBoolean(ECO, false); }
     public static int color(Context c) { return get(c).getInt(COLOR, DEFAULT_COLOR); }
@@ -139,7 +153,7 @@ public final class Prefs
     public static int dotX(Context c) { return get(c).getInt(DOT_X, 50); }
 
     public static String iconTint(Context c) { return get(c).getString(ICON_TINT, ICON_TINT_COLOR); }
-    public static int iconSizeDp(Context c) { return get(c).getInt(ICON_SIZE_DP, 48); }
+    public static int iconSizeDp(Context c) { return get(c).getInt(ICON_SIZE_DP, 24); }
     public static boolean iconPlate(Context c) { return get(c).getBoolean(ICON_PLATE, false); }
     public static boolean iconShift(Context c) { return get(c).getBoolean(ICON_SHIFT, true); }
 
@@ -147,7 +161,7 @@ public final class Prefs
     public static boolean iconLastRowCenter(Context c) { return get(c).getBoolean(ICON_LAST_ROW_CENTER, true); }
     public static int iconOffsetXDp(Context c) { return get(c).getInt(ICON_OFFSET_X_DP, 0); }
     public static String iconYAnchor(Context c) { return get(c).getString(ICON_Y_ANCHOR, ICON_Y_CAMERA); }
-    public static int iconOffsetYDp(Context c) { return get(c).getInt(ICON_OFFSET_Y_DP, 0); }
+    public static int iconOffsetYDp(Context c) { return get(c).getInt(ICON_OFFSET_Y_DP, 92); }
     public static int iconPerRow(Context c) { return get(c).getInt(ICON_PER_ROW, 0); }
     public static int iconGapDp(Context c) { return get(c).getInt(ICON_GAP_DP, 12); }
     public static int iconRowGapDp(Context c) { return get(c).getInt(ICON_ROW_GAP_DP, 12); }
@@ -183,7 +197,7 @@ public final class Prefs
                 .apply();
     }
 
-    public static int timeoutSec(Context c) { return get(c).getInt(TIMEOUT_SEC, 60); }
+    public static int timeoutSec(Context c) { return get(c).getInt(TIMEOUT_SEC, 290); }
     public static boolean interval(Context c) { return get(c).getBoolean(INTERVAL, false); }
     public static int intervalOnSec(Context c) { return get(c).getInt(INTERVAL_ON_SEC, 4); }
     public static int intervalOffSec(Context c) { return get(c).getInt(INTERVAL_OFF_SEC, 6); }
@@ -192,8 +206,8 @@ public final class Prefs
     public static boolean night(Context c) { return get(c).getBoolean(NIGHT, false); }
     public static int nightStart(Context c) { return get(c).getInt(NIGHT_START, 23 * 60); }
     public static int nightEnd(Context c) { return get(c).getInt(NIGHT_END, 7 * 60); }
-    public static boolean respectDnd(Context c) { return get(c).getBoolean(RESPECT_DND, true); }
-    public static boolean batteryLight(Context c) { return get(c).getBoolean(BATTERY_LIGHT, true); }
+    public static boolean respectDnd(Context c) { return get(c).getBoolean(RESPECT_DND, false); }
+    public static boolean batteryLight(Context c) { return get(c).getBoolean(BATTERY_LIGHT, false); }
     public static boolean ignorePersistent(Context c) { return get(c).getBoolean(IGNORE_PERSISTENT, true); }
 
     public static boolean filterSelected(Context c) { return "selected".equals(get(c).getString(FILTER_MODE, "all")); }

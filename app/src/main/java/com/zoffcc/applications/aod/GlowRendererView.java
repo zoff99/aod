@@ -41,11 +41,12 @@ import java.util.List;
  */
 public class GlowRendererView extends View
 {
-    /** Default: black out only this fraction of the display height (top),
-     *  leaving the bottom third untouched. The user can extend it to the
-     *  whole panel with {@link #setBlackoutFull(boolean)}. */
-    private static final float BLACKOUT_DEFAULT_FRACTION = 0.66f;
-    private float blackoutFraction = BLACKOUT_DEFAULT_FRACTION;
+    /** Reduced extent, used when "black out the whole display" is switched
+     *  off: only this fraction of the display height (top) is covered and
+     *  the bottom third is left untouched. The service always applies the
+     *  setting through {@link #setBlackoutFull(boolean)}. */
+    private static final float BLACKOUT_PARTIAL_FRACTION = 0.66f;
+    private float blackoutFraction = 1f;
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint blackPaint = new Paint();
     private final Path edgePath = new Path();
@@ -183,7 +184,7 @@ public class GlowRendererView extends View
      *  changes what is visible. */
     public void setBlackoutFull(boolean full)
     {
-        float f = full ? 1f : BLACKOUT_DEFAULT_FRACTION;
+        float f = full ? 1f : BLACKOUT_PARTIAL_FRACTION;
         if (blackoutFraction != f)
         {
             blackoutFraction = f;

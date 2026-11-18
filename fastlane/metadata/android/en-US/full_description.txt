@@ -9,7 +9,7 @@ STYLES
 • App icons — one icon per app that has a notification, in centered rows below the camera: original colors, white or black, 24–96 dp, optional background plate. Completely still: no pulsing, no flashing, no blinking.
 
 DARK WHEN THERE IS NOTHING TO SHOW
-With no notification the screen stays completely black. The overlay hides the system always-on clock and widgets, so an idle phone is a static black field: no animation, no per-frame redraws, nothing that keeps the panel awake. By default only the top two thirds of the panel are covered and the bottom third is left untouched; covering the whole panel is an opt-in setting. Pressing the power button turns the display off and it stays off.
+With no notification the screen stays completely black. The overlay hides the system always-on clock and widgets, so an idle phone is a static black field: no animation, no per-frame redraws, nothing that keeps the panel awake. The whole panel is covered by default; if you prefer, only the top two thirds can be covered so the bottom third stays as the phone draws it. Pressing the power button turns the display off and it stays off.
 
 COLORS AND BEHAVIOR
 • Per-app colors, automatic color taken from the app icon, or one global color

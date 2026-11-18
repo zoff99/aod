@@ -27,6 +27,11 @@ public class autostart_service extends BroadcastReceiver
         if (Intent.ACTION_BOOT_COMPLETED.equals(action) ||
             Intent.ACTION_MY_PACKAGE_REPLACED.equals(action))
         {
+            // An update can leave the accessibility service switched off. Put
+            // it back, but only if the user granted WRITE_SECURE_SETTINGS via
+            // adb and the app is switched on (see AccessRestore).
+            AccessRestore.restore(context,
+                    Intent.ACTION_BOOT_COMPLETED.equals(action) ? "boot" : "update");
             notificationobserver.requestRebind(context);
         }
 

@@ -198,6 +198,11 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
 
     private void updateStatus()
     {
+        // After an update the service is often off: put it back silently when
+        // we are allowed to, then show the real state below.
+        if (isAccessibilityEnabled()) { Prefs.markAccessSeen(this); }
+        else { AccessRestore.restore(this, "appStart"); }
+
         boolean bat;
         try
         {
@@ -241,12 +246,12 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
         bindSwitch(R.id.sw_enabled, Prefs.ENABLED, true);
         bindSwitch(R.id.sw_aod_light, Prefs.AOD_LIGHT, true);
         bindSwitch(R.id.sw_screen_on_light, Prefs.SCREEN_ON_LIGHT, true);
-        bindSwitch(R.id.sw_preview, Prefs.PREVIEW, true);
-        bindSwitch(R.id.sw_double_tap, Prefs.DOUBLE_TAP_WAKE, true);
+        bindSwitch(R.id.sw_preview, Prefs.PREVIEW, false);
+        bindSwitch(R.id.sw_double_tap, Prefs.DOUBLE_TAP_WAKE, false);
         bindSwitch(R.id.sw_clear_unlock, Prefs.CLEAR_ON_UNLOCK, false);
         bindSwitch(R.id.sw_relight_relock, Prefs.RELIGHT_RELOCK, true);
         bindSwitch(R.id.sw_canvas_fallback, Prefs.CANVAS_FALLBACK, false);
-        bindSwitch(R.id.sw_blackout_full, Prefs.BLACKOUT_FULL, false);
+        bindSwitch(R.id.sw_blackout_full, Prefs.BLACKOUT_FULL, true);
         bindSwitch(R.id.sw_icon_plate, Prefs.ICON_PLATE, false);
         bindSwitch(R.id.sw_icon_shift, Prefs.ICON_SHIFT, true);
         bindSwitch(R.id.sw_icon_center_h, Prefs.ICON_CENTER_H, true);
@@ -260,8 +265,8 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
         bindSwitch(R.id.sw_eco, Prefs.ECO, false);
         bindSwitch(R.id.sw_interval, Prefs.INTERVAL, false);
         bindSwitch(R.id.sw_night, Prefs.NIGHT, false);
-        bindSwitch(R.id.sw_dnd, Prefs.RESPECT_DND, true);
-        bindSwitch(R.id.sw_battery_light, Prefs.BATTERY_LIGHT, true);
+        bindSwitch(R.id.sw_dnd, Prefs.RESPECT_DND, false);
+        bindSwitch(R.id.sw_battery_light, Prefs.BATTERY_LIGHT, false);
         bindSwitch(R.id.sw_ignore_persistent, Prefs.IGNORE_PERSISTENT, true);
     }
 
@@ -273,7 +278,7 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
         sa.setDropDownViewResource(R.layout.item_spinner_dropdown);
         style.setAdapter(sa);
         String[] styleVals = {Prefs.STYLE_RING, Prefs.STYLE_EDGE, Prefs.STYLE_DOT, Prefs.STYLE_ICONS};
-        style.setSelection(indexOf(styleVals, prefs.getString(Prefs.STYLE, Prefs.STYLE_RING)));
+        style.setSelection(indexOf(styleVals, prefs.getString(Prefs.STYLE, Prefs.STYLE_ICONS)));
         style.setOnItemSelectedListener(new SimpleItemSelected()
         {
             @Override
@@ -464,7 +469,7 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
     private void bindSliders()
     {
         bindSlider(R.id.sb_timeout, R.id.lbl_timeout,
-                prefs.getInt(Prefs.TIMEOUT_SEC, 60) - 10, R.string.lbl_timeout,
+                prefs.getInt(Prefs.TIMEOUT_SEC, 290) - 10, R.string.lbl_timeout,
                 p -> prefs.edit().putInt(Prefs.TIMEOUT_SEC, p + 10).apply());
         bindSlider(R.id.sb_brightness, R.id.lbl_brightness,
                 prefs.getInt(Prefs.BRIGHTNESS, 35) - 5, R.string.lbl_brightness,
@@ -473,13 +478,13 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
                 prefs.getInt(Prefs.STROKE_DP, 5) - 2, R.string.lbl_stroke,
                 p -> prefs.edit().putInt(Prefs.STROKE_DP, p + 2).apply());
         bindSlider(R.id.sb_icon_size, R.id.lbl_icon_size,
-                prefs.getInt(Prefs.ICON_SIZE_DP, 48) - 24, R.string.lbl_icon_size,
+                prefs.getInt(Prefs.ICON_SIZE_DP, 24) - 24, R.string.lbl_icon_size,
                 p -> prefs.edit().putInt(Prefs.ICON_SIZE_DP, p + 24).apply());
         bindSlider(R.id.sb_icon_offset_x, R.id.lbl_icon_offset_x,
                 prefs.getInt(Prefs.ICON_OFFSET_X_DP, 0) + 200, R.string.lbl_icon_offset_x, -200,
                 p -> prefs.edit().putInt(Prefs.ICON_OFFSET_X_DP, p - 200).apply());
         bindSlider(R.id.sb_icon_offset_y, R.id.lbl_icon_offset_y,
-                prefs.getInt(Prefs.ICON_OFFSET_Y_DP, 0), R.string.lbl_icon_offset_y,
+                prefs.getInt(Prefs.ICON_OFFSET_Y_DP, 92), R.string.lbl_icon_offset_y,
                 p -> prefs.edit().putInt(Prefs.ICON_OFFSET_Y_DP, p).apply());
         bindSlider(R.id.sb_icon_per_row, R.id.lbl_icon_per_row,
                 prefs.getInt(Prefs.ICON_PER_ROW, 0), R.string.lbl_icon_per_row,

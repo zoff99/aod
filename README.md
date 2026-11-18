@@ -32,14 +32,15 @@ The app combines three standard Android mechanisms:
 
 3. **A black always-on field, drawn by the same overlay**
    While the display is off, the overlay paints an opaque black rectangle
-   over the top two thirds of the panel, which hides the system AOD clock
-   and widgets. On OLED those pixels are effectively off, so an idle
-   screen is a static, near-zero-cost black field: no animation, no wake
+   over the whole panel, which hides the system AOD clock and widgets.
+   On OLED those pixels are effectively off, so an idle screen is a
+   static, near-zero-cost black field: no animation, no wake
    locks, and **nothing at all is drawn when there is no notification**.
    The light, the app icons and the optional notification text are painted
    into that field, so nothing ever has to wake the panel — pressing the
-   power button turns the display off and it stays off. The bottom third
-   of the panel is deliberately left untouched.
+   power button turns the display off and it stays off. Covering only the
+   top two thirds, leaving the bottom third as the phone draws it, is an
+   opt-out setting.
 
    For phones that show *nothing* when the display is off there is an
    opt-in fallback (`AodScreenActivity`, off by default): a pure-black,
@@ -127,6 +128,28 @@ shows the counters taken from group summaries.
 5. Optional one-tap setup via ADB:
    `adb shell pm grant com.zoffcc.applications.aod android.permission.WRITE_SECURE_SETTINGS`
    then use the "Auto-enable accessibility" button that appears.
+
+### Accessibility after an app update
+
+Replacing the package makes the system re-evaluate its accessibility
+bindings, and on many builds the service ends up switched off — an app is not
+allowed to grant itself accessibility. With the ADB grant above (which
+survives updates; only an uninstall clears it) the app puts the service back
+by itself: after an update (`MY_PACKAGE_REPLACED`), on boot, and when the
+settings screen is opened. It appends its own component to
+`enabled_accessibility_services`, so other accessibility services are left
+alone, and it only ever acts when
+
+- `WRITE_SECURE_SETTINGS` was granted, **and**
+- the in-app master switch is on, **and**
+- the service has been enabled on this device before (a first install still
+  asks the user).
+
+`adb logcat -s AODDBG` shows `restore: accessibility re-enabled after update`.
+
+On Android 13+ a sideloaded app may also have its accessibility toggle blocked
+by *restricted settings*: allow it once under *App info → ⋮ → Allow restricted
+settings*, or sideload with `adb install -r -i com.android.vending …`.
 
 Test without a second device:
 
