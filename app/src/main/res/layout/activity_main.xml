@@ -234,6 +234,125 @@
                 android:layout_marginTop="14dp" android:layout_marginBottom="6dp"
                 android:background="@color/hc_border" />
 
+            <TextView style="@style/SectionLabel" android:text="@string/sec_icon_pos" />
+            <TextView style="@style/SettingSummary" android:text="@string/sec_icon_pos_sum" />
+
+            <androidx.appcompat.widget.SwitchCompat android:id="@+id/sw_icon_center_h" style="@style/SettingSwitch"
+                app:thumbTint="@color/switch_thumb" app:trackTint="@color/switch_track"
+                android:text="@string/set_icon_center_h" />
+            <TextView style="@style/SettingSummary" android:text="@string/set_icon_center_h_sum" />
+
+            <TextView android:id="@+id/lbl_icon_offset_x" style="@style/SliderLabel"
+                android:labelFor="@+id/sb_icon_offset_x" />
+            <SeekBar android:id="@+id/sb_icon_offset_x" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:minHeight="48dp"
+                android:max="400"
+                android:progressTint="@color/hc_accent" android:thumbTint="@color/hc_accent"
+                android:secondaryProgressTint="@color/hc_border" />
+            <TextView style="@style/SettingSummary" android:text="@string/set_icon_offset_x_sum" />
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:gravity="center_vertical"
+                android:minHeight="48dp">
+                <TextView style="@style/InlineLabel" android:text="@string/set_icon_y_anchor"
+                    android:labelFor="@+id/sp_icon_y_anchor" />
+                <Spinner android:id="@+id/sp_icon_y_anchor" android:layout_width="0dp"
+                    android:layout_height="wrap_content" android:layout_weight="1"
+                    android:backgroundTint="@color/hc_accent" />
+            </LinearLayout>
+            <TextView style="@style/SettingSummary" android:text="@string/set_icon_y_anchor_sum" />
+
+            <TextView android:id="@+id/lbl_icon_offset_y" style="@style/SliderLabel"
+                android:labelFor="@+id/sb_icon_offset_y" />
+            <SeekBar android:id="@+id/sb_icon_offset_y" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:minHeight="48dp"
+                android:max="600"
+                android:progressTint="@color/hc_accent" android:thumbTint="@color/hc_accent"
+                android:secondaryProgressTint="@color/hc_border" />
+            <TextView style="@style/SettingSummary" android:text="@string/set_icon_offset_y_sum" />
+
+            <TextView android:id="@+id/lbl_icon_per_row" style="@style/SliderLabel"
+                android:labelFor="@+id/sb_icon_per_row" />
+            <SeekBar android:id="@+id/sb_icon_per_row" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:minHeight="48dp"
+                android:max="8"
+                android:progressTint="@color/hc_accent" android:thumbTint="@color/hc_accent"
+                android:secondaryProgressTint="@color/hc_border" />
+            <TextView style="@style/SettingSummary" android:text="@string/set_icon_per_row_sum" />
+
+            <TextView android:id="@+id/lbl_icon_gap" style="@style/SliderLabel"
+                android:labelFor="@+id/sb_icon_gap" />
+            <SeekBar android:id="@+id/sb_icon_gap" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:minHeight="48dp"
+                android:max="64"
+                android:progressTint="@color/hc_accent" android:thumbTint="@color/hc_accent"
+                android:secondaryProgressTint="@color/hc_border" />
+
+            <TextView android:id="@+id/lbl_icon_row_gap" style="@style/SliderLabel"
+                android:labelFor="@+id/sb_icon_row_gap" />
+            <SeekBar android:id="@+id/sb_icon_row_gap" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:minHeight="48dp"
+                android:max="96"
+                android:progressTint="@color/hc_accent" android:thumbTint="@color/hc_accent"
+                android:secondaryProgressTint="@color/hc_border" />
+            <TextView style="@style/SettingSummary" android:text="@string/set_icon_gaps_sum" />
+
+            <TextView android:id="@+id/lbl_icon_max" style="@style/SliderLabel"
+                android:labelFor="@+id/sb_icon_max" />
+            <SeekBar android:id="@+id/sb_icon_max" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:minHeight="48dp"
+                android:max="23"
+                android:progressTint="@color/hc_accent" android:thumbTint="@color/hc_accent"
+                android:secondaryProgressTint="@color/hc_border" />
+            <TextView style="@style/SettingSummary" android:text="@string/set_icon_max_sum" />
+
+            <androidx.appcompat.widget.SwitchCompat android:id="@+id/sw_icon_last_row" style="@style/SettingSwitch"
+                app:thumbTint="@color/switch_thumb" app:trackTint="@color/switch_track"
+                android:text="@string/set_icon_last_row" />
+            <TextView style="@style/SettingSummary" android:text="@string/set_icon_last_row_sum" />
+
+            <androidx.appcompat.widget.SwitchCompat android:id="@+id/sw_icon_clip" style="@style/SettingSwitch"
+                app:thumbTint="@color/switch_thumb" app:trackTint="@color/switch_track"
+                android:text="@string/set_icon_clip" />
+            <TextView style="@style/SettingSummary" android:text="@string/set_icon_clip_sum" />
+
+            <Button android:id="@+id/btn_icon_reset" style="@style/BtnSecondary"
+                android:layout_marginTop="6dp" android:text="@string/btn_icon_reset" />
+
+            <View android:layout_width="match_parent" android:layout_height="2dp"
+                android:layout_marginTop="14dp" android:layout_marginBottom="6dp"
+                android:background="@color/hc_border" />
+
+            <TextView style="@style/SectionLabel" android:text="@string/sec_icon_count" />
+            <TextView style="@style/SettingSummary" android:text="@string/sec_icon_count_sum" />
+
+            <androidx.appcompat.widget.SwitchCompat android:id="@+id/sw_icon_count" style="@style/SettingSwitch"
+                app:thumbTint="@color/switch_thumb" app:trackTint="@color/switch_track"
+                android:text="@string/set_icon_count" />
+            <TextView style="@style/SettingSummary" android:text="@string/set_icon_count_sum" />
+
+            <androidx.appcompat.widget.SwitchCompat android:id="@+id/sw_icon_count_always" style="@style/SettingSwitch"
+                app:thumbTint="@color/switch_thumb" app:trackTint="@color/switch_track"
+                android:text="@string/set_icon_count_always" />
+            <TextView style="@style/SettingSummary" android:text="@string/set_icon_count_always_sum" />
+
+            <TextView android:id="@+id/lbl_icon_count_size" style="@style/SliderLabel"
+                android:labelFor="@+id/sb_icon_count_size" />
+            <SeekBar android:id="@+id/sb_icon_count_size" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:minHeight="48dp"
+                android:max="18"
+                android:progressTint="@color/hc_accent" android:thumbTint="@color/hc_accent"
+                android:secondaryProgressTint="@color/hc_border" />
+
+            <androidx.appcompat.widget.SwitchCompat android:id="@+id/sw_icon_count_badge" style="@style/SettingSwitch"
+                app:thumbTint="@color/switch_thumb" app:trackTint="@color/switch_track"
+                android:text="@string/set_icon_count_badge" />
+            <TextView style="@style/SettingSummary" android:text="@string/set_icon_count_badge_sum" />
+
+            <View android:layout_width="match_parent" android:layout_height="2dp"
+                android:layout_marginTop="14dp" android:layout_marginBottom="6dp"
+                android:background="@color/hc_border" />
+
             <TextView style="@style/SectionLabel" android:text="@string/sec_behavior" />
 
             <androidx.appcompat.widget.SwitchCompat android:id="@+id/sw_night" style="@style/SettingSwitch"

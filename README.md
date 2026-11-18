@@ -63,6 +63,15 @@ icons because they cover many more pixels than a thin ring.
   the camera; original colors, white or black; size 24–96 dp; optional
   background plate; slow drift against burn-in. Completely still — no
   pulsing, flashing or blinking, and no per-frame redraws
+- Icon position: center the rows or start them at the left edge, horizontal
+  offset ±200 dp, vertical start below the camera / from the top / from the
+  bottom with a 0–600 dp offset, icons per row (0 = fill the width, or 1–8),
+  gap between icons and between rows, at most 1–24 icons, center or align a
+  shorter last row, optional clipping to the blacked-out area, and a
+  "reset position" button. Offsets are limited so the block stays on the panel
+- Notification counts: optional number under each icon (from two upwards, or
+  always), text size 10–28 dp, optional rounded badge; the row height reserves
+  room for it so rows never overlap the number
 - Animations (light styles): pulse, rotate, flash, steady; adjustable speed
 - ECO mode (reduced frame rate) and interval mode (on/off cycling)
 - Per-app colors (long-press an app icon in the strip), auto color from

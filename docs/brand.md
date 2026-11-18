@@ -117,15 +117,14 @@ bitmaps at 48/72/96/144/192 px.
 fastlane/metadata/android/en-US/
 ├── title.txt                 23 / 30 chars
 ├── short_description.txt     75 / 80 chars
-├── full_description.txt    3398 / 4000 chars
-├── changelogs/10100.txt     393 / 500 chars   (named after versionCode)
+├── full_description.txt    3769 / 4000 chars
 └── images/
     ├── icon.png             512 × 512, 32-bit PNG, full square
     └── featureGraphic.png  1024 × 500, 24-bit PNG, no alpha
 ```
 
-Play limits: title 30, short description 80, full description 4000, changelog
-500 characters. Icon: 512 × 512, 32-bit PNG, sRGB, ≤ 1024 KB, **full square** —
+Play limits: title 30, short description 80, full description 4000 characters.
+Release notes are written in the Play Console, not kept here. Icon: 512 × 512, 32-bit PNG, sRGB, ≤ 1024 KB, **full square** —
 Play rounds it at 30 % of the icon size and adds the shadow. Feature graphic:
 1024 × 500, JPEG or 24-bit PNG.
 
@@ -149,5 +148,5 @@ adb exec-out screencap -p > fastlane/metadata/android/en-US/images/phoneScreensh
 Good subjects: the settings screen (high contrast), the app picker with search,
 the icon style on a black screen, the camera ring, the edge glow.
 
-To add another language, copy `en-US` to e.g. `de-DE`, translate the four text
-files and the changelog; the images can stay as they are (no text in the icon).
+To add another language, copy `en-US` to e.g. `de-DE`, translate the three text
+files; the images can stay as they are (no text in the icon).

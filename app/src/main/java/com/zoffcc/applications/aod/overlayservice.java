@@ -859,7 +859,7 @@ public class overlayservice extends AccessibilityService
         {
             view.stop();
             view.setPreview(null, null, null);
-            view.setIcons(null, 0, false, false, false);
+            view.clearIcons();
         }
         syncOverlay();
         release(partialLock);
@@ -932,14 +932,14 @@ public class overlayservice extends AccessibilityService
             {
                 view.stop();
                 view.setPreview(null, null, null);
-                view.setIcons(null, 0, false, false, false);
+                view.clearIcons();
             }
         }
         else if (!lightActive)
         {
             view.stop();
             view.setPreview(null, null, null);
-            view.setIcons(null, 0, false, false, false);
+            view.clearIcons();
             view.setVisibility(android.view.View.GONE);
         }
         else
@@ -970,35 +970,52 @@ public class overlayservice extends AccessibilityService
         if (view == null) { return; }
         if (!Prefs.STYLE_ICONS.equals(Prefs.style(this)) || (!testMode && items.isEmpty()))
         {
-            view.setIcons(null, 0, false, false, false);
+            view.clearIcons();
             return;
         }
-        java.util.LinkedHashSet<String> pkgs = new java.util.LinkedHashSet<>();
+        IconLayout cfg = IconLayout.from(this);
+        cfg.overUi = testMode;
+
+        // One entry per app, newest app first, with the number of notifications
+        // that app currently has. LinkedHashMap keeps the arrival order.
+        java.util.LinkedHashMap<String, Integer> perApp = new java.util.LinkedHashMap<>();
         if (testMode)
         {
-            pkgs.add(getPackageName()); // "Test light" previews our own icon
+            // "Test light" previews our own icon with a demo count of 2, so the
+            // number under the icon can be checked without a second device.
+            perApp.put(getPackageName(), 2);
         }
         else
         {
             for (NotificationItem n : items)
             {
-                if (!n.batteryEvent && n.pkg != null && !n.pkg.isEmpty()) { pkgs.add(n.pkg); }
+                if (n.batteryEvent || n.pkg == null || n.pkg.isEmpty()) { continue; }
+                Integer have = perApp.get(n.pkg);
+                perApp.put(n.pkg, have == null ? 1 : have + 1);
             }
         }
+
         String tint = Prefs.iconTint(this);
-        int iconPx = Math.round(Prefs.iconSizeDp(this) * getResources().getDisplayMetrics().density);
         ArrayList<android.graphics.Bitmap> list = new ArrayList<>();
-        for (String pkg : pkgs)
+        ArrayList<Integer> counts = new ArrayList<>();
+        for (java.util.Map.Entry<String, Integer> e : perApp.entrySet())
         {
-            android.graphics.Bitmap b = AppIconCache.get(this, pkg, tint, iconPx);
-            if (b != null) { list.add(b); }
-            if (list.size() >= 12) { break; }
+            android.graphics.Bitmap b = AppIconCache.get(this, e.getKey(), tint, cfg.sizePx);
+            if (b != null)
+            {
+                list.add(b);
+                counts.add(e.getValue());
+            }
+            if (list.size() >= cfg.maxIcons) { break; }
         }
-        boolean black = Prefs.ICON_TINT_BLACK.equals(tint);
-        view.setIcons(list, iconPx, Prefs.iconPlate(this), black, testMode);
-        Dbg.log("overlay", "icons: apps=" + pkgs.size() + " drawn=" + list.size()
-                + " tint=" + tint + " px=" + iconPx + " plate=" + Prefs.iconPlate(this)
-                + " shift=" + Prefs.iconShift(this));
+        int[] nums = new int[counts.size()];
+        for (int i = 0; i < nums.length; i++) { nums[i] = counts.get(i); }
+
+        view.setIcons(list, nums, cfg);
+        Dbg.log("overlay", "icons: apps=" + perApp.size() + " drawn=" + list.size()
+                + " tint=" + tint + " px=" + cfg.sizePx + " plate=" + cfg.plate
+                + " shift=" + Prefs.iconShift(this) + " counts=" + counts
+                + " layout[" + cfg + "]");
     }
 
     /**
@@ -1154,8 +1171,9 @@ public class overlayservice extends AccessibilityService
             refreshGeometry();
             syncOverlay();
         }
-        if (Prefs.STYLE.equals(key) || Prefs.ICON_TINT.equals(key) || Prefs.ICON_SIZE_DP.equals(key)
-                || Prefs.ICON_PLATE.equals(key) || Prefs.ICON_SHIFT.equals(key))
+        // every icon setting (appearance, position, spacing, counts) is an
+        // "icon_*" key, so one branch covers them all
+        if (Prefs.STYLE.equals(key) || (key != null && key.startsWith("icon_")))
         {
             applyAppearance();
             refreshGeometry();

@@ -18,6 +18,8 @@ COLORS AND BEHAVIOR
 • Adjustable light duration, night quiet hours, Do-Not-Disturb is respected
 • Charging, battery-full and low-battery light
 • App filter: all apps, or only the ones you pick in a searchable list with icons
+• Place the icon block wherever you want it: centered or left-aligned, horizontal offset, vertical start below the camera or measured from the top or bottom edge, icons per row, spacing between icons and rows, and a limit on how many are shown
+• Optional number under each icon showing how many notifications that app has, with adjustable text size and an optional badge
 • Hide on unlock and light up again when the phone re-locks
 • Optional notification preview text, drawn by the overlay
 • Burn-in protection: the light and the icons slowly change position while shown

@@ -61,6 +61,24 @@ public final class Prefs
     public static final String ICON_PLATE = "icon_plate";           // rounded plate behind each icon
     public static final String ICON_SHIFT = "icon_shift";           // slow drift against burn-in
 
+    // ---- app icon position / layout ---------------------------------------
+    public static final String ICON_CENTER_H = "icon_center_h";     // center the rows horizontally
+    public static final String ICON_LAST_ROW_CENTER = "icon_last_row_center"; // center a shorter last row
+    public static final String ICON_OFFSET_X_DP = "icon_offset_x_dp";  // -200..200 dp
+    public static final String ICON_Y_ANCHOR = "icon_y_anchor";     // camera | top | bottom
+    public static final String ICON_OFFSET_Y_DP = "icon_offset_y_dp";  // 0..600 dp from that anchor
+    public static final String ICON_PER_ROW = "icon_per_row";       // 0 = as many as fit, 1..8
+    public static final String ICON_GAP_DP = "icon_gap_dp";         // 0..64 dp between icons
+    public static final String ICON_ROW_GAP_DP = "icon_row_gap_dp"; // 0..96 dp between rows
+    public static final String ICON_MAX = "icon_max";               // 1..24 icons at most
+    public static final String ICON_CLIP = "icon_clip";             // stay inside the black field
+
+    // ---- per-app notification count under the icon ------------------------
+    public static final String ICON_COUNT = "icon_count";           // draw the number below the icon
+    public static final String ICON_COUNT_ALWAYS = "icon_count_always"; // also draw a "1"
+    public static final String ICON_COUNT_SIZE_DP = "icon_count_size_dp"; // 10..28 dp text
+    public static final String ICON_COUNT_BADGE = "icon_count_badge";     // rounded badge behind it
+
     // ---- cutout calibration ----------------------------------------------
     public static final String CUTOUT_LEFT = "cutout_left";
     public static final String CUTOUT_TOP = "cutout_top";
@@ -85,6 +103,9 @@ public final class Prefs
     public static final String ICON_TINT_COLOR = "color";
     public static final String ICON_TINT_WHITE = "white";
     public static final String ICON_TINT_BLACK = "black";
+    public static final String ICON_Y_CAMERA = "camera";
+    public static final String ICON_Y_TOP = "top";
+    public static final String ICON_Y_BOTTOM = "bottom";
 
     public static SharedPreferences get(Context c)
     {
@@ -117,6 +138,34 @@ public final class Prefs
     public static int iconSizeDp(Context c) { return get(c).getInt(ICON_SIZE_DP, 48); }
     public static boolean iconPlate(Context c) { return get(c).getBoolean(ICON_PLATE, false); }
     public static boolean iconShift(Context c) { return get(c).getBoolean(ICON_SHIFT, true); }
+
+    public static boolean iconCenterH(Context c) { return get(c).getBoolean(ICON_CENTER_H, true); }
+    public static boolean iconLastRowCenter(Context c) { return get(c).getBoolean(ICON_LAST_ROW_CENTER, true); }
+    public static int iconOffsetXDp(Context c) { return get(c).getInt(ICON_OFFSET_X_DP, 0); }
+    public static String iconYAnchor(Context c) { return get(c).getString(ICON_Y_ANCHOR, ICON_Y_CAMERA); }
+    public static int iconOffsetYDp(Context c) { return get(c).getInt(ICON_OFFSET_Y_DP, 0); }
+    public static int iconPerRow(Context c) { return get(c).getInt(ICON_PER_ROW, 0); }
+    public static int iconGapDp(Context c) { return get(c).getInt(ICON_GAP_DP, 12); }
+    public static int iconRowGapDp(Context c) { return get(c).getInt(ICON_ROW_GAP_DP, 12); }
+    public static int iconMax(Context c) { return get(c).getInt(ICON_MAX, 12); }
+    public static boolean iconClip(Context c) { return get(c).getBoolean(ICON_CLIP, true); }
+
+    public static boolean iconCount(Context c) { return get(c).getBoolean(ICON_COUNT, true); }
+    public static boolean iconCountAlways(Context c) { return get(c).getBoolean(ICON_COUNT_ALWAYS, false); }
+    public static int iconCountSizeDp(Context c) { return get(c).getInt(ICON_COUNT_SIZE_DP, 13); }
+    public static boolean iconCountBadge(Context c) { return get(c).getBoolean(ICON_COUNT_BADGE, false); }
+
+    /** Position and spacing only: colors, size, plate and the count settings
+     *  are deliberately left alone by "reset position". */
+    public static void resetIconLayout(Context c)
+    {
+        get(c).edit()
+                .remove(ICON_CENTER_H).remove(ICON_LAST_ROW_CENTER)
+                .remove(ICON_OFFSET_X_DP).remove(ICON_Y_ANCHOR).remove(ICON_OFFSET_Y_DP)
+                .remove(ICON_PER_ROW).remove(ICON_GAP_DP).remove(ICON_ROW_GAP_DP)
+                .remove(ICON_MAX).remove(ICON_CLIP)
+                .apply();
+    }
 
     public static int timeoutSec(Context c) { return get(c).getInt(TIMEOUT_SEC, 60); }
     public static boolean interval(Context c) { return get(c).getBoolean(INTERVAL, false); }

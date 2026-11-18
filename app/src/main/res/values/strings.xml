@@ -52,6 +52,40 @@
     <string name="set_icon_shift">Move icons slowly (burn-in protection)</string>
     <string name="set_icon_shift_sum">A still image can burn into an OLED panel. With this on, the whole icon block drifts a few pixels about once a minute, so no pixel stays lit in the same place. Turn it off only if you want the icons pinned to one spot.</string>
 
+    <string name="sec_icon_pos">Icon position and layout</string>
+    <string name="sec_icon_pos_sum">Where the icons sit on the dark screen. The icons are laid out in rows; these settings decide where the block of rows starts, how far apart the icons are and how many go into one row. Everything applies to the always-on screen only, and the icons never leave the panel: an offset that would push them off the edge is limited to the edge.</string>
+    <string name="set_icon_center_h">Center icons horizontally</string>
+    <string name="set_icon_center_h_sum">On: every row is centered on the screen, which is the calmest look. Off: the rows start at the left edge, and the horizontal offset below decides how far from that edge.</string>
+    <string name="lbl_icon_offset_x">Horizontal offset: %1$d dp</string>
+    <string name="set_icon_offset_x_sum">Moves the whole block left (negative) or right (positive). With centering on, 0 means exactly in the middle; with centering off, 0 means at the left edge.</string>
+    <string name="set_icon_y_anchor">Vertical start</string>
+    <string name="set_icon_y_anchor_sum">What the vertical offset is measured from. \u201cBelow the camera\u201d keeps the icons clear of the camera and the status bar. \u201cTop of the screen\u201d measures from the very top, so 0 puts the icons at the top edge. \u201cBottom of the screen\u201d measures upwards from the bottom edge to the bottom of the last row.</string>
+    <string name="lbl_icon_offset_y">Vertical offset: %1$d dp</string>
+    <string name="set_icon_offset_y_sum">Distance from the anchor chosen above. Larger values move the icons down, except with the bottom anchor, where they move the icons up.</string>
+    <string name="lbl_icon_per_row">Icons per row: %1$d (0 = fill the width)</string>
+    <string name="set_icon_per_row_sum">0 fits as many icons into one row as the screen width allows. A fixed number gives a predictable shape: 1 is a vertical list, 2 or 3 is a narrow block. More icons wrap into the next row.</string>
+    <string name="lbl_icon_gap">Space between icons: %1$d dp</string>
+    <string name="lbl_icon_row_gap">Space between rows: %1$d dp</string>
+    <string name="set_icon_gaps_sum">Empty space between neighbours. Bigger gaps are easier to tell apart at a glance; 0 packs the icons tightly next to each other.</string>
+    <string name="lbl_icon_max">Show at most %1$d icons</string>
+    <string name="set_icon_max_sum">One icon per app, newest app first. Apps beyond this limit are not drawn, which keeps a busy notification list from filling the whole screen.</string>
+    <string name="set_icon_last_row">Center the last, shorter row</string>
+    <string name="set_icon_last_row_sum">When the last row has fewer icons than the others: on centers that row on its own, off lines it up with the column above it. Only has an effect while horizontal centering is on.</string>
+    <string name="set_icon_clip">Keep icons inside the black area</string>
+    <string name="set_icon_clip_sum">On: rows that would reach past the blacked-out part of the screen are dropped, so nothing is drawn over the area that is deliberately left untouched. Off: the icons may use the whole panel, including the lower part \u2014 useful if you moved them down on purpose.</string>
+    <string name="btn_icon_reset">Reset position</string>
+    <string name="icon_pos_reset">Icon position back to the defaults</string>
+
+    <string name="sec_icon_count">Notification count under the icon</string>
+    <string name="sec_icon_count_sum">Shows how many notifications are waiting in each app as a number below its icon. The number is part of the same still image: it does not blink and it moves with the icons.</string>
+    <string name="set_icon_count">Show the number of notifications</string>
+    <string name="set_icon_count_sum">Prints the count under each app icon. A single notification shows no number unless the switch below is on, so a quiet screen stays quiet. Counts above 99 are shown as \u201c99+\u201d. Room for the number is reserved, so rows never overlap it.</string>
+    <string name="set_icon_count_always">Also show a count of 1</string>
+    <string name="set_icon_count_always_sum">On: every icon gets a number, even when the app has only one notification. Off: the number appears from two notifications upwards.</string>
+    <string name="lbl_icon_count_size">Count text size: %1$d dp</string>
+    <string name="set_icon_count_badge">Rounded badge behind the number</string>
+    <string name="set_icon_count_badge_sum">Draws the number on a small dark rounded badge instead of straight onto the black screen. Slightly easier to read next to bright icons; it also makes the block a little taller.</string>
+
     <string name="sec_behavior">Behavior</string>
     <string name="set_night">Night quiet hours</string>
     <string name="set_night_start">From</string>
@@ -95,6 +129,11 @@
         <item>Original colors</item>
         <item>White</item>
         <item>Black</item>
+    </string-array>
+    <string-array name="icon_y_anchor_entries">
+        <item>Below the camera</item>
+        <item>Top of the screen</item>
+        <item>Bottom of the screen</item>
     </string-array>
     <string-array name="anim_entries">
         <item>Pulse</item>

@@ -249,6 +249,12 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
         bindSwitch(R.id.sw_blackout_full, Prefs.BLACKOUT_FULL, false);
         bindSwitch(R.id.sw_icon_plate, Prefs.ICON_PLATE, false);
         bindSwitch(R.id.sw_icon_shift, Prefs.ICON_SHIFT, true);
+        bindSwitch(R.id.sw_icon_center_h, Prefs.ICON_CENTER_H, true);
+        bindSwitch(R.id.sw_icon_last_row, Prefs.ICON_LAST_ROW_CENTER, true);
+        bindSwitch(R.id.sw_icon_clip, Prefs.ICON_CLIP, true);
+        bindSwitch(R.id.sw_icon_count, Prefs.ICON_COUNT, true);
+        bindSwitch(R.id.sw_icon_count_always, Prefs.ICON_COUNT_ALWAYS, false);
+        bindSwitch(R.id.sw_icon_count_badge, Prefs.ICON_COUNT_BADGE, false);
         bindSwitch(R.id.sw_auto_color, Prefs.AUTO_COLOR, true);
         bindSwitch(R.id.sw_eco, Prefs.ECO, false);
         bindSwitch(R.id.sw_interval, Prefs.INTERVAL, false);
@@ -323,6 +329,22 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
                 prefs.edit().putString(Prefs.ICON_TINT, tintVals[position]).apply();
             }
         });
+
+        Spinner anchor = findViewById(R.id.sp_icon_y_anchor);
+        ArrayAdapter<CharSequence> ya = ArrayAdapter.createFromResource(this,
+                R.array.icon_y_anchor_entries, R.layout.item_spinner);
+        ya.setDropDownViewResource(R.layout.item_spinner_dropdown);
+        anchor.setAdapter(ya);
+        String[] anchorVals = {Prefs.ICON_Y_CAMERA, Prefs.ICON_Y_TOP, Prefs.ICON_Y_BOTTOM};
+        anchor.setSelection(indexOf(anchorVals, prefs.getString(Prefs.ICON_Y_ANCHOR, Prefs.ICON_Y_CAMERA)));
+        anchor.setOnItemSelectedListener(new SimpleItemSelected()
+        {
+            @Override
+            public void onItemSelected(int position)
+            {
+                prefs.edit().putString(Prefs.ICON_Y_ANCHOR, anchorVals[position]).apply();
+            }
+        });
     }
 
     private static int indexOf(String[] arr, String v)
@@ -390,16 +412,27 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
 
     private void bindSlider(int id, int labelId, int initial, int formatRes, SliderWriter writer)
     {
+        bindSlider(id, labelId, initial, formatRes, 0, writer);
+    }
+
+    /**
+     * @param displayOffset added to the raw seek bar progress for the label,
+     *                      so a slider that stores -200..200 also shows
+     *                      -200..200 instead of 0..400
+     */
+    private void bindSlider(int id, int labelId, int initial, int formatRes,
+                            int displayOffset, SliderWriter writer)
+    {
         SeekBar sb = findViewById(id);
         TextView lbl = findViewById(labelId);
         sb.setProgress(initial);
-        lbl.setText(getString(formatRes, initial));
+        lbl.setText(getString(formatRes, initial + displayOffset));
         sb.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener()
         {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser)
             {
-                lbl.setText(getString(formatRes, progress));
+                lbl.setText(getString(formatRes, progress + displayOffset));
                 if (fromUser) { writer.write(progress); }
             }
 
@@ -425,6 +458,27 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
         bindSlider(R.id.sb_icon_size, R.id.lbl_icon_size,
                 prefs.getInt(Prefs.ICON_SIZE_DP, 48) - 24, R.string.lbl_icon_size,
                 p -> prefs.edit().putInt(Prefs.ICON_SIZE_DP, p + 24).apply());
+        bindSlider(R.id.sb_icon_offset_x, R.id.lbl_icon_offset_x,
+                prefs.getInt(Prefs.ICON_OFFSET_X_DP, 0) + 200, R.string.lbl_icon_offset_x, -200,
+                p -> prefs.edit().putInt(Prefs.ICON_OFFSET_X_DP, p - 200).apply());
+        bindSlider(R.id.sb_icon_offset_y, R.id.lbl_icon_offset_y,
+                prefs.getInt(Prefs.ICON_OFFSET_Y_DP, 0), R.string.lbl_icon_offset_y,
+                p -> prefs.edit().putInt(Prefs.ICON_OFFSET_Y_DP, p).apply());
+        bindSlider(R.id.sb_icon_per_row, R.id.lbl_icon_per_row,
+                prefs.getInt(Prefs.ICON_PER_ROW, 0), R.string.lbl_icon_per_row,
+                p -> prefs.edit().putInt(Prefs.ICON_PER_ROW, p).apply());
+        bindSlider(R.id.sb_icon_gap, R.id.lbl_icon_gap,
+                prefs.getInt(Prefs.ICON_GAP_DP, 12), R.string.lbl_icon_gap,
+                p -> prefs.edit().putInt(Prefs.ICON_GAP_DP, p).apply());
+        bindSlider(R.id.sb_icon_row_gap, R.id.lbl_icon_row_gap,
+                prefs.getInt(Prefs.ICON_ROW_GAP_DP, 12), R.string.lbl_icon_row_gap,
+                p -> prefs.edit().putInt(Prefs.ICON_ROW_GAP_DP, p).apply());
+        bindSlider(R.id.sb_icon_max, R.id.lbl_icon_max,
+                prefs.getInt(Prefs.ICON_MAX, 12) - 1, R.string.lbl_icon_max, 1,
+                p -> prefs.edit().putInt(Prefs.ICON_MAX, p + 1).apply());
+        bindSlider(R.id.sb_icon_count_size, R.id.lbl_icon_count_size,
+                prefs.getInt(Prefs.ICON_COUNT_SIZE_DP, 13) - 10, R.string.lbl_icon_count_size, 10,
+                p -> prefs.edit().putInt(Prefs.ICON_COUNT_SIZE_DP, p + 10).apply());
         bindSlider(R.id.sb_speed, R.id.lbl_speed,
                 (prefs.getInt(Prefs.SPEED_MS, 1600) - 300) / 100, R.string.lbl_speed,
                 p -> prefs.edit().putInt(Prefs.SPEED_MS, 300 + p * 100).apply());
@@ -497,6 +551,12 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
             sendBroadcast(i);
         });
         findViewById(R.id.btn_hide).setOnClickListener(v -> sendLocal(notificationobserver.ACTION_HIDE));
+        findViewById(R.id.btn_icon_reset).setOnClickListener(v -> {
+            Prefs.resetIconLayout(this);
+            Dbg.log("ui", "icon position reset to defaults");
+            Toast.makeText(this, R.string.icon_pos_reset, Toast.LENGTH_SHORT).show();
+            recreate(); // refresh every slider, switch and spinner from the store
+        });
         findViewById(R.id.btn_select_apps).setOnClickListener(v ->
                 startActivity(new Intent(this, AppPickerActivity.class)));
         Button logBtn = findViewById(R.id.btn_toggle_log);

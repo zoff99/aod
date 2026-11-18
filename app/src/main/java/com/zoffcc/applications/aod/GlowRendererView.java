@@ -85,19 +85,25 @@ public class GlowRendererView extends View
     // App icons: ready-made bitmaps, laid out once, blitted without any
     // animation. This is the "no LED, no blinking" style.
     private List<Bitmap> icons = null;
+    private int[] iconCounts = null;
+    private IconLayout iconCfg = new IconLayout();
     private int iconPx = 96;
     private int iconCols = 1;
     private int iconRows = 1;
     private int iconCount = 0;
     private float iconGap = 16f;
+    private float iconRowGap = 16f;
+    private float iconBadgeH = 0f;
     private float iconTop = 0f;
     private float iconsBottom = 0f;
-    private boolean iconPlate = false;
-    private boolean iconLightPlate = false;
-    private boolean iconsOverUi = false;
     private final Paint iconPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
     private final Paint platePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint countPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint badgePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private float countAscent = 0f;
+    private float countDescent = 0f;
     private final RectF iconRect = new RectF();
+    private final RectF badgeRect = new RectF();
 
     public GlowRendererView(Context context)
     {
@@ -110,6 +116,12 @@ public class GlowRendererView extends View
         blackPaint.setColor(Color.BLACK);
         textPaint.setColor(0xFFEEEEEE);
         textPaint.setTextSize(15f * getResources().getDisplayMetrics().scaledDensity);
+        countPaint.setColor(0xFFF2F2F2);
+        countPaint.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        countPaint.setTextSize(13f * getResources().getDisplayMetrics().scaledDensity);
+        Paint.FontMetrics fm = countPaint.getFontMetrics();
+        countAscent = -fm.ascent;
+        countDescent = fm.descent;
     }
 
     // ---- configuration ----------------------------------------------------
@@ -250,30 +262,44 @@ public class GlowRendererView extends View
     }
 
     /**
-     * Icons of the apps that currently have a notification, newest first.
-     * Pass null to clear them. The bitmaps are already tinted by the owner;
-     * this view only decides where they go.
+     * Icons of the apps that currently have a notification, newest first,
+     * together with how many notifications each of those apps has. Pass null
+     * to clear them. The bitmaps are already tinted by the owner; this view
+     * only decides where they go, following {@link IconLayout}.
      *
-     * @param sizePx     edge length of one icon in pixels
-     * @param plate      draw a rounded plate behind each icon
-     * @param lightPlate use a light plate (needed for black icons)
-     * @param overUi     also draw them while the screen is awake (test only)
+     * @param list   one bitmap per app, newest app first
+     * @param counts notification count per app, same order as {@code list}
+     * @param cfg    size, position, spacing and count settings
      */
-    public void setIcons(List<Bitmap> list, int sizePx, boolean plate, boolean lightPlate, boolean overUi)
+    public void setIcons(List<Bitmap> list, int[] counts, IconLayout cfg)
     {
         this.icons = (list == null || list.isEmpty()) ? null : new ArrayList<>(list);
-        this.iconPx = Math.max(24, sizePx);
-        this.iconPlate = plate;
-        this.iconLightPlate = lightPlate;
-        this.iconsOverUi = overUi;
+        this.iconCounts = counts;
+        this.iconCfg = cfg == null ? new IconLayout() : cfg;
+        this.iconPx = Math.max(24, iconCfg.sizePx);
+        countPaint.setTextSize(Math.max(8f, iconCfg.countTextPx));
+        Paint.FontMetrics fm = countPaint.getFontMetrics();
+        countAscent = -fm.ascent;
+        countDescent = fm.descent;
         layoutIcons();
         invalidate();
     }
 
+    /** Nothing to show: an idle screen must stay completely black. */
+    public void clearIcons()
+    {
+        icons = null;
+        iconCounts = null;
+        iconCount = 0;
+        iconsBottom = 0f;
+        invalidate();
+    }
+
     /**
-     * Centered rows below the camera, always inside the blacked-out area.
-     * Rows that would not fit are dropped rather than drawn over the part of
-     * the screen that must stay untouched.
+     * Rows of icons, placed by the configured horizontal rule and vertical
+     * anchor. Rows that would not fit are dropped rather than drawn over the
+     * part of the screen that must stay untouched (unless the user turned
+     * that guard off).
      */
     private void layoutIcons()
     {
@@ -281,33 +307,71 @@ public class GlowRendererView extends View
         iconCount = 0;
         if (icons == null) { return; }
         float density = getResources().getDisplayMetrics().density;
-        iconGap = Math.max(10f * density, iconPx * 0.30f);
         float margin = 16f * density;
+
+        iconGap = Math.max(0f, iconCfg.gapPx);
+        iconRowGap = Math.max(0f, iconCfg.rowGapPx);
+        // room for the number under the icon, so rows never overlap it
+        iconBadgeH = iconCfg.count
+                ? (countAscent + countDescent + 6f * density + (iconCfg.countBadge ? 6f * density : 0f))
+                : 0f;
+        float cellH = iconPx + iconBadgeH;
+
         float avail = screenW - 2f * margin;
-        int cols = Math.max(1, (int) ((avail + iconGap) / (iconPx + iconGap)));
-        cols = Math.min(cols, icons.size());
+        int cols = iconCfg.perRow > 0
+                ? iconCfg.perRow
+                : (int) ((avail + iconGap) / (iconPx + iconGap));
+        cols = Math.max(1, Math.min(cols, icons.size()));
         int rows = (icons.size() + cols - 1) / cols;
 
-        float top = Math.max(camera.bottom + 22f * density, screenH * 0.10f);
-        float limit = screenH * blackoutFraction - margin;
-        int fit = Math.max(1, (int) ((limit - top + iconGap) / (iconPx + iconGap)));
-        if (rows > fit) { rows = fit; }
+        float blockH = rows * cellH + (rows - 1) * iconRowGap;
+        float top = iconTopFor(blockH, density);
+        float limit = (iconCfg.clipToBlackout ? screenH * blackoutFraction : screenH) - margin;
+        int fit = Math.max(1, (int) ((limit - top + iconRowGap) / (cellH + iconRowGap)));
+        if (rows > fit)
+        {
+            rows = fit;
+            blockH = rows * cellH + (rows - 1) * iconRowGap;
+            top = iconTopFor(blockH, density);
+        }
 
         iconCols = cols;
         iconRows = rows;
         iconCount = Math.min(icons.size(), rows * cols);
         iconTop = top;
-        iconsBottom = top + rows * iconPx + (rows - 1) * iconGap;
+        iconsBottom = top + blockH;
+    }
+
+    /** Vertical start of the whole block, from the configured anchor. */
+    private float iconTopFor(float blockH, float density)
+    {
+        float top;
+        if (Prefs.ICON_Y_TOP.equals(iconCfg.yAnchor))
+        {
+            top = iconCfg.offsetYPx;
+        }
+        else if (Prefs.ICON_Y_BOTTOM.equals(iconCfg.yAnchor))
+        {
+            top = screenH - iconCfg.offsetYPx - blockH;
+        }
+        else
+        {
+            top = Math.max(camera.bottom + 22f * density, screenH * 0.10f) + iconCfg.offsetYPx;
+        }
+        // never let the block leave the panel, whatever offset was dialled in
+        return Math.max(0f, Math.min(top, Math.max(0f, screenH - blockH)));
     }
 
     private void drawIcons(Canvas canvas)
     {
+        float density = getResources().getDisplayMetrics().density;
         float corner = iconPx * 0.22f;
-        float pad = iconPlate || iconLightPlate ? iconPx * 0.10f : 0f;
+        float pad = iconCfg.plate || iconCfg.lightPlate ? iconPx * 0.10f : 0f;
         if (pad > 0f)
         {
-            platePaint.setColor(iconLightPlate ? 0xFFE8E8E8 : 0xFF1C1C1E);
+            platePaint.setColor(iconCfg.lightPlate ? 0xFFE8E8E8 : 0xFF1C1C1E);
         }
+        float fullRowW = iconCols * iconPx + (iconCols - 1) * iconGap;
         for (int i = 0; i < iconCount; i++)
         {
             Bitmap b = icons.get(i);
@@ -316,8 +380,23 @@ public class GlowRendererView extends View
             int col = i % iconCols;
             int inRow = Math.min(iconCols, iconCount - row * iconCols);
             float rowW = inRow * iconPx + (inRow - 1) * iconGap;
-            float x = (screenW - rowW) / 2f + col * (iconPx + iconGap) + shiftX;
-            float y = iconTop + row * (iconPx + iconGap) + shiftY;
+
+            float base;
+            if (iconCfg.centerH)
+            {
+                boolean shortLast = row == iconRows - 1 && inRow < iconCols;
+                float w = shortLast && !iconCfg.lastRowCenter ? fullRowW : rowW;
+                base = (screenW - w) / 2f;
+            }
+            else
+            {
+                base = 16f * density;
+            }
+            // the offset moves the block, but never off the panel
+            base = Math.max(0f, Math.min(base + iconCfg.offsetXPx, Math.max(0f, screenW - rowW)));
+
+            float x = base + col * (iconPx + iconGap) + shiftX;
+            float y = iconTop + row * (iconPx + iconBadgeH + iconRowGap) + shiftY;
             if (pad > 0f)
             {
                 iconRect.set(x - pad, y - pad, x + iconPx + pad, y + iconPx + pad);
@@ -325,7 +404,36 @@ public class GlowRendererView extends View
             }
             iconRect.set(x, y, x + iconPx, y + iconPx);
             canvas.drawBitmap(b, null, iconRect, iconPaint);
+
+            if (iconCfg.count && iconCounts != null && i < iconCounts.length)
+            {
+                int n = iconCounts[i];
+                if (n > 1 || (n == 1 && iconCfg.countAlways))
+                {
+                    drawCount(canvas, n, x + iconPx / 2f, y + iconPx, density);
+                }
+            }
         }
+    }
+
+    /** The number of notifications of one app, centered under its icon. */
+    private void drawCount(Canvas canvas, int n, float cx, float iconBottom, float density)
+    {
+        String s = n > 99 ? "99+" : Integer.toString(n);
+        float tw = countPaint.measureText(s);
+        float top = iconBottom + 3f * density;
+        if (iconCfg.countBadge)
+        {
+            float padH = 7f * density;
+            float padV = 3f * density;
+            float h = countAscent + countDescent + 2f * padV;
+            float w = Math.max(tw + 2f * padH, h);
+            badgeRect.set(cx - w / 2f, top, cx + w / 2f, top + h);
+            badgePaint.setColor(0xFF26262A);
+            canvas.drawRoundRect(badgeRect, h / 2f, h / 2f, badgePaint);
+            top += padV;
+        }
+        canvas.drawText(s, cx - tw / 2f, top + countAscent, countPaint);
     }
 
     private void rebuildPaths()
@@ -374,7 +482,7 @@ public class GlowRendererView extends View
                 }
             }
         }
-        else if (running && icons != null && iconsOverUi)
+        else if (running && icons != null && iconCfg.overUi)
         {
             // "Test light" while the app is on screen: show the icons as they
             // would look, without painting a black field over the UI
