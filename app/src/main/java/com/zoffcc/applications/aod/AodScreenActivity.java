@@ -125,19 +125,19 @@ public class AodScreenActivity extends Activity
 
     /**
      * Same brightness as the rest of the phone, scaled by the configured
-     * percentage. Only when that is switched off does the canvas fall back
-     * to its own dim level, as it used to.
+     * percentage - or the fixed percentage when following is off. The value
+     * is never sampled here: this window asks for a brightness itself, so
+     * the published setting describes us, not the phone.
      */
     private void applyBrightness()
     {
         WindowManager.LayoutParams attrs = getWindow().getAttributes();
-        float want = Prefs.followBrightness(this)
-                ? Brightness.requested(this)
-                : (Math.max(5, Math.min(100, Prefs.brightness(this))) / 100f) * 0.45f;
+        float want = Brightness.requested(this);
         attrs.screenBrightness = want;
         getWindow().setAttributes(attrs);
-        Dbg.log("canvas", "brightness: system=" + String.format("%.3f", Brightness.system(this))
+        Dbg.log("canvas", "brightness: mode=" + (Brightness.auto(this) ? "adaptive" : "manual")
                 + " follow=" + Prefs.followBrightness(this) + " pct=" + Prefs.brightness(this)
+                + " system=" + String.format("%.3f", Brightness.system(this))
                 + " requested=" + String.format("%.3f", want));
     }
 

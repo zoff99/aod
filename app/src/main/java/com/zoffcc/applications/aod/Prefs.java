@@ -33,6 +33,7 @@ public final class Prefs
     public static final String AUTO_COLOR = "auto_color";           // derive color from the app icon
     public static final String BRIGHTNESS = "brightness";           // 5..100 % of the system brightness
     public static final String FOLLOW_BRIGHTNESS = "follow_brightness"; // track the brightness slider
+    public static final String LAST_BRIGHTNESS = "last_brightness";     // internal: last clean reading
     public static final String STROKE_DP = "stroke_dp";             // light thickness
     public static final String DOT_X = "dot_x";                     // 0..100 horizontal dot position
 
@@ -155,10 +156,17 @@ public final class Prefs
     public static boolean eco(Context c) { return get(c).getBoolean(ECO, false); }
     public static int color(Context c) { return get(c).getInt(COLOR, DEFAULT_COLOR); }
     public static boolean autoColor(Context c) { return get(c).getBoolean(AUTO_COLOR, true); }
-    /** Percentage of the system brightness for the always-on field. */
+    /** While awake the app never asks for a brightness, so the setting
+     *  read then is the real one. Remembered for a start while dark. */
+    public static float lastBrightness(Context c) { return get(c).getFloat(LAST_BRIGHTNESS, -1f); }
+    public static void setLastBrightness(Context c, float v)
+    { get(c).edit().putFloat(LAST_BRIGHTNESS, v).apply(); }
+
+    /** Percentage of the system brightness, or the absolute brightness
+     *  when following is switched off. */
     public static int brightness(Context c) { return get(c).getInt(BRIGHTNESS, 100); }
     /** On by default: the always-on screen is as bright as the rest of the
-     *  phone and follows the brightness slider. Off leaves it to the phone. */
+     *  phone. Off: the percentage is used as a fixed brightness instead. */
     public static boolean followBrightness(Context c) { return get(c).getBoolean(FOLLOW_BRIGHTNESS, true); }
     public static int strokeDp(Context c) { return get(c).getInt(STROKE_DP, 5); }
     public static int dotX(Context c) { return get(c).getInt(DOT_X, 50); }

@@ -274,9 +274,30 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
         bindSwitch(R.id.sw_ignore_persistent, Prefs.IGNORE_PERSISTENT, true);
     }
 
-    /** The percentage slider only means something while we follow the slider. */
+    /**
+     * The brightness slider means two different things depending on the
+     * switch, so it is bound here rather than with the plain sliders.
+     */
     private void bindBrightnessRow()
     {
+        SeekBar sb = findViewById(R.id.sb_brightness);
+        sb.setProgress(prefs.getInt(Prefs.BRIGHTNESS, 100) - 5);
+        sb.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener()
+        {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser)
+            {
+                updateBrightnessRow(Prefs.followBrightness(MainActivity.this));
+                if (fromUser) { prefs.edit().putInt(Prefs.BRIGHTNESS, progress + 5).apply(); }
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {}
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {}
+        });
+
         SwitchCompat sw = findViewById(R.id.sw_follow_brightness);
         sw.setChecked(Prefs.followBrightness(this));
         sw.setOnCheckedChangeListener((b, checked) -> {
@@ -288,11 +309,15 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
 
     private void updateBrightnessRow(boolean follow)
     {
-        View slider = findViewById(R.id.sb_brightness);
-        View label = findViewById(R.id.lbl_brightness);
-        slider.setEnabled(follow);
-        slider.setAlpha(follow ? 1f : 0.4f);
-        label.setAlpha(follow ? 1f : 0.5f);
+        SeekBar sb = findViewById(R.id.sb_brightness);
+        TextView lbl = findViewById(R.id.lbl_brightness);
+        lbl.setText(getString(follow ? R.string.lbl_brightness : R.string.lbl_brightness_fixed,
+                sb.getProgress() + 5));
+        // Adaptive brightness is the one case where "the system brightness"
+        // is not the slider position, and Android gives apps no way to read
+        // the live value. Say so instead of pretending.
+        findViewById(R.id.tv_brightness_auto).setVisibility(
+                follow && Brightness.auto(this) ? View.VISIBLE : View.GONE);
     }
 
     private void bindSpinners()
@@ -512,9 +537,6 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
         bindSlider(R.id.sb_timeout, R.id.lbl_timeout,
                 prefs.getInt(Prefs.TIMEOUT_SEC, 290) - 10, R.string.lbl_timeout,
                 p -> prefs.edit().putInt(Prefs.TIMEOUT_SEC, p + 10).apply());
-        bindSlider(R.id.sb_brightness, R.id.lbl_brightness,
-                prefs.getInt(Prefs.BRIGHTNESS, 100) - 5, R.string.lbl_brightness,
-                p -> prefs.edit().putInt(Prefs.BRIGHTNESS, p + 5).apply());
         bindSlider(R.id.sb_stroke, R.id.lbl_stroke,
                 prefs.getInt(Prefs.STROKE_DP, 5) - 2, R.string.lbl_stroke,
                 p -> prefs.edit().putInt(Prefs.STROKE_DP, p + 2).apply());
@@ -711,6 +733,7 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
     {
         super.onResume();
         updateStatus();
+        updateBrightnessRow(Prefs.followBrightness(this));
     }
 
     @Override

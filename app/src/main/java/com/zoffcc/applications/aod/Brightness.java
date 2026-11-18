@@ -20,16 +20,24 @@ import android.view.WindowManager;
  * brightness only when nothing else supplied a value - which is why an
  * always-on screen otherwise ignores the brightness slider completely.
  *
- * So the always-on field asks for the current system brightness, scaled by
- * the user's percentage, and hands control back (no override at all) as soon
- * as the phone is awake again, so the lock screen and every app keep using
- * the system value untouched.
+ * Two things make reading "the system brightness" awkward, and both are
+ * handled here:
  *
- * Only public settings are read: the float brightness key on Android 12+,
- * SCREEN_BRIGHTNESS (0..255) before that. With adaptive brightness Android
- * does not publish the live auto value to apps, so the setting the slider
- * writes is the closest available number; changes to either key, and to the
- * auto-brightness mode, are observed so the field follows the slider live.
+ * 1. The published setting is not always the slider. With adaptive
+ *    brightness on, Android writes the value it computed from the light
+ *    sensor into that setting, and while the slider is being dragged it uses
+ *    a temporary value that is never published at all. In a dark room the
+ *    published number therefore sits near the minimum no matter where the
+ *    slider is. There is no public API for the live brightness, so the
+ *    published setting is the closest thing available.
+ *
+ * 2. While our own dark field is up, the published number describes the
+ *    dozing panel, not the phone the user was just looking at. So the value
+ *    is only ever sampled while none of our windows asks for a brightness,
+ *    and that reading is latched (and remembered across restarts) for as
+ *    long as the dark field is painted.
+ *
+ * Nothing here ever writes a brightness setting.
  */
 public final class Brightness
 {
@@ -39,22 +47,29 @@ public final class Brightness
     private static final float FLOOR = 0.01f;
 
     /**
-     * Android 12 keeps the slider value here as 0..1 instead of 0..255. It is
+     * Android 12 keeps the brightness here as 0..1 instead of 0..255. It is
      * a world-readable settings key, but the SDK does not expose a constant
      * for it, so the key is named directly. Reading it needs no permission.
      */
     private static final String KEY_BRIGHTNESS_FLOAT = "screen_brightness_float";
 
-    /** The system brightness setting, 0..1. */
-    public static float system(Context c)
+    /** Last brightness seen while no window of ours asked for one. */
+    private static float latched = Float.NaN;
+
+    /**
+     * The brightness setting as published right now, 0..1. While the phone
+     * is awake this is what the display uses; while it dozes it is the
+     * phone's own doze/auto value, so it must not be used as "the system
+     * brightness" then.
+     */
+    public static float raw(Context c)
     {
         float v = -1f;
         if (Build.VERSION.SDK_INT >= 31)
         {
             try
             {
-                v = Settings.System.getFloat(c.getContentResolver(),
-                        KEY_BRIGHTNESS_FLOAT, -1f);
+                v = Settings.System.getFloat(c.getContentResolver(), KEY_BRIGHTNESS_FLOAT, -1f);
             }
             catch (Exception ignored) {}
         }
@@ -71,7 +86,34 @@ public final class Brightness
         return clamp(v);
     }
 
-    /** True when adaptive brightness is on (informational, for the log). */
+    /**
+     * Take the system brightness. Call this only while none of our windows
+     * requests a brightness, i.e. while the phone is awake and showing its
+     * own lock screen or an app.
+     */
+    public static void sample(Context c)
+    {
+        latched = raw(c);
+    }
+
+    /** The brightness the rest of the phone uses (last clean reading). */
+    public static float system(Context c)
+    {
+        if (Float.isNaN(latched))
+        {
+            float saved = Prefs.lastBrightness(c);
+            latched = clamp(saved >= 0f ? saved : raw(c));
+        }
+        return latched;
+    }
+
+    /** Keep the last clean reading for a start that happens while dark. */
+    public static void remember(Context c)
+    {
+        if (!Float.isNaN(latched)) { Prefs.setLastBrightness(c, latched); }
+    }
+
+    /** True when adaptive brightness is on. */
     public static boolean auto(Context c)
     {
         try
@@ -83,17 +125,14 @@ public final class Brightness
     }
 
     /**
-     * What our always-on windows should request: the system brightness times
-     * the configured percentage, or "no opinion" when the user prefers to
-     * leave the always-on brightness to the phone.
+     * What our always-on windows should request: either the system
+     * brightness times the configured percentage, or - when the user wants
+     * a brightness of their own - that percentage as an absolute value.
      */
     public static float requested(Context c)
     {
-        if (!Prefs.followBrightness(c))
-        {
-            return WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE;
-        }
         float pct = Math.max(5, Math.min(100, Prefs.brightness(c))) / 100f;
+        if (!Prefs.followBrightness(c)) { return clamp(pct); }
         return clamp(system(c) * pct);
     }
 

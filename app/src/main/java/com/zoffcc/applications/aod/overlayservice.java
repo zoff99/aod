@@ -168,7 +168,17 @@ public class overlayservice extends AccessibilityService
 
             buildWindow();
             registerReceivers();
-            brightnessObserver = Brightness.watch(this, this::applyBrightness);
+            brightnessObserver = Brightness.watch(this, () -> {
+                if (effectiveScreenOff())
+                {
+                    // Android publishes its own doze/auto value here, not the
+                    // brightness the user was looking at. Evidence, not input.
+                    Dbg.log("overlay", "brightness setting moved while dark: published="
+                            + String.format("%.3f", Brightness.raw(this))
+                            + " kept=" + String.format("%.3f", appliedBrightness));
+                }
+                applyBrightness();
+            });
             refreshGeometry();
 
             screenOn = displayState() == Display.STATE_ON;
@@ -1002,14 +1012,26 @@ public class overlayservice extends AccessibilityService
      * that asks for one, and only falls back to its fixed doze brightness
      * when nobody asks - that is why an always-on screen otherwise ignores
      * the brightness slider. So while the black field is painted we ask for
-     * the current system brightness times the configured percentage, and the
-     * moment the phone is awake we withdraw the request, leaving the lock
-     * screen and every app on the untouched system value.
+     * the brightness the phone had while it was awake times the configured
+     * percentage, and the moment the phone is awake we withdraw the request,
+     * leaving the lock screen and every app on the untouched system value.
+     *
+     * The system value is only sampled while we make no request: once the
+     * panel dozes, the published setting describes the dozing panel (and
+     * with adaptive brightness it is the light-sensor value, which sits near
+     * the minimum in a dark room), so re-reading it then would drag the
+     * always-on field down to that instead of matching the phone.
      */
     private void applyBrightness()
     {
-        if (view == null || !viewAdded) { return; }
         boolean dark = effectiveScreenOff();
+        int st = displayState();
+        if (!dark && st != Display.STATE_OFF && st != Display.STATE_DOZE
+                && st != Display.STATE_DOZE_SUSPEND)
+        {
+            Brightness.sample(this);
+        }
+        if (view == null || !viewAdded) { return; }
         float want = dark ? Brightness.requested(this)
                 : WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE;
         if (want == appliedBrightness) { return; }
@@ -1019,11 +1041,13 @@ public class overlayservice extends AccessibilityService
         lp.screenBrightness = want;
         try { wm.updateViewLayout(view, lp); }
         catch (Exception e) { Log.w(TAG, "brightness: " + e); }
+        if (dark) { Brightness.remember(this); }
         Dbg.log("overlay", "brightness: dark=" + dark
-                + " system=" + String.format("%.3f", Brightness.system(this))
-                + " auto=" + Brightness.auto(this)
+                + " mode=" + (Brightness.auto(this) ? "adaptive" : "manual")
                 + " follow=" + Prefs.followBrightness(this)
                 + " pct=" + Prefs.brightness(this)
+                + " system=" + String.format("%.3f", Brightness.system(this))
+                + " published=" + String.format("%.3f", Brightness.raw(this))
                 + " requested=" + (want < 0 ? "(system decides)" : String.format("%.3f", want)));
     }
 
@@ -1279,6 +1303,7 @@ public class overlayservice extends AccessibilityService
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key)
     {
+        if (Prefs.LAST_BRIGHTNESS.equals(key)) { return; }   // our own bookkeeping
         Dbg.log("overlay", "pref changed: " + key);
         if (Prefs.ENABLED.equals(key))
         {

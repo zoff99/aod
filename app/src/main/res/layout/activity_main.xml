@@ -156,6 +156,9 @@
                 app:thumbTint="@color/switch_thumb" app:trackTint="@color/switch_track"
                 android:text="@string/set_follow_brightness" />
             <TextView style="@style/SettingSummary" android:text="@string/set_follow_brightness_sum" />
+            <TextView android:id="@+id/tv_brightness_auto" style="@style/SettingSummary"
+                android:textColor="@color/hc_accent" android:visibility="gone"
+                android:text="@string/brightness_auto_note" />
 
             <TextView android:id="@+id/lbl_brightness" style="@style/SliderLabel"
                 android:labelFor="@+id/sb_brightness" />

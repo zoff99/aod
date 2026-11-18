@@ -225,17 +225,40 @@ then falls back to its own fixed doze brightness — which is why an
 always-on screen otherwise ignores the brightness slider completely.
 
 So, with **Use the system brightness** on (the default), the overlay asks
-for the current system brightness times the configured percentage *while it
-paints the black always-on field*, and withdraws the request the moment the
-phone is awake again. The lock screen and every app therefore keep the
-untouched system value; the app never writes any brightness setting.
+for the brightness the phone itself was using, times the configured
+percentage, *while it paints the black always-on field*, and withdraws the
+request the moment the phone is awake again. The lock screen and every app
+therefore keep the untouched system value; the app never writes any
+brightness setting.
 
-`Brightness.java` reads the world-readable slider setting
+`Brightness.java` reads the world-readable brightness setting
 (`screen_brightness_float` on Android 12+, `screen_brightness` before that)
-and observes it, so a slider move takes effect immediately. With adaptive
-brightness Android does not publish the live auto value to apps, so the
-setting the slider writes is the closest available number; the debug log
-prints `system`, `auto`, `pct`, `follow` and `requested` for every change.
+and observes it. Two details matter:
+
+- **The setting is only sampled while the phone is awake.** Once the panel
+  dozes, the published number describes the dozing panel, not the phone the
+  user was looking at, so re-reading it then would pull the always-on field
+  down to the doze level. The last clean reading is latched, and remembered
+  in the preferences so a service start that happens while dark still has
+  it.
+- **Adaptive brightness cannot be matched exactly.** With it on, Android
+  writes the value it computed from the light sensor into that setting
+  (`DisplayPowerController`, `REASON_AUTOMATIC` → `updateScreenBrightnessSetting`),
+  and while the slider is being dragged it uses a temporary value that is
+  never published at all (`REASON_TEMPORARY`). In a dark room the published
+  number therefore sits near the minimum whatever the slider says, and no
+  public API exposes the live brightness. The settings screen says so
+  plainly. Turning adaptive brightness off makes the setting *be* the slider
+  position, and the match is then exact.
+
+With **Use the system brightness** off, the percentage is used as an
+absolute brightness instead. That is also the quickest way to check whether
+a given ROM honours window brightness requests while dozing: set 100 % and
+the dark screen must become visibly brighter.
+
+The debug log prints `dark`, `mode`, `follow`, `pct`, `system`, `published`
+and `requested` for every change, plus a line whenever the setting moves
+while the dark field is up.
 
 ## Compatibility notes
 
