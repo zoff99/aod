@@ -31,7 +31,8 @@ public final class Prefs
     public static final String ECO = "eco";                         // reduced frame rate
     public static final String COLOR = "color";
     public static final String AUTO_COLOR = "auto_color";           // derive color from the app icon
-    public static final String BRIGHTNESS = "brightness";           // 5..100 (dark canvas brightness)
+    public static final String BRIGHTNESS = "brightness";           // 5..100 % of the system brightness
+    public static final String FOLLOW_BRIGHTNESS = "follow_brightness"; // track the brightness slider
     public static final String STROKE_DP = "stroke_dp";             // light thickness
     public static final String DOT_X = "dot_x";                     // 0..100 horizontal dot position
 
@@ -154,7 +155,11 @@ public final class Prefs
     public static boolean eco(Context c) { return get(c).getBoolean(ECO, false); }
     public static int color(Context c) { return get(c).getInt(COLOR, DEFAULT_COLOR); }
     public static boolean autoColor(Context c) { return get(c).getBoolean(AUTO_COLOR, true); }
-    public static int brightness(Context c) { return get(c).getInt(BRIGHTNESS, 35); }
+    /** Percentage of the system brightness for the always-on field. */
+    public static int brightness(Context c) { return get(c).getInt(BRIGHTNESS, 100); }
+    /** On by default: the always-on screen is as bright as the rest of the
+     *  phone and follows the brightness slider. Off leaves it to the phone. */
+    public static boolean followBrightness(Context c) { return get(c).getBoolean(FOLLOW_BRIGHTNESS, true); }
     public static int strokeDp(Context c) { return get(c).getInt(STROKE_DP, 5); }
     public static int dotX(Context c) { return get(c).getInt(DOT_X, 50); }
 

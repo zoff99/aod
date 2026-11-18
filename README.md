@@ -103,7 +103,8 @@ them to one spot.
   light color
 - Ignore persistent notifications; optional dismiss-on-unlock
 - Camera-ring calibration: automatic cutout detection + manual offset/size
-- Light duration, canvas brightness, thickness sliders
+- Always-on brightness that follows the system brightness slider
+- Light duration, brightness percentage, thickness sliders
 - Test button, live debug log, boot persistence
 
 ## What the number under an icon counts
@@ -215,6 +216,27 @@ Wake locks appear in `dumpsys power` as `aod:notifications`, `aod:light`,
 - Dependencies: appcompat, recyclerview (UI only). Everything else is
   platform API.
 
+## Brightness of the always-on screen
+
+Android takes the display brightness from the topmost visible window that
+sets `LayoutParams.screenBrightness`. A window that leaves the value at
+`BRIGHTNESS_OVERRIDE_NONE` has no say, and while the panel dozes the system
+then falls back to its own fixed doze brightness — which is why an
+always-on screen otherwise ignores the brightness slider completely.
+
+So, with **Use the system brightness** on (the default), the overlay asks
+for the current system brightness times the configured percentage *while it
+paints the black always-on field*, and withdraws the request the moment the
+phone is awake again. The lock screen and every app therefore keep the
+untouched system value; the app never writes any brightness setting.
+
+`Brightness.java` reads the world-readable slider setting
+(`screen_brightness_float` on Android 12+, `screen_brightness` before that)
+and observes it, so a slider move takes effect immediately. With adaptive
+brightness Android does not publish the live auto value to apps, so the
+setting the slider writes is the closest available number; the debug log
+prints `system`, `auto`, `pct`, `follow` and `requested` for every change.
+
 ## Compatibility notes
 
 - Whether an overlay is visible **on top of the native AOD** depends on
@@ -223,6 +245,9 @@ Wake locks appear in `dumpsys power` as `aod:notifications`, `aod:light`,
 - Keeping any light active costs battery; use ECO / interval mode and
   short timeouts. The dark canvas keeps the panel technically "on" at low
   brightness — on OLED this is cheap, on LCD it is not.
+- The always-on field is as bright as the rest of the phone by default. If
+  that is too bright at night, lower the percentage slider; it still follows
+  the system slider, just proportionally dimmer.
 - Long-term static light can contribute to burn-in; the built-in position
   shifting mitigates this, but use at your own risk.
 

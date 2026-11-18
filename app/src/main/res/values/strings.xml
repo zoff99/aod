@@ -102,7 +102,10 @@
     <string name="sec_cutout">Camera ring calibration</string>
 
     <string name="lbl_timeout">Light duration: %1$d s</string>
-    <string name="lbl_brightness">Dark canvas brightness: %1$d%%</string>
+    <string name="lbl_brightness">Always-on brightness: %1$d%% of the system</string>
+    <string name="set_follow_brightness">Use the system brightness</string>
+    <string name="set_follow_brightness_sum">On: the dark always-on screen is exactly as bright as the rest of the phone and follows the brightness slider in the status bar, live. Without this, Android keeps an always-on screen at its own fixed dim level, so moving the slider changes everything except this screen. While the phone is awake the app never touches brightness at all: the lock screen and your apps keep the system value. Off: the phone decides the always-on brightness on its own, and the fallback dark canvas uses its own dim level.</string>
+    <string name="set_brightness_sum">How bright the always-on screen is compared with the rest of the phone. 100% is identical to the lock screen; lower values keep it dimmer but still follow the slider. Only used while \u201cUse the system brightness\u201d is on.</string>
     <string name="lbl_stroke">Light thickness: %1$d dp</string>
     <string name="lbl_speed">Animation cycle: %1$d ms</string>
     <string name="lbl_cutout_x">Ring offset X: %1$d px</string>

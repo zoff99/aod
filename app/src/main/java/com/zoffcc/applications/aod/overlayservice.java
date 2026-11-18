@@ -95,6 +95,8 @@ public class overlayservice extends AccessibilityService
     private long canvasBackoffUntil = 0L;
     private PowerManager.WakeLock partialLock;
     private PowerManager.WakeLock drawLock;
+    private android.database.ContentObserver brightnessObserver;
+    private float appliedBrightness = Float.NaN;
     private PowerManager.WakeLock wakeBridge;
     private boolean drawCapable = false;
 
@@ -166,6 +168,7 @@ public class overlayservice extends AccessibilityService
 
             buildWindow();
             registerReceivers();
+            brightnessObserver = Brightness.watch(this, this::applyBrightness);
             refreshGeometry();
 
             screenOn = displayState() == Display.STATE_ON;
@@ -199,6 +202,7 @@ public class overlayservice extends AccessibilityService
     private void buildWindow()
     {
         if (viewAdded) { return; }
+        appliedBrightness = Float.NaN;
         view = new GlowRendererView(this);
         WindowManager.LayoutParams lp = new WindowManager.LayoutParams(
                 WindowManager.LayoutParams.MATCH_PARENT,
@@ -221,10 +225,15 @@ public class overlayservice extends AccessibilityService
             lp.setFitInsetsTypes(0);
             lp.setFitInsetsSides(0);
         }
+        // Ask for the right brightness from the very first frame, so the
+        // field never flashes at the phone's own doze level.
+        lp.screenBrightness = effectiveScreenOff() ? Brightness.requested(this)
+                : WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE;
         view.setVisibility(android.view.View.GONE);
         try
         {
             wm.addView(view, lp);
+            appliedBrightness = lp.screenBrightness;
             viewAdded = true;
         }
         catch (Exception e)
@@ -269,6 +278,8 @@ public class overlayservice extends AccessibilityService
         try { unregisterReceiver(commandReceiver); } catch (Exception ignored) {}
         try { if (prefs != null) { prefs.unregisterOnSharedPreferenceChangeListener(this); } }
         catch (Exception ignored) {}
+        Brightness.unwatch(this, brightnessObserver);
+        brightnessObserver = null;
         stopBurst(false, "serviceDestroy");
         if (viewAdded && view != null)
         {
@@ -981,6 +992,39 @@ public class overlayservice extends AccessibilityService
         {
             view.setVisibility(android.view.View.VISIBLE);
         }
+        applyBrightness();
+    }
+
+    /**
+     * Brightness of the always-on field.
+     *
+     * Android takes the display brightness from the topmost visible window
+     * that asks for one, and only falls back to its fixed doze brightness
+     * when nobody asks - that is why an always-on screen otherwise ignores
+     * the brightness slider. So while the black field is painted we ask for
+     * the current system brightness times the configured percentage, and the
+     * moment the phone is awake we withdraw the request, leaving the lock
+     * screen and every app on the untouched system value.
+     */
+    private void applyBrightness()
+    {
+        if (view == null || !viewAdded) { return; }
+        boolean dark = effectiveScreenOff();
+        float want = dark ? Brightness.requested(this)
+                : WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE;
+        if (want == appliedBrightness) { return; }
+        appliedBrightness = want;
+        WindowManager.LayoutParams lp = (WindowManager.LayoutParams) view.getLayoutParams();
+        if (lp == null) { return; }
+        lp.screenBrightness = want;
+        try { wm.updateViewLayout(view, lp); }
+        catch (Exception e) { Log.w(TAG, "brightness: " + e); }
+        Dbg.log("overlay", "brightness: dark=" + dark
+                + " system=" + String.format("%.3f", Brightness.system(this))
+                + " auto=" + Brightness.auto(this)
+                + " follow=" + Prefs.followBrightness(this)
+                + " pct=" + Prefs.brightness(this)
+                + " requested=" + (want < 0 ? "(system decides)" : String.format("%.3f", want)));
     }
 
     private void applyAppearance()
@@ -1249,6 +1293,11 @@ public class overlayservice extends AccessibilityService
         if (Prefs.NIGHT.equals(key) || Prefs.NIGHT_START.equals(key) || Prefs.NIGHT_END.equals(key))
         {
             sendLocal(notificationobserver.ACTION_REEVAL);
+        }
+        if (Prefs.BRIGHTNESS.equals(key) || Prefs.FOLLOW_BRIGHTNESS.equals(key))
+        {
+            appliedBrightness = Float.NaN;   // force a fresh request
+            applyBrightness();
         }
         if (Prefs.BLACKOUT_FULL.equals(key))
         {

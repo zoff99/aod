@@ -45,6 +45,7 @@ public class AodScreenActivity extends Activity
     private FrameLayout root;
     private long lastTap = 0L;
     private boolean receiversRegistered = false;
+    private android.database.ContentObserver brightnessObserver;
 
     private final Runnable selfTimeout = new Runnable()
     {
@@ -78,10 +79,7 @@ public class AodScreenActivity extends Activity
         getWindow().setLayout(WindowManager.LayoutParams.MATCH_PARENT,
                               WindowManager.LayoutParams.MATCH_PARENT);
 
-        WindowManager.LayoutParams attrs = getWindow().getAttributes();
-        int brightness = Math.max(5, Math.min(100, Prefs.brightness(this)));
-        attrs.screenBrightness = (brightness / 100f) * 0.45f;
-        getWindow().setAttributes(attrs);
+        applyBrightness();
 
         buildUi();
         overridePendingTransition(0, 0);
@@ -123,6 +121,24 @@ public class AodScreenActivity extends Activity
                 }
             });
         }
+    }
+
+    /**
+     * Same brightness as the rest of the phone, scaled by the configured
+     * percentage. Only when that is switched off does the canvas fall back
+     * to its own dim level, as it used to.
+     */
+    private void applyBrightness()
+    {
+        WindowManager.LayoutParams attrs = getWindow().getAttributes();
+        float want = Prefs.followBrightness(this)
+                ? Brightness.requested(this)
+                : (Math.max(5, Math.min(100, Prefs.brightness(this))) / 100f) * 0.45f;
+        attrs.screenBrightness = want;
+        getWindow().setAttributes(attrs);
+        Dbg.log("canvas", "brightness: system=" + String.format("%.3f", Brightness.system(this))
+                + " follow=" + Prefs.followBrightness(this) + " pct=" + Prefs.brightness(this)
+                + " requested=" + String.format("%.3f", want));
     }
 
     private void wakeUp()
@@ -177,6 +193,11 @@ public class AodScreenActivity extends Activity
                 catch (Exception ignored) {}
             }
         });
+        if (brightnessObserver == null)
+        {
+            brightnessObserver = Brightness.watch(this, this::applyBrightness);
+        }
+        applyBrightness();
         Dbg.log("canvas", "onResume -> AOD_SHOWN");
         sendLocal(notificationobserver.ACTION_AOD_SHOWN);
     }
@@ -198,6 +219,8 @@ public class AodScreenActivity extends Activity
     protected void onDestroy()
     {
         Dbg.log("canvas", "onDestroy");
+        Brightness.unwatch(this, brightnessObserver);
+        brightnessObserver = null;
         if (receiversRegistered)
         {
             try { unregisterReceiver(receiver); } catch (Exception ignored) {}

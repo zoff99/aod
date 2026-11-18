@@ -102,6 +102,7 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
         prefs.edit().remove("preview").apply();
 
         bindSwitches();
+        bindBrightnessRow();
         bindSpinners();
         bindColorRow();
         bindSliders();
@@ -271,6 +272,27 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
         bindSwitch(R.id.sw_dnd, Prefs.RESPECT_DND, false);
         bindSwitch(R.id.sw_battery_light, Prefs.BATTERY_LIGHT, false);
         bindSwitch(R.id.sw_ignore_persistent, Prefs.IGNORE_PERSISTENT, true);
+    }
+
+    /** The percentage slider only means something while we follow the slider. */
+    private void bindBrightnessRow()
+    {
+        SwitchCompat sw = findViewById(R.id.sw_follow_brightness);
+        sw.setChecked(Prefs.followBrightness(this));
+        sw.setOnCheckedChangeListener((b, checked) -> {
+            prefs.edit().putBoolean(Prefs.FOLLOW_BRIGHTNESS, checked).apply();
+            updateBrightnessRow(checked);
+        });
+        updateBrightnessRow(sw.isChecked());
+    }
+
+    private void updateBrightnessRow(boolean follow)
+    {
+        View slider = findViewById(R.id.sb_brightness);
+        View label = findViewById(R.id.lbl_brightness);
+        slider.setEnabled(follow);
+        slider.setAlpha(follow ? 1f : 0.4f);
+        label.setAlpha(follow ? 1f : 0.5f);
     }
 
     private void bindSpinners()
@@ -491,7 +513,7 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
                 prefs.getInt(Prefs.TIMEOUT_SEC, 290) - 10, R.string.lbl_timeout,
                 p -> prefs.edit().putInt(Prefs.TIMEOUT_SEC, p + 10).apply());
         bindSlider(R.id.sb_brightness, R.id.lbl_brightness,
-                prefs.getInt(Prefs.BRIGHTNESS, 35) - 5, R.string.lbl_brightness,
+                prefs.getInt(Prefs.BRIGHTNESS, 100) - 5, R.string.lbl_brightness,
                 p -> prefs.edit().putInt(Prefs.BRIGHTNESS, p + 5).apply());
         bindSlider(R.id.sb_stroke, R.id.lbl_stroke,
                 prefs.getInt(Prefs.STROKE_DP, 5) - 2, R.string.lbl_stroke,
