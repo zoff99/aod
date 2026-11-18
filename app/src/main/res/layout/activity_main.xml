@@ -86,9 +86,11 @@
             <androidx.appcompat.widget.SwitchCompat android:id="@+id/sw_preview" style="@style/SettingSwitch"
                 app:thumbTint="@color/switch_thumb" app:trackTint="@color/switch_track"
                 android:text="@string/set_preview" />
+            <TextView style="@style/SettingSummary" android:text="@string/set_preview_sum" />
             <androidx.appcompat.widget.SwitchCompat android:id="@+id/sw_double_tap" style="@style/SettingSwitch"
                 app:thumbTint="@color/switch_thumb" app:trackTint="@color/switch_track"
                 android:text="@string/set_double_tap" />
+            <TextView style="@style/SettingSummary" android:text="@string/set_double_tap_sum" />
             <androidx.appcompat.widget.SwitchCompat android:id="@+id/sw_clear_unlock" style="@style/SettingSwitch"
                 app:thumbTint="@color/switch_thumb" app:trackTint="@color/switch_track"
                 android:text="@string/set_clear_unlock" />
@@ -96,6 +98,10 @@
                 app:thumbTint="@color/switch_thumb" app:trackTint="@color/switch_track"
                 android:text="@string/set_relight_relock" />
             <TextView style="@style/SettingSummary" android:text="@string/set_relight_relock_sum" />
+            <androidx.appcompat.widget.SwitchCompat android:id="@+id/sw_canvas_fallback" style="@style/SettingSwitch"
+                app:thumbTint="@color/switch_thumb" app:trackTint="@color/switch_track"
+                android:text="@string/set_canvas_fallback" />
+            <TextView style="@style/SettingSummary" android:text="@string/set_canvas_fallback_sum" />
 
             <View android:layout_width="match_parent" android:layout_height="2dp"
                 android:layout_marginTop="10dp" android:layout_marginBottom="6dp"
@@ -183,6 +189,42 @@
                     android:labelFor="@+id/et_interval_off" android:paddingStart="16dp" />
                 <EditText android:id="@+id/et_interval_off" style="@style/NumberInput" />
             </LinearLayout>
+
+            <View android:layout_width="match_parent" android:layout_height="2dp"
+                android:layout_marginTop="14dp" android:layout_marginBottom="6dp"
+                android:background="@color/hc_border" />
+
+            <TextView style="@style/SectionLabel" android:text="@string/sec_icons" />
+            <TextView style="@style/SettingSummary" android:text="@string/sec_icons_sum" />
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:gravity="center_vertical"
+                android:minHeight="48dp">
+                <TextView style="@style/InlineLabel" android:text="@string/set_icon_tint"
+                    android:labelFor="@+id/sp_icon_tint" />
+                <Spinner android:id="@+id/sp_icon_tint" android:layout_width="0dp"
+                    android:layout_height="wrap_content" android:layout_weight="1"
+                    android:backgroundTint="@color/hc_accent" />
+            </LinearLayout>
+            <TextView style="@style/SettingSummary" android:text="@string/set_icon_tint_sum" />
+
+            <TextView android:id="@+id/lbl_icon_size" style="@style/SliderLabel"
+                android:labelFor="@+id/sb_icon_size" />
+            <SeekBar android:id="@+id/sb_icon_size" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:minHeight="48dp"
+                android:max="72"
+                android:progressTint="@color/hc_accent" android:thumbTint="@color/hc_accent"
+                android:secondaryProgressTint="@color/hc_border" />
+
+            <androidx.appcompat.widget.SwitchCompat android:id="@+id/sw_icon_plate" style="@style/SettingSwitch"
+                app:thumbTint="@color/switch_thumb" app:trackTint="@color/switch_track"
+                android:text="@string/set_icon_plate" />
+            <TextView style="@style/SettingSummary" android:text="@string/set_icon_plate_sum" />
+
+            <androidx.appcompat.widget.SwitchCompat android:id="@+id/sw_icon_shift" style="@style/SettingSwitch"
+                app:thumbTint="@color/switch_thumb" app:trackTint="@color/switch_track"
+                android:text="@string/set_icon_shift" />
+            <TextView style="@style/SettingSummary" android:text="@string/set_icon_shift_sum" />
 
             <View android:layout_width="match_parent" android:layout_height="2dp"
                 android:layout_marginTop="14dp" android:layout_marginBottom="6dp"

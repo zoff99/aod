@@ -22,6 +22,7 @@ public final class Prefs
     public static final String DOUBLE_TAP_WAKE = "double_tap_wake";
     public static final String CLEAR_ON_UNLOCK = "clear_on_unlock"; // dismiss notifications on unlock
     public static final String RELIGHT_RELOCK = "relight_relock";   // light again after unlock + re-lock
+    public static final String CANVAS_FALLBACK = "canvas_fallback"; // dim activity canvas, phones without AOD
 
     // ---- appearance -----------------------------------------------------
     public static final String STYLE = "style";                     // ring | edge | dot
@@ -53,6 +54,12 @@ public final class Prefs
     public static final String FILTER_APPS = "filter_apps";         // set of package names
     public static final String APP_COLORS = "app_colors";           // "pkg=#AARRGGBB;..." overrides
 
+    // ---- app icons on the always-on screen -------------------------------
+    public static final String ICON_TINT = "icon_tint";             // color | white | black
+    public static final String ICON_SIZE_DP = "icon_size_dp";       // 24..96 dp
+    public static final String ICON_PLATE = "icon_plate";           // rounded plate behind each icon
+    public static final String ICON_SHIFT = "icon_shift";           // slow drift against burn-in
+
     // ---- cutout calibration ----------------------------------------------
     public static final String CUTOUT_LEFT = "cutout_left";
     public static final String CUTOUT_TOP = "cutout_top";
@@ -69,10 +76,14 @@ public final class Prefs
     public static final String STYLE_RING = "ring";
     public static final String STYLE_EDGE = "edge";
     public static final String STYLE_DOT = "dot";
+    public static final String STYLE_ICONS = "icons";               // app icons instead of a light
     public static final String ANIM_PULSE = "pulse";
     public static final String ANIM_ROTATE = "rotate";
     public static final String ANIM_FLASH = "flash";
     public static final String ANIM_STEADY = "steady";
+    public static final String ICON_TINT_COLOR = "color";
+    public static final String ICON_TINT_WHITE = "white";
+    public static final String ICON_TINT_BLACK = "black";
 
     public static SharedPreferences get(Context c)
     {
@@ -86,6 +97,9 @@ public final class Prefs
     public static boolean doubleTapWake(Context c) { return get(c).getBoolean(DOUBLE_TAP_WAKE, true); }
     public static boolean clearOnUnlock(Context c) { return get(c).getBoolean(CLEAR_ON_UNLOCK, false); }
     public static boolean relightRelock(Context c) { return get(c).getBoolean(RELIGHT_RELOCK, true); }
+    /** Opt-in only: the fallback canvas is an activity that turns the panel
+     *  on, so it must never be used on a phone that has its own AOD. */
+    public static boolean canvasFallback(Context c) { return get(c).getBoolean(CANVAS_FALLBACK, false); }
 
     public static String style(Context c) { return get(c).getString(STYLE, STYLE_RING); }
     public static String anim(Context c) { return get(c).getString(ANIM, ANIM_PULSE); }
@@ -95,6 +109,11 @@ public final class Prefs
     public static int brightness(Context c) { return get(c).getInt(BRIGHTNESS, 35); }
     public static int strokeDp(Context c) { return get(c).getInt(STROKE_DP, 5); }
     public static int dotX(Context c) { return get(c).getInt(DOT_X, 50); }
+
+    public static String iconTint(Context c) { return get(c).getString(ICON_TINT, ICON_TINT_COLOR); }
+    public static int iconSizeDp(Context c) { return get(c).getInt(ICON_SIZE_DP, 48); }
+    public static boolean iconPlate(Context c) { return get(c).getBoolean(ICON_PLATE, false); }
+    public static boolean iconShift(Context c) { return get(c).getBoolean(ICON_SHIFT, true); }
 
     public static int timeoutSec(Context c) { return get(c).getInt(TIMEOUT_SEC, 60); }
     public static boolean interval(Context c) { return get(c).getBoolean(INTERVAL, false); }

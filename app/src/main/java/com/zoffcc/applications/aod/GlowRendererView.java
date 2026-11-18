@@ -1,6 +1,7 @@
 package com.zoffcc.applications.aod;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -9,8 +10,21 @@ import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.SweepGradient;
+import android.graphics.Typeface;
+import android.text.Layout;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.text.StaticLayout;
+import android.text.TextPaint;
+import android.text.TextUtils;
+import android.text.style.ForegroundColorSpan;
+import android.text.style.RelativeSizeSpan;
+import android.text.style.StyleSpan;
 import android.os.SystemClock;
 import android.view.View;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Canvas renderer for the notification light. Draws one of three styles
@@ -58,6 +72,31 @@ public class GlowRendererView extends View
     private int sweepColor = 0;
     private final android.graphics.Matrix sweepMatrix = new android.graphics.Matrix();
 
+    // Notification preview text. It is laid out once when the notification
+    // changes (never inside onDraw) and painted into the black area, so no
+    // activity and no screen wake-up is needed to show it.
+    private final TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+    private CharSequence previewText = null;
+    private String previewKey = "";
+    private StaticLayout previewLayout = null;
+
+    // App icons: ready-made bitmaps, laid out once, blitted without any
+    // animation. This is the "no LED, no blinking" style.
+    private List<Bitmap> icons = null;
+    private int iconPx = 96;
+    private int iconCols = 1;
+    private int iconRows = 1;
+    private int iconCount = 0;
+    private float iconGap = 16f;
+    private float iconTop = 0f;
+    private float iconsBottom = 0f;
+    private boolean iconPlate = false;
+    private boolean iconLightPlate = false;
+    private boolean iconsOverUi = false;
+    private final Paint iconPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
+    private final Paint platePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final RectF iconRect = new RectF();
+
     public GlowRendererView(Context context)
     {
         super(context);
@@ -67,6 +106,8 @@ public class GlowRendererView extends View
         paint.setStrokeJoin(Paint.Join.ROUND);
         blackPaint.setStyle(Paint.Style.FILL);
         blackPaint.setColor(Color.BLACK);
+        textPaint.setColor(0xFFEEEEEE);
+        textPaint.setTextSize(15f * getResources().getDisplayMetrics().scaledDensity);
     }
 
     // ---- configuration ----------------------------------------------------
@@ -91,6 +132,8 @@ public class GlowRendererView extends View
         this.screenW = screenSize.x;
         this.screenH = screenSize.y;
         rebuildPaths();
+        rebuildPreview();
+        layoutIcons();
         invalidate();
     }
 
@@ -130,6 +173,145 @@ public class GlowRendererView extends View
         }
     }
 
+    /**
+     * Notification text shown next to the light while a burst runs. Pass
+     * three nulls to clear it: an idle black field must stay completely
+     * empty. The layout is built here, on change, not per frame.
+     */
+    public void setPreview(String app, String title, String body)
+    {
+        String a = app == null ? "" : app;
+        String t = title == null ? "" : title;
+        String b = body == null ? "" : body;
+        String key = a + '\u0001' + t + '\u0001' + b;
+        if (key.equals(previewKey)) { return; }
+        previewKey = key;
+
+        SpannableStringBuilder sb = new SpannableStringBuilder();
+        appendPart(sb, a, 0.78f, 0xFF9E9E9E, false);
+        appendPart(sb, t, 1.25f, 0xFFEEEEEE, true);
+        appendPart(sb, b, 0.95f, 0xFFBDBDBD, false);
+        while (sb.length() > 0 && sb.charAt(sb.length() - 1) == '\n')
+        {
+            sb.delete(sb.length() - 1, sb.length());
+        }
+        previewText = sb.length() == 0 ? null : sb;
+        rebuildPreview();
+        invalidate();
+    }
+
+    private void appendPart(SpannableStringBuilder sb, String s, float size, int color, boolean bold)
+    {
+        if (s == null || s.trim().isEmpty()) { return; }
+        int start = sb.length();
+        sb.append(s.trim());
+        int end = sb.length();
+        sb.setSpan(new RelativeSizeSpan(size), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        sb.setSpan(new ForegroundColorSpan(color), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        if (bold) { sb.setSpan(new StyleSpan(Typeface.BOLD), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE); }
+        sb.append('\n');
+    }
+
+    private void rebuildPreview()
+    {
+        previewLayout = null;
+        if (previewText == null) { return; }
+        try
+        {
+            int width = Math.max(64, Math.round(screenW * 0.82f));
+            previewLayout = StaticLayout.Builder
+                    .obtain(previewText, 0, previewText.length(), textPaint, width)
+                    .setAlignment(Layout.Alignment.ALIGN_CENTER)
+                    .setIncludePad(false)
+                    .setMaxLines(6)
+                    .setEllipsize(TextUtils.TruncateAt.END)
+                    .build();
+        }
+        catch (Throwable t)
+        {
+            previewLayout = null;
+        }
+    }
+
+    /**
+     * Icons of the apps that currently have a notification, newest first.
+     * Pass null to clear them. The bitmaps are already tinted by the owner;
+     * this view only decides where they go.
+     *
+     * @param sizePx     edge length of one icon in pixels
+     * @param plate      draw a rounded plate behind each icon
+     * @param lightPlate use a light plate (needed for black icons)
+     * @param overUi     also draw them while the screen is awake (test only)
+     */
+    public void setIcons(List<Bitmap> list, int sizePx, boolean plate, boolean lightPlate, boolean overUi)
+    {
+        this.icons = (list == null || list.isEmpty()) ? null : new ArrayList<>(list);
+        this.iconPx = Math.max(24, sizePx);
+        this.iconPlate = plate;
+        this.iconLightPlate = lightPlate;
+        this.iconsOverUi = overUi;
+        layoutIcons();
+        invalidate();
+    }
+
+    /**
+     * Centered rows below the camera, always inside the blacked-out area.
+     * Rows that would not fit are dropped rather than drawn over the part of
+     * the screen that must stay untouched.
+     */
+    private void layoutIcons()
+    {
+        iconsBottom = 0f;
+        iconCount = 0;
+        if (icons == null) { return; }
+        float density = getResources().getDisplayMetrics().density;
+        iconGap = Math.max(10f * density, iconPx * 0.30f);
+        float margin = 16f * density;
+        float avail = screenW - 2f * margin;
+        int cols = Math.max(1, (int) ((avail + iconGap) / (iconPx + iconGap)));
+        cols = Math.min(cols, icons.size());
+        int rows = (icons.size() + cols - 1) / cols;
+
+        float top = Math.max(camera.bottom + 22f * density, screenH * 0.10f);
+        float limit = screenH * BLACKOUT_HEIGHT_FRACTION - margin;
+        int fit = Math.max(1, (int) ((limit - top + iconGap) / (iconPx + iconGap)));
+        if (rows > fit) { rows = fit; }
+
+        iconCols = cols;
+        iconRows = rows;
+        iconCount = Math.min(icons.size(), rows * cols);
+        iconTop = top;
+        iconsBottom = top + rows * iconPx + (rows - 1) * iconGap;
+    }
+
+    private void drawIcons(Canvas canvas)
+    {
+        float corner = iconPx * 0.22f;
+        float pad = iconPlate || iconLightPlate ? iconPx * 0.10f : 0f;
+        if (pad > 0f)
+        {
+            platePaint.setColor(iconLightPlate ? 0xFFE8E8E8 : 0xFF1C1C1E);
+        }
+        for (int i = 0; i < iconCount; i++)
+        {
+            Bitmap b = icons.get(i);
+            if (b == null) { continue; }
+            int row = i / iconCols;
+            int col = i % iconCols;
+            int inRow = Math.min(iconCols, iconCount - row * iconCols);
+            float rowW = inRow * iconPx + (inRow - 1) * iconGap;
+            float x = (screenW - rowW) / 2f + col * (iconPx + iconGap) + shiftX;
+            float y = iconTop + row * (iconPx + iconGap) + shiftY;
+            if (pad > 0f)
+            {
+                iconRect.set(x - pad, y - pad, x + iconPx + pad, y + iconPx + pad);
+                canvas.drawRoundRect(iconRect, corner + pad, corner + pad, platePaint);
+            }
+            iconRect.set(x, y, x + iconPx, y + iconPx);
+            canvas.drawBitmap(b, null, iconRect, iconPaint);
+        }
+    }
+
     private void rebuildPaths()
     {
         float inset = strokePx * 1.5f + 2f;
@@ -151,8 +333,41 @@ public class GlowRendererView extends View
             // OLED these pixels are effectively off, so a static blackout costs
             // almost nothing.
             canvas.drawRect(0f, 0f, screenW, screenH * BLACKOUT_HEIGHT_FRACTION, blackPaint);
+            if (running)
+            {
+                float density = getResources().getDisplayMetrics().density;
+                float textTop = screenH * BLACKOUT_HEIGHT_FRACTION * 0.5f;
+                if (icons != null)
+                {
+                    drawIcons(canvas);
+                    textTop = iconsBottom + 18f * density;
+                }
+                if (previewLayout != null)
+                {
+                    // centered, below the light or the icons, and moving with
+                    // the same slow burn-in shift; skipped if it would not fit
+                    float bottom = screenH * BLACKOUT_HEIGHT_FRACTION - 4f * density;
+                    if (textTop + previewLayout.getHeight() <= bottom)
+                    {
+                        float x = (screenW - previewLayout.getWidth()) / 2f + shiftX;
+                        canvas.save();
+                        canvas.translate(x, textTop + shiftY);
+                        previewLayout.draw(canvas);
+                        canvas.restore();
+                    }
+                }
+            }
+        }
+        else if (running && icons != null && iconsOverUi)
+        {
+            // "Test light" while the app is on screen: show the icons as they
+            // would look, without painting a black field over the UI
+            drawIcons(canvas);
         }
         if (!running) { return; }
+        // App icons are a still image: no pulsing, no flashing, no frame loop.
+        // The only redraws are the slow burn-in shifts driven by the owner.
+        if (Prefs.STYLE_ICONS.equals(style)) { return; }
 
         long now = SystemClock.elapsedRealtime();
         if (eco && now - lastFrame < 66L)

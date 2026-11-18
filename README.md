@@ -4,6 +4,8 @@ A notification light / LED for phones that do not have one. When a
 notification arrives, a colored light glows **around the front camera
 cutout**, along the **screen edges**, or as a small **LED dot** — on the
 lock screen and while the display is in its always-on / doze state.
+Alternatively it shows the **app icons** of the apps that have a
+notification and no light at all.
 No root, no Xposed, no hardware LED required.
 
 Pure Java, no Kotlin, no tracking, **no internet permission at all**.
@@ -28,33 +30,45 @@ The app combines three standard Android mechanisms:
    screen content is ever read** — accessibility is used purely for the
    window type.
 
-3. **A dark replacement canvas** (`AodScreenActivity`)
-   On devices where overlays are not composited during native doze (or
-   which have no AOD), the service launches a pure-black, very dim,
-   `showWhenLocked` + `turnScreenOn` + `KEEP_SCREEN_ON` activity. On OLED
-   panels black pixels are effectively off, so this looks and behaves like
-   an AOD. The light overlay draws on top of it, an optional notification
-   preview is shown, and **double-tap wakes** the device. When the light
-   timeout ends, the service returns the phone to the lock screen with
-   `GLOBAL_ACTION_LOCK_SCREEN` so it can doze again.
+3. **A black always-on field, drawn by the same overlay**
+   While the display is off, the overlay paints an opaque black rectangle
+   over the top two thirds of the panel, which hides the system AOD clock
+   and widgets. On OLED those pixels are effectively off, so an idle
+   screen is a static, near-zero-cost black field: no animation, no wake
+   locks, and **nothing at all is drawn when there is no notification**.
+   The light, the app icons and the optional notification text are painted
+   into that field, so nothing ever has to wake the panel — pressing the
+   power button turns the display off and it stays off. The bottom third
+   of the panel is deliberately left untouched.
+
+   For phones that show *nothing* when the display is off there is an
+   opt-in fallback (`AodScreenActivity`, off by default): a pure-black,
+   very dim `showWhenLocked` + `turnScreenOn` + `KEEP_SCREEN_ON` activity
+   that gives the light something to sit on and supports double-tap wake.
+   Because it turns the panel on, it is never used unless asked for.
 
 While the light runs, a timeout-bounded `PARTIAL_WAKE_LOCK` keeps the
 animation timers alive during doze. The hidden `DRAW_WAKE_LOCK` level is
 probed once and used only where the OEM permits it. All wake locks are
 released when the burst ends.
 
-**Burn-in protection:** the light and the preview text slowly change
-position while shown.
+**Burn-in protection:** the light, the app icons and the preview text
+slowly change position while shown — about once a minute, further for
+icons because they cover many more pixels than a thin ring.
 
 ## Features
 
-- Styles: camera ring, screen edge glow, status-bar LED dot
-- Animations: pulse, rotate, flash, steady; adjustable speed
+- Styles: camera ring, screen edge glow, status-bar LED dot, or app icons
+- App icons: one icon per app with a notification, in centered rows below
+  the camera; original colors, white or black; size 24–96 dp; optional
+  background plate; slow drift against burn-in. Completely still — no
+  pulsing, flashing or blinking, and no per-frame redraws
+- Animations (light styles): pulse, rotate, flash, steady; adjustable speed
 - ECO mode (reduced frame rate) and interval mode (on/off cycling)
 - Per-app colors (long-press an app icon in the strip), auto color from
   the app icon, or one global color
-- Notification preview text on the dark canvas (optional)
-- Double tap to wake
+- Notification preview text, drawn by the overlay (optional)
+- Double tap to wake (on the fallback canvas)
 - Charging / battery-full / low-battery light
 - Night quiet hours, Do-Not-Disturb respect
 - App filter (all apps or a selected set)

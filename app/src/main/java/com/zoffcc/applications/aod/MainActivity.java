@@ -245,6 +245,9 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
         bindSwitch(R.id.sw_double_tap, Prefs.DOUBLE_TAP_WAKE, true);
         bindSwitch(R.id.sw_clear_unlock, Prefs.CLEAR_ON_UNLOCK, false);
         bindSwitch(R.id.sw_relight_relock, Prefs.RELIGHT_RELOCK, true);
+        bindSwitch(R.id.sw_canvas_fallback, Prefs.CANVAS_FALLBACK, false);
+        bindSwitch(R.id.sw_icon_plate, Prefs.ICON_PLATE, false);
+        bindSwitch(R.id.sw_icon_shift, Prefs.ICON_SHIFT, true);
         bindSwitch(R.id.sw_auto_color, Prefs.AUTO_COLOR, true);
         bindSwitch(R.id.sw_eco, Prefs.ECO, false);
         bindSwitch(R.id.sw_interval, Prefs.INTERVAL, false);
@@ -261,7 +264,7 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
                 R.array.style_entries, R.layout.item_spinner);
         sa.setDropDownViewResource(R.layout.item_spinner_dropdown);
         style.setAdapter(sa);
-        String[] styleVals = {Prefs.STYLE_RING, Prefs.STYLE_EDGE, Prefs.STYLE_DOT};
+        String[] styleVals = {Prefs.STYLE_RING, Prefs.STYLE_EDGE, Prefs.STYLE_DOT, Prefs.STYLE_ICONS};
         style.setSelection(indexOf(styleVals, prefs.getString(Prefs.STYLE, Prefs.STYLE_RING)));
         style.setOnItemSelectedListener(new SimpleItemSelected()
         {
@@ -301,6 +304,22 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
             {
                 prefs.edit().putString(Prefs.FILTER_MODE, position == 1 ? "selected" : "all").apply();
                 sendLocal(notificationobserver.ACTION_REEVAL);
+            }
+        });
+
+        Spinner tint = findViewById(R.id.sp_icon_tint);
+        ArrayAdapter<CharSequence> ta = ArrayAdapter.createFromResource(this,
+                R.array.icon_tint_entries, R.layout.item_spinner);
+        ta.setDropDownViewResource(R.layout.item_spinner_dropdown);
+        tint.setAdapter(ta);
+        String[] tintVals = {Prefs.ICON_TINT_COLOR, Prefs.ICON_TINT_WHITE, Prefs.ICON_TINT_BLACK};
+        tint.setSelection(indexOf(tintVals, prefs.getString(Prefs.ICON_TINT, Prefs.ICON_TINT_COLOR)));
+        tint.setOnItemSelectedListener(new SimpleItemSelected()
+        {
+            @Override
+            public void onItemSelected(int position)
+            {
+                prefs.edit().putString(Prefs.ICON_TINT, tintVals[position]).apply();
             }
         });
     }
@@ -402,6 +421,9 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
         bindSlider(R.id.sb_stroke, R.id.lbl_stroke,
                 prefs.getInt(Prefs.STROKE_DP, 5) - 2, R.string.lbl_stroke,
                 p -> prefs.edit().putInt(Prefs.STROKE_DP, p + 2).apply());
+        bindSlider(R.id.sb_icon_size, R.id.lbl_icon_size,
+                prefs.getInt(Prefs.ICON_SIZE_DP, 48) - 24, R.string.lbl_icon_size,
+                p -> prefs.edit().putInt(Prefs.ICON_SIZE_DP, p + 24).apply());
         bindSlider(R.id.sb_speed, R.id.lbl_speed,
                 (prefs.getInt(Prefs.SPEED_MS, 1600) - 300) / 100, R.string.lbl_speed,
                 p -> prefs.edit().putInt(Prefs.SPEED_MS, 300 + p * 100).apply());

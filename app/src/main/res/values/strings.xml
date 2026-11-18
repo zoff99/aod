@@ -20,10 +20,14 @@
     <string name="set_aod_light_sum">The main always-on light: it glows while the display is off or in the phone\u2019s own always-on mode, for the light duration set below. Notifications that arrive while you use the phone are saved and shown the next time the screen goes off.</string>
     <string name="set_screen_on_light">Light on lock screen (screen on)</string>
     <string name="set_screen_on_light_sum">Keeps the light visible when you wake the phone but it is still locked, for example after a single press of the power button. Waking the screen is not an unlock: the light stays until you unlock the phone or the light duration ends.</string>
-    <string name="set_preview">Show notification text on dark canvas</string>
+    <string name="set_preview">Show notification text with the light</string>
+    <string name="set_preview_sum">Prints the app name, title and text of the newest notification into the black area, below the light or the app icons. The overlay draws it, so the display is never woken up for it. With no notification the screen stays completely black.</string>
     <string name="set_double_tap">Double tap to wake</string>
+    <string name="set_double_tap_sum">Two quick taps anywhere wake the phone. This works on the fallback dark canvas below, because only that canvas can receive touches.</string>
     <string name="set_clear_unlock">Dismiss notifications on unlock</string>
     <string name="set_relight_relock">Light again when locked again</string>
+    <string name="set_canvas_fallback">Fallback dark canvas (phones without AOD)</string>
+    <string name="set_canvas_fallback_sum">Leave this OFF if your phone has its own always-on display. It is only for phones that show nothing when the display is off: it opens a very dim black screen so the light has something to sit on. That screen keeps the panel awake, so while a light is showing the power button may not turn the display off. With this off, the light and the black background are drawn without waking anything.</string>
     <string name="set_relight_relock_sum">Unlocking the phone hides the light. With this on, turning the display off or locking the phone again brings the light back for any notification you have not dismissed. Dismissed notifications never light up again.</string>
 
     <string name="sec_appearance">Appearance</string>
@@ -35,6 +39,16 @@
     <string name="set_interval">Interval mode (on/off cycling)</string>
     <string name="set_interval_on">On (s)</string>
     <string name="set_interval_off">Off (s)</string>
+
+    <string name="sec_icons">App icons instead of a light</string>
+    <string name="sec_icons_sum">Used when the style above is set to \u201cApp icons\u201d. The icons of the apps that have a notification are shown on the black screen instead of a ring, edge or dot. They are completely still: nothing pulses, flashes or blinks, and the screen is redrawn only when the icons move. With no notification the screen stays completely black. The icons belong to the dark always-on screen; while the phone is awake on the lock screen its own clock is left alone.</string>
+    <string name="set_icon_tint">Icon color</string>
+    <string name="set_icon_tint_sum">Original colors keeps the artwork as it is. White turns each icon into a light monochrome glyph, which is the calmest look on a black screen. Black is the inverted form and is always drawn on a light plate so it stays visible.</string>
+    <string name="lbl_icon_size">Icon size: %1$d dp</string>
+    <string name="set_icon_plate">Background plate behind icons</string>
+    <string name="set_icon_plate_sum">Draws a rounded plate behind every icon, which helps icons with transparent or busy artwork stand out. Black icons always get a light plate, whatever this switch says.</string>
+    <string name="set_icon_shift">Move icons slowly (burn-in protection)</string>
+    <string name="set_icon_shift_sum">A still image can burn into an OLED panel. With this on, the whole icon block drifts a few pixels about once a minute, so no pixel stays lit in the same place. Turn it off only if you want the icons pinned to one spot.</string>
 
     <string name="sec_behavior">Behavior</string>
     <string name="set_night">Night quiet hours</string>
@@ -73,6 +87,12 @@
         <item>Camera ring</item>
         <item>Screen edge</item>
         <item>LED dot</item>
+        <item>App icons (no light)</item>
+    </string-array>
+    <string-array name="icon_tint_entries">
+        <item>Original colors</item>
+        <item>White</item>
+        <item>Black</item>
     </string-array>
     <string-array name="anim_entries">
         <item>Pulse</item>

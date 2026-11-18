@@ -45,10 +45,13 @@ import java.util.List;
  *    running while the application processor would otherwise suspend;
  *  - probe the hidden DRAW wake lock level once; where the OEM permits it,
  *    the display pipeline keeps compositing during doze;
- *  - where the overlay is not visible during native doze (or the device has
- *    no AOD at all), launch {@link AodScreenActivity}: a pure-black, very dim,
- *    show-when-locked activity that acts as a replacement canvas. On OLED
- *    panels black pixels are effectively off, so this looks like an AOD.
+ *  - the black background and the optional notification text are drawn by
+ *    the overlay itself, so nothing has to wake the panel: pressing power
+ *    still turns the display off and it stays off;
+ *  - only if the user explicitly enables the fallback canvas (phones with no
+ *    always-on display of their own) is {@link AodScreenActivity} launched:
+ *    a pure-black, very dim, show-when-locked activity. It turns the panel
+ *    on, which is exactly why it is opt-in and off by default.
  *  - when the burst ends, return the device to the lock screen with
  *    GLOBAL_ACTION_LOCK_SCREEN so it can doze again.
  */
@@ -84,6 +87,8 @@ public class overlayservice extends AccessibilityService
     private boolean lastKmLocked = true;
     private int kmUnlockedSeen = 0;
     private long relockWatchStart = 0L;
+    private long canvasLaunchAt = 0L;
+    private long canvasBackoffUntil = 0L;
     private PowerManager.WakeLock partialLock;
     private PowerManager.WakeLock drawLock;
     private PowerManager.WakeLock wakeBridge;
@@ -364,6 +369,14 @@ public class overlayservice extends AccessibilityService
                     syncOverlay();
                     break;
                 case notificationobserver.ACTION_AOD_GONE:
+                    // A canvas that disappears the instant it was shown means
+                    // this device refuses it. Back off instead of relaunching
+                    // on every screen-off, which would wake the panel in a loop.
+                    if (canvasShown && SystemClock.elapsedRealtime() - canvasLaunchAt < 1500L)
+                    {
+                        canvasBackoffUntil = SystemClock.elapsedRealtime() + 30000L;
+                        Dbg.log("overlay", "canvas vanished immediately -> backoff 30s (no wake loop)");
+                    }
                     canvasShown = false;
                     boolean keep = screenOn && lockedScreenOnLightWanted()
                             && SystemClock.elapsedRealtime() - lastUserPresentAt >= 1500L;
@@ -447,7 +460,10 @@ public class overlayservice extends AccessibilityService
                 kmUnlockedSeen = 0;
             }
             lastKmLocked = locked;
-            h.postDelayed(this, 300L);
+            // While the panel is off there is nothing to unlock: poll lazily
+            // so a still always-on screen costs almost no CPU. An awake lock
+            // screen needs the fast poll to hide the light promptly.
+            h.postDelayed(this, (screenOn || canvasShown) ? 300L : 2000L);
         }
     };
 
@@ -464,7 +480,9 @@ public class overlayservice extends AccessibilityService
                 + " test=" + testMode
                 + " enabled=" + Prefs.enabled(this) + " aodLight=" + Prefs.aodLight(this)
                 + " screenOnLight=" + Prefs.screenOnLight(this)
-                + " relight=" + Prefs.relightRelock(this);
+                + " relight=" + Prefs.relightRelock(this)
+                + " fallbackCanvas=" + Prefs.canvasFallback(this)
+                + " style=" + Prefs.style(this);
     }
 
     private static String dispName(int st)
@@ -718,9 +736,7 @@ public class overlayservice extends AccessibilityService
         view.setVisibility(android.view.View.VISIBLE);
         view.start();
         lightActive = true;
-        shiftIndex = 0;
-        view.setShift(0f, 0f);
-        h.postDelayed(shiftRunnable, SHIFT_INTERVAL_MS);
+        armShift();
         lastKmLocked = km == null || km.isKeyguardLocked();
         kmUnlockedSeen = 0;
         h.removeCallbacks(keyguardWatch);
@@ -733,18 +749,28 @@ public class overlayservice extends AccessibilityService
             try { drawLock.acquire(lockFor); } catch (Exception ignored) {}
         }
 
-        if (allowCanvas && Prefs.preview(this) && !canvasShown && !screenOn)
+        // The fallback canvas is an activity with setTurnScreenOn(true):
+        // launching it here would immediately undo the user's power-button
+        // screen-off (off -> canvas -> on -> off -> ...). It is therefore
+        // opt-in only; by default the overlay draws everything and the
+        // display is left exactly as the user left it.
+        boolean fallback = Prefs.canvasFallback(this);
+        if (allowCanvas && fallback && !canvasShown && !screenOn)
         {
-            Dbg.log("overlay", "startBurst -> launchCanvas (preview)");
+            Dbg.log("overlay", "startBurst -> launchCanvas (fallback canvas enabled)");
             launchCanvas();
         }
         else if (allowCanvas)
         {
-            Dbg.log("overlay", "startBurst canvas skipped: preview=" + Prefs.preview(this)
+            Dbg.log("overlay", "startBurst canvas skipped: fallback=" + fallback
                     + " canvasShown=" + canvasShown + " screenOn=" + screenOn);
         }
 
-        timeoutTimer = new CountDownTimer(durationMs, 1000L)
+        // Interval mode needs a tick to toggle visibility; otherwise a single
+        // wake-up at the end of the burst is enough (much less CPU while the
+        // panel shows a still image).
+        long tick = Prefs.interval(this) ? 1000L : Math.max(1000L, durationMs);
+        timeoutTimer = new CountDownTimer(durationMs, tick)
         {
             @Override
             public void onTick(long millisUntilFinished)
@@ -811,6 +837,8 @@ public class overlayservice extends AccessibilityService
         if (view != null)
         {
             view.stop();
+            view.setPreview(null, null, null);
+            view.setIcons(null, 0, false, false, false);
         }
         syncOverlay();
         release(partialLock);
@@ -836,12 +864,30 @@ public class overlayservice extends AccessibilityService
         public void run()
         {
             if (!lightActive || view == null) { return; }
+            boolean icons = Prefs.STYLE_ICONS.equals(Prefs.style(overlayservice.this));
+            if (icons && !Prefs.iconShift(overlayservice.this)) { return; }
             shiftIndex = (shiftIndex + 1) % SHIFTS.length;
             float d = getResources().getDisplayMetrics().density;
-            view.setShift(SHIFTS[shiftIndex][0] * d, SHIFTS[shiftIndex][1] * d);
+            // icons cover far more pixels than a thin ring, so they drift a
+            // little further to keep any single pixel from staying lit
+            float scale = icons ? 2.6f : 1f;
+            view.setShift(SHIFTS[shiftIndex][0] * d * scale, SHIFTS[shiftIndex][1] * d * scale);
             h.postDelayed(this, SHIFT_INTERVAL_MS);
         }
     };
+
+    /** Restart the slow burn-in drift (about once a minute). */
+    private void armShift()
+    {
+        h.removeCallbacks(shiftRunnable);
+        shiftIndex = 0;
+        if (view != null) { view.setShift(0f, 0f); }
+        boolean icons = Prefs.STYLE_ICONS.equals(Prefs.style(this));
+        if (!icons || Prefs.iconShift(this))
+        {
+            h.postDelayed(shiftRunnable, SHIFT_INTERVAL_MS);
+        }
+    }
 
     /**
      * Opaque black over the system AOD whenever the screen is off, so the
@@ -860,11 +906,18 @@ public class overlayservice extends AccessibilityService
         if (off)
         {
             view.setVisibility(android.view.View.VISIBLE);
-            if (!lightActive) { view.stop(); }
+            if (!lightActive)
+            {
+                view.stop();
+                view.setPreview(null, null, null);
+                view.setIcons(null, 0, false, false, false);
+            }
         }
         else if (!lightActive)
         {
             view.stop();
+            view.setPreview(null, null, null);
+            view.setIcons(null, 0, false, false, false);
             view.setVisibility(android.view.View.GONE);
         }
         else
@@ -880,6 +933,95 @@ public class overlayservice extends AccessibilityService
         float strokePx = Prefs.strokeDp(this) * getResources().getDisplayMetrics().density;
         view.configure(Prefs.style(this), Prefs.anim(this), color, Prefs.eco(this),
                 Prefs.speedMs(this), strokePx, Prefs.dotX(this));
+        syncPreview();
+        syncIcons();
+    }
+
+    /**
+     * Feed the renderer the icons of the apps that have a notification, one
+     * per app, newest first. Icons are only used by the "app icons" style;
+     * every other style keeps the drawn light. Nothing is shown when there
+     * is no notification, so the idle screen stays completely black.
+     */
+    private void syncIcons()
+    {
+        if (view == null) { return; }
+        if (!Prefs.STYLE_ICONS.equals(Prefs.style(this)) || (!testMode && items.isEmpty()))
+        {
+            view.setIcons(null, 0, false, false, false);
+            return;
+        }
+        java.util.LinkedHashSet<String> pkgs = new java.util.LinkedHashSet<>();
+        if (testMode)
+        {
+            pkgs.add(getPackageName()); // "Test light" previews our own icon
+        }
+        else
+        {
+            for (NotificationItem n : items)
+            {
+                if (!n.batteryEvent && n.pkg != null && !n.pkg.isEmpty()) { pkgs.add(n.pkg); }
+            }
+        }
+        String tint = Prefs.iconTint(this);
+        int iconPx = Math.round(Prefs.iconSizeDp(this) * getResources().getDisplayMetrics().density);
+        ArrayList<android.graphics.Bitmap> list = new ArrayList<>();
+        for (String pkg : pkgs)
+        {
+            android.graphics.Bitmap b = AppIconCache.get(this, pkg, tint, iconPx);
+            if (b != null) { list.add(b); }
+            if (list.size() >= 12) { break; }
+        }
+        boolean black = Prefs.ICON_TINT_BLACK.equals(tint);
+        view.setIcons(list, iconPx, Prefs.iconPlate(this), black, testMode);
+        Dbg.log("overlay", "icons: apps=" + pkgs.size() + " drawn=" + list.size()
+                + " tint=" + tint + " px=" + iconPx + " plate=" + Prefs.iconPlate(this)
+                + " shift=" + Prefs.iconShift(this));
+    }
+
+    /**
+     * Notification text is painted by the overlay itself. No activity is
+     * started for it, so showing text never wakes the display and never
+     * needs an extra wake lock. With no notification the field stays empty.
+     */
+    private void syncPreview()
+    {
+        if (view == null) { return; }
+        if (!Prefs.preview(this) || Prefs.canvasFallback(this) || testMode || items.isEmpty())
+        {
+            view.setPreview(null, null, null);
+            return;
+        }
+        NotificationItem item = null;
+        for (NotificationItem n : items)
+        {
+            if (!n.batteryEvent) { item = n; break; }
+        }
+        if (item == null)
+        {
+            view.setPreview(null, null, null);
+            return;
+        }
+        view.setPreview(appLabel(item.pkg), item.title, item.text);
+    }
+
+    private String labelPkg = "";
+    private String labelCache = "";
+
+    private String appLabel(String pkg)
+    {
+        if (pkg == null) { return ""; }
+        if (pkg.equals(labelPkg)) { return labelCache; }
+        String label = pkg;
+        try
+        {
+            android.content.pm.PackageManager pm = getPackageManager();
+            label = pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString();
+        }
+        catch (Exception ignored) {}
+        labelPkg = pkg;
+        labelCache = label;
+        return label;
     }
 
     private void refreshGeometry()
@@ -908,6 +1050,13 @@ public class overlayservice extends AccessibilityService
 
     private void launchCanvas()
     {
+        long now = SystemClock.elapsedRealtime();
+        if (now < canvasBackoffUntil)
+        {
+            Dbg.log("overlay", "launchCanvas skipped: backoff " + (canvasBackoffUntil - now) + "ms");
+            return;
+        }
+        canvasLaunchAt = now;
         try
         {
             Intent intent = new Intent(this, AodScreenActivity.class);
@@ -975,6 +1124,22 @@ public class overlayservice extends AccessibilityService
         if (Prefs.NIGHT.equals(key) || Prefs.NIGHT_START.equals(key) || Prefs.NIGHT_END.equals(key))
         {
             sendLocal(notificationobserver.ACTION_REEVAL);
+        }
+        if (Prefs.STYLE.equals(key) || Prefs.ICON_TINT.equals(key) || Prefs.ICON_SIZE_DP.equals(key)
+                || Prefs.ICON_PLATE.equals(key) || Prefs.ICON_SHIFT.equals(key))
+        {
+            applyAppearance();
+            refreshGeometry();
+            if (lightActive) { armShift(); }
+        }
+        if (Prefs.PREVIEW.equals(key) || Prefs.CANVAS_FALLBACK.equals(key))
+        {
+            if (!Prefs.canvasFallback(this) && canvasShown)
+            {
+                Dbg.log("overlay", "fallback canvas switched off -> HIDE");
+                sendLocal(notificationobserver.ACTION_HIDE);
+            }
+            syncPreview();
         }
         if (lightActive)
         {
