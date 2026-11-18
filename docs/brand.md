@@ -11,6 +11,8 @@ without redrawing the icon. The artwork is original to this project.
 | `docs/icon-square.svg` | same art, full square, no corners, no alpha | store listing icon (Google Play masks it for you) |
 | `docs/icon-monochrome.svg` | the ring + dot alone, one colour | watermarks, footers, stickers, dark-on-light print, themed launcher layer |
 | `docs/render_assets.py` | renders the PNGs from the same numbers | regenerating `fastlane` images and one-off promo exports |
+| `docs/icon-preview.png` | reference sheet: the icon on dark and light backgrounds, inside the launcher mask, as the full-square store icon, down to 48 px, plus the themed mark | checking the artwork at a glance |
+| `docs/icon-layout-preview.png` | diagram of the icon position and count settings on a 1080 × 2340 panel | showing what the placement options do |
 | `fastlane/metadata/android/en-US/` | store text + images | Play listing via `fastlane supply` |
 
 All three SVGs are plain, hand-written, dependency-free vectors: no filters, no
