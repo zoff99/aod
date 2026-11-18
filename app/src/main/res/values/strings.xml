@@ -50,7 +50,7 @@
     <string name="set_icon_plate">Background plate behind icons</string>
     <string name="set_icon_plate_sum">Draws a rounded plate behind every icon, which helps icons with transparent or busy artwork stand out. Black icons always get a light plate, whatever this switch says.</string>
     <string name="set_icon_shift">Move icons slowly (burn-in protection)</string>
-    <string name="set_icon_shift_sum">A still image can burn into an OLED panel. With this on, the whole icon block drifts a few pixels about once a minute, so no pixel stays lit in the same place. Turn it off only if you want the icons pinned to one spot.</string>
+    <string name="set_icon_shift_sum">A still image can burn into an OLED panel. With this on, the icon block is placed a few pixels differently for every light-up and moves again after ten minutes, so no pixel stays lit in the same place. Nothing slides around while you look at it: it stays in one spot for the whole time the icons are shown. Turn it off only if you want the icons pinned to one spot.</string>
 
     <string name="sec_icon_pos">Icon position and layout</string>
     <string name="sec_icon_pos_sum">Where the icons sit on the dark screen. The icons are laid out in rows; these settings decide where the block of rows starts, how far apart the icons are and how many go into one row. Everything applies to the always-on screen only, and the icons never leave the panel: an offset that would push them off the edge is limited to the edge.</string>
@@ -161,7 +161,7 @@
     <string name="picker_all">Select all</string>
     <string name="picker_none">Clear</string>
     <string name="picker_empty">No apps match your search</string>
-    <string name="picker_hint">Long press an app to choose its light color</string>
+    <string name="picker_hint">Long press an app to choose the color of its light: the ring, the screen edge, the status-bar dot or its icon on the dark screen.</string>
     <string name="picker_filter">Show:</string>
     <string name="picker_empty_none">Nothing selected yet</string>
     <string name="picker_empty_all">Every app here is already selected</string>

@@ -53,9 +53,13 @@ animation timers alive during doze. The hidden `DRAW_WAKE_LOCK` level is
 probed once and used only where the OEM permits it. All wake locks are
 released when the burst ends.
 
-**Burn-in protection:** the light and the app icons
-slowly change position while shown — about once a minute, further for
-icons because they cover many more pixels than a thin ring.
+**Burn-in protection:** the light and the app icons are placed a
+few pixels differently **at the start of every burst**, and move again after
+**ten minutes** if a single burst lasts that long (`SHIFT_INTERVAL_MS`).
+Within one burst nothing slides around at all, so what you see stays calm;
+across repeated bursts the pixels differ. Icons move further than a thin
+ring because they cover many more pixels. Switch *Move icons* off to pin
+them to one spot.
 
 ## Features
 

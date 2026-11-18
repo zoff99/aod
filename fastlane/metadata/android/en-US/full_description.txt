@@ -21,7 +21,7 @@ COLORS AND BEHAVIOR
 • Place the icon block anywhere: centered or left-aligned, horizontal offset, vertical start below the camera or from the top or bottom edge, icons per row, spacing, and a limit on how many are shown
 • Optional number under each icon: how many notifications that app has, or its own unread counter, with adjustable text size and an optional badge
 • Hide on unlock and light up again when the phone re-locks
-• Burn-in protection: the light and the icons slowly change position while shown
+• Burn-in protection: the light and the icons are placed a few pixels differently for every light-up, and again after ten minutes
 
 PRIVACY
 AoD requests no INTERNET permission at all. No ads, no analytics, no accounts, no tracking.

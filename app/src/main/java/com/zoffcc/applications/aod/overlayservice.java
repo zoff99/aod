@@ -74,7 +74,11 @@ public class overlayservice extends AccessibilityService
     private static final int DRAW_WAKE_LOCK_LEVEL = 0x00000080;
 
     private static final long LOCK_GUARD_MS = 1200L;
-    private static final long SHIFT_INTERVAL_MS = 58000L;
+    /** How often the light moves while one burst lasts that long: ten
+     *  minutes. The position also changes at the start of every burst,
+     *  which is what actually protects the panel, because bursts are
+     *  usually far shorter than this interval. */
+    private static final long SHIFT_INTERVAL_MS = 600000L;
 
     private final Handler h = new Handler(Looper.getMainLooper());
     private WindowManager wm;
@@ -896,29 +900,51 @@ public class overlayservice extends AccessibilityService
         public void run()
         {
             if (!lightActive || view == null) { return; }
-            boolean icons = Prefs.STYLE_ICONS.equals(Prefs.style(overlayservice.this));
-            if (icons && !Prefs.iconShift(overlayservice.this)) { return; }
-            shiftIndex = (shiftIndex + 1) % SHIFTS.length;
-            float d = getResources().getDisplayMetrics().density;
-            // icons cover far more pixels than a thin ring, so they drift a
-            // little further to keep any single pixel from staying lit
-            float scale = icons ? 2.6f : 1f;
-            view.setShift(SHIFTS[shiftIndex][0] * d * scale, SHIFTS[shiftIndex][1] * d * scale);
+            if (pinned()) { return; }
+            applyShift();
             h.postDelayed(this, SHIFT_INTERVAL_MS);
         }
     };
 
-    /** Restart the slow burn-in drift (about once a minute). */
+    /** True when the icons style is switched to "pinned to one spot". */
+    private boolean pinned()
+    {
+        return Prefs.STYLE_ICONS.equals(Prefs.style(this)) && !Prefs.iconShift(this);
+    }
+
+    /** Next position slot and draw it. */
+    private void applyShift()
+    {
+        shiftIndex = (shiftIndex + 1) % SHIFTS.length;
+        float d = getResources().getDisplayMetrics().density;
+        // icons cover far more pixels than a thin ring, so they move a
+        // little further to keep any single pixel from staying lit
+        float scale = Prefs.STYLE_ICONS.equals(Prefs.style(this)) ? 2.6f : 1f;
+        float dx = SHIFTS[shiftIndex][0] * d * scale;
+        float dy = SHIFTS[shiftIndex][1] * d * scale;
+        if (view != null) { view.setShift(dx, dy); }
+        Dbg.log("overlay", "burn-in shift slot=" + shiftIndex + " dx=" + (int) dx
+                + " dy=" + (int) dy + " (next in " + (SHIFT_INTERVAL_MS / 60000L) + " min)");
+    }
+
+    /**
+     * Position the light for a new burst and arm the slow move for long
+     * bursts. Stepping the slot once per burst is what protects the panel:
+     * within a burst nothing moves at all, so the icons sit calmly for the
+     * whole time they are shown, and repeated bursts land in different
+     * places. With "move icons" switched off they stay pinned to one spot.
+     */
     private void armShift()
     {
         h.removeCallbacks(shiftRunnable);
-        shiftIndex = 0;
-        if (view != null) { view.setShift(0f, 0f); }
-        boolean icons = Prefs.STYLE_ICONS.equals(Prefs.style(this));
-        if (!icons || Prefs.iconShift(this))
+        if (pinned())
         {
-            h.postDelayed(shiftRunnable, SHIFT_INTERVAL_MS);
+            shiftIndex = -1;      // slot 0 = no offset at all
+            applyShift();
+            return;
         }
+        applyShift();
+        h.postDelayed(shiftRunnable, SHIFT_INTERVAL_MS);
     }
 
     /**
