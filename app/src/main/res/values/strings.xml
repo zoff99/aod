@@ -161,6 +161,15 @@
     <string name="picker_all">Select all</string>
     <string name="picker_none">Clear</string>
     <string name="picker_empty">No apps match your search</string>
+    <string name="picker_hint">Long press an app to choose its light color</string>
+    <string name="picker_filter">Show:</string>
+    <string name="picker_empty_none">Nothing selected yet</string>
+    <string name="picker_empty_all">Every app here is already selected</string>
+    <string-array name="picker_filter_entries">
+        <item>All apps</item>
+        <item>Selected only</item>
+        <item>Not selected</item>
+    </string-array>
     <string name="picker_loading">Loading apps…</string>
     <string name="btn_back">Back</string>
     <string name="app_icon_desc">App icon</string>

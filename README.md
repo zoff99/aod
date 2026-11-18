@@ -64,8 +64,8 @@ icons because they cover many more pixels than a thin ring.
   the camera; original colors, white or black; size 24–96 dp; optional
   background plate; slow drift against burn-in. Completely still — no
   pulsing, flashing or blinking, and no per-frame redraws
-- Icon artwork: the app's launcher icon, or the small symbol it posts to the
-  status bar (`Notification.getSmallIcon()`, loaded by resource id from that
+- Icon artwork: the small symbol an app posts to the status bar (default),
+  or its launcher icon (`Notification.getSmallIcon()`, loaded by resource id from that
   app's resources). Status-bar symbols are flat alpha masks, so with
   "original colors" they are filled with `Notification.color` — the accent
   the app chose for its own notifications — falling back to the dominant
@@ -94,7 +94,9 @@ icons because they cover many more pixels than a thin ring.
   app — the manifest declares `<queries>` for `ACTION_MAIN`, which Android 11+
   requires to see them at all, without `QUERY_ALL_PACKAGES` — plus every
   package that has posted a notification, so apps without a launcher icon can
-  be filtered too
+  be filtered too. The list can be narrowed to all / selected / not
+  selected apps, and a hint reminds you that a long press sets that app's
+  light color
 - Ignore persistent notifications; optional dismiss-on-unlock
 - Camera-ring calibration: automatic cutout detection + manual offset/size
 - Light duration, canvas brightness, thickness sliders

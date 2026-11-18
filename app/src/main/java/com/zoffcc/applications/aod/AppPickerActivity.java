@@ -10,8 +10,11 @@ import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ProgressBar;
+import android.widget.Spinner;
 import android.widget.TextView;
 
 import androidx.appcompat.app.ActionBar;
@@ -31,7 +34,10 @@ import java.util.concurrent.Executors;
 /**
  * Full-screen app selection: searchable list of every app that can be
  * launched, plus every app that has posted a notification since install
- * (some of those have no launcher icon at all), each with its icon. Selection is saved instantly; long press sets a per-app light
+ * (some of those have no launcher icon at all), each with its icon.
+ *
+ * The list can be narrowed to selected or not-selected apps, which makes a
+ * long list easy to finish, and the view chosen is remembered. Selection is saved instantly; long press sets a per-app light
  * color. Designed for very large app lists (background loading, lazy icons,
  * diffed updates, fast scrolling).
  */
@@ -51,6 +57,7 @@ public class AppPickerActivity extends AppCompatActivity implements AppListAdapt
     private ProgressBar progress;
     private EditText search;
     private View clearSearch;
+    private String mode = Prefs.PICKER_ALL;
     private volatile boolean loaded = false;
     private final Runnable filterRunnable = this::refilter;
 
@@ -81,6 +88,8 @@ public class AppPickerActivity extends AppCompatActivity implements AppListAdapt
         clearSearch.setOnClickListener(v -> search.setText(""));
         findViewById(R.id.btn_all).setOnClickListener(v -> applyToFiltered(true));
         findViewById(R.id.btn_none).setOnClickListener(v -> applyToFiltered(false));
+
+        bindFilter();
 
         search.addTextChangedListener(new TextWatcher()
         {
@@ -147,17 +156,63 @@ public class AppPickerActivity extends AppCompatActivity implements AppListAdapt
         });
     }
 
+    /** All apps / only the selected ones / only the ones not picked yet. */
+    private void bindFilter()
+    {
+        Spinner sp = findViewById(R.id.sp_picker_filter);
+        ArrayAdapter<CharSequence> fa = ArrayAdapter.createFromResource(this,
+                R.array.picker_filter_entries, R.layout.item_spinner);
+        fa.setDropDownViewResource(R.layout.item_spinner_dropdown);
+        sp.setAdapter(fa);
+        final String[] modes = {Prefs.PICKER_ALL, Prefs.PICKER_SELECTED, Prefs.PICKER_UNSELECTED};
+        mode = Prefs.pickerFilter(this);
+        sp.setSelection(indexOf(modes, mode));
+        sp.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener()
+        {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id)
+            {
+                String next = modes[position];
+                if (next.equals(mode)) { return; }   // spinners report on attach
+                mode = next;
+                prefs.edit().putString(Prefs.PICKER_FILTER, next).apply();
+                refilter();
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {}
+        });
+    }
+
+    private static int indexOf(String[] values, String value)
+    {
+        for (int i = 0; i < values.length; i++) { if (values[i].equals(value)) { return i; } }
+        return 0;
+    }
+
     private void refilter()
     {
         String q = search.getText().toString().trim().toLowerCase(Locale.ROOT);
         List<AppListAdapter.AppEntry> out = new ArrayList<>();
         for (AppListAdapter.AppEntry e : all)
         {
+            boolean picked = selected.contains(e.pkg);
+            if (Prefs.PICKER_SELECTED.equals(mode) && !picked) { continue; }
+            if (Prefs.PICKER_UNSELECTED.equals(mode) && picked) { continue; }
             if (q.isEmpty() || e.searchKey.contains(q)) { out.add(e); }
         }
         filtered = out;
         adapter.submit(out);
-        empty.setVisibility(loaded && out.isEmpty() ? View.VISIBLE : View.GONE);
+        if (!loaded || !out.isEmpty())
+        {
+            empty.setVisibility(View.GONE);
+            return;
+        }
+        if (!q.isEmpty()) { empty.setText(R.string.picker_empty); }
+        else if (Prefs.PICKER_SELECTED.equals(mode)) { empty.setText(R.string.picker_empty_none); }
+        else if (Prefs.PICKER_UNSELECTED.equals(mode)) { empty.setText(R.string.picker_empty_all); }
+        else { empty.setText(R.string.picker_empty); }
+        empty.setVisibility(View.VISIBLE);
     }
 
     @Override
@@ -167,7 +222,8 @@ public class AppPickerActivity extends AppCompatActivity implements AppListAdapt
         else { selected.remove(entry.pkg); }
         persist();
         updateCount();
-        adapter.refresh(entry.pkg);
+        if (Prefs.PICKER_ALL.equals(mode)) { adapter.refresh(entry.pkg); }
+        else { refilter(); }   // the row no longer belongs in this view
     }
 
     @Override
@@ -194,6 +250,7 @@ public class AppPickerActivity extends AppCompatActivity implements AppListAdapt
         // Selection is stored outside the entries, so a diff would see no
         // change; membership is untouched, so rebind everything in place.
         adapter.notifyDataSetChanged();
+        if (!Prefs.PICKER_ALL.equals(mode)) { refilter(); }
         sendReeval();
     }
 

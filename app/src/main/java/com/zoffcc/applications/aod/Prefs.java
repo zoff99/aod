@@ -54,6 +54,7 @@ public final class Prefs
     public static final String FILTER_MODE = "filter_mode";         // all | selected
     public static final String FILTER_APPS = "filter_apps";         // set of package names
     public static final String SEEN_PKGS = "seen_pkgs";             // packages that ever notified
+    public static final String PICKER_FILTER = "picker_filter";      // all | selected | unselected
     public static final String APP_COLORS = "app_colors";           // "pkg=#AARRGGBB;..." overrides
 
     // ---- app icons on the always-on screen -------------------------------
@@ -104,6 +105,9 @@ public final class Prefs
     public static final String ANIM_ROTATE = "rotate";
     public static final String ANIM_FLASH = "flash";
     public static final String ANIM_STEADY = "steady";
+    public static final String PICKER_ALL = "all";
+    public static final String PICKER_SELECTED = "selected";
+    public static final String PICKER_UNSELECTED = "unselected";
     public static final String ICON_SRC_APP = "app";
     public static final String ICON_SRC_NOTIFICATION = "notification";
     public static final String ICON_TINT_COLOR = "color";
@@ -154,9 +158,9 @@ public final class Prefs
     public static int strokeDp(Context c) { return get(c).getInt(STROKE_DP, 5); }
     public static int dotX(Context c) { return get(c).getInt(DOT_X, 50); }
 
-    /** Which artwork the icons style draws: the launcher icon of the app,
-     *  or the small symbol that app posts to the status bar. */
-    public static String iconSource(Context c) { return get(c).getString(ICON_SOURCE, ICON_SRC_APP); }
+    /** Which artwork the icons style draws: the small symbol that app posts
+     *  to the status bar (the default), or its launcher icon. */
+    public static String iconSource(Context c) { return get(c).getString(ICON_SOURCE, ICON_SRC_NOTIFICATION); }
     public static boolean iconFromNotification(Context c)
     { return ICON_SRC_NOTIFICATION.equals(iconSource(c)); }
 
@@ -217,6 +221,10 @@ public final class Prefs
     public static boolean respectDnd(Context c) { return get(c).getBoolean(RESPECT_DND, false); }
     public static boolean batteryLight(Context c) { return get(c).getBoolean(BATTERY_LIGHT, false); }
     public static boolean ignorePersistent(Context c) { return get(c).getBoolean(IGNORE_PERSISTENT, true); }
+
+    /** What the app picker lists: everything, or only the picked ones, or
+     *  the ones not picked yet - useful to finish a long list. */
+    public static String pickerFilter(Context c) { return get(c).getString(PICKER_FILTER, PICKER_ALL); }
 
     public static boolean filterSelected(Context c) { return "selected".equals(get(c).getString(FILTER_MODE, "all")); }
 
