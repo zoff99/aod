@@ -22,6 +22,13 @@ public final class NotificationItem implements Parcelable
     /** Notification.number: what the app says this notification stands for
      *  (e.g. unread messages). 0 when the app does not publish a counter. */
     public int number = 0;
+    /** Resource id of the small status-bar symbol the app posted, in that
+     *  app's own resources. 0 when it has none, or when it posted a bitmap or
+     *  URI icon instead - those are never loaded. A number, not content. */
+    public int iconRes = 0;
+    /** Notification.color: the accent the app chose for its notification
+     *  icon, or 0 when it did not choose one. */
+    public int accent = 0;
 
     public NotificationItem() {}
 
@@ -33,6 +40,8 @@ public final class NotificationItem implements Parcelable
         postTime = in.readLong();
         batteryEvent = in.readByte() != 0;
         number = in.readInt();
+        iconRes = in.readInt();
+        accent = in.readInt();
     }
 
     @Override
@@ -44,6 +53,8 @@ public final class NotificationItem implements Parcelable
         dest.writeLong(postTime);
         dest.writeByte((byte) (batteryEvent ? 1 : 0));
         dest.writeInt(number);
+        dest.writeInt(iconRes);
+        dest.writeInt(accent);
     }
 
     @Override

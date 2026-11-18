@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Paint;
@@ -11,7 +12,9 @@ import android.graphics.drawable.Drawable;
 import android.util.LruCache;
 
 /**
- * App icons for the always-on screen.
+ * Icons for the always-on screen: either the app's launcher icon or the small
+ * symbol it posts to the status bar (Notification.smallIcon, loaded from that
+ * app's own resources by resource id - never a bitmap supplied by the app).
  *
  * Each icon is rasterised once per (package, tint) into a small square
  * bitmap and kept in a tiny LRU cache. The renderer then only blits
@@ -52,9 +55,112 @@ public final class AppIconCache
         return made;
     }
 
+    /**
+     * The status-bar symbol of a notification, drawn at the same size as an
+     * app icon. {@code resId} lives in the posting app's resources, so they
+     * are opened read-only for that one drawable.
+     *
+     * These symbols are normally flat alpha masks. With the "color" tint such
+     * a mask is filled with {@code color} - the accent the app chose for its
+     * notifications, or a color derived from its launcher icon. A symbol that
+     * already carries real colors keeps them, exactly like an app icon does.
+     *
+     * @return null when the app has no such drawable, so the caller can fall
+     *         back to the launcher icon.
+     */
+    public static Bitmap getNotificationIcon(Context c, String pkg, int resId, String tint,
+                                         int sizePx, int color)
+    {
+        if (pkg == null || pkg.isEmpty() || resId == 0) { return null; }
+        int work = Math.max(MIN_PX, Math.min(MAX_PX, sizePx));
+        String key = pkg + "|n" + resId + "|" + tint + "|" + work + "|" + color;
+        Bitmap hit = CACHE.get(key);
+        if (hit != null) { return hit; }
+        Bitmap made = rasteriseNotification(c, pkg, resId, tint, work, color);
+        if (made != null) { CACHE.put(key, made); }
+        return made;
+    }
+
     public static void clear()
     {
         CACHE.evictAll();
+    }
+
+    @SuppressWarnings("deprecation")
+    private static Bitmap rasteriseNotification(Context c, String pkg, int resId,
+                                                String tint, int work, int color)
+    {
+        Bitmap raw = null;
+        try
+        {
+            android.content.res.Resources res = c.getPackageManager().getResourcesForApplication(pkg);
+            Drawable d = res.getDrawable(resId, null);
+            if (d == null) { return null; }
+
+            raw = Bitmap.createBitmap(work, work, Bitmap.Config.ARGB_8888);
+            Canvas cv = new Canvas(raw);
+            d.setBounds(0, 0, work, work);
+            d.draw(cv);
+
+            ColorMatrix m = matrix(tint);
+            if (m == null && Prefs.ICON_TINT_COLOR.equals(tint) && isMonochrome(raw))
+            {
+                m = flat(visible(color));
+            }
+            if (m == null) { return raw; }
+
+            Bitmap out = Bitmap.createBitmap(work, work, Bitmap.Config.ARGB_8888);
+            Paint p = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
+            p.setColorFilter(new ColorMatrixColorFilter(m));
+            new Canvas(out).drawBitmap(raw, 0f, 0f, p);
+            raw.recycle();
+            return out;
+        }
+        catch (Throwable t)
+        {
+            if (raw != null) { raw.recycle(); }
+            return null;
+        }
+    }
+
+    /** True when no pixel of the glyph carries a real hue: a plain mask. */
+    private static boolean isMonochrome(Bitmap b)
+    {
+        int w = b.getWidth();
+        int h = b.getHeight();
+        int[] px = new int[w * h];
+        b.getPixels(px, 0, w, 0, 0, w, h);
+        float[] hsv = new float[3];
+        for (int i = 0; i < px.length; i += 3)   // every third pixel is plenty
+        {
+            int p = px[i];
+            if (Color.alpha(p) < 128) { continue; }
+            Color.RGBToHSV(Color.red(p), Color.green(p), Color.blue(p), hsv);
+            if (hsv[1] > 0.12f) { return false; }
+        }
+        return true;
+    }
+
+    /** Fill every pixel with one color, keeping the alpha mask untouched. */
+    private static ColorMatrix flat(int color)
+    {
+        float r = Color.red(color);
+        float g = Color.green(color);
+        float b = Color.blue(color);
+        return new ColorMatrix(new float[]{
+                0f, 0f, 0f, 0f, r,
+                0f, 0f, 0f, 0f, g,
+                0f, 0f, 0f, 0f, b,
+                0f, 0f, 0f, 1f, 0f});
+    }
+
+    /** A brand color can be very dark; on a black panel it would vanish. */
+    private static int visible(int color)
+    {
+        float[] hsv = new float[3];
+        Color.colorToHSV(color, hsv);
+        if (hsv[2] < 0.55f) { hsv[2] = 0.55f; }
+        return Color.HSVToColor(hsv);
     }
 
     private static Bitmap rasterise(Context c, String pkg, String tint, int work)

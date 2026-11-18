@@ -29,8 +29,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * Full-screen app selection: searchable list of every launchable app with
- * its icon. Selection is saved instantly; long press sets a per-app light
+ * Full-screen app selection: searchable list of every app that can be
+ * launched, plus every app that has posted a notification since install
+ * (some of those have no launcher icon at all), each with its icon. Selection is saved instantly; long press sets a per-app light
  * color. Designed for very large app lists (background loading, lazy icons,
  * diffed updates, fast scrolling).
  */
@@ -113,6 +114,22 @@ public class AppPickerActivity extends AppCompatActivity implements AppListAdapt
                 if (pkg.equals(getPackageName()) || !seen.add(pkg)) { continue; }
                 String label;
                 try { label = ri.loadLabel(getPackageManager()).toString(); }
+                catch (Exception e) { label = pkg; }
+                entries.add(new AppListAdapter.AppEntry(pkg, label, Prefs.appColor(this, pkg)));
+            }
+            // apps without a launcher entry: they still post notifications,
+            // so they must be filterable too. Package names come from the
+            // listener's own memory, never from notification content.
+            for (String pkg : Prefs.seenPackages(this))
+            {
+                if (pkg.equals(getPackageName()) || !seen.add(pkg)) { continue; }
+                String label;
+                try
+                {
+                    label = getPackageManager()
+                            .getApplicationLabel(getPackageManager().getApplicationInfo(pkg, 0))
+                            .toString();
+                }
                 catch (Exception e) { label = pkg; }
                 entries.add(new AppListAdapter.AppEntry(pkg, label, Prefs.appColor(this, pkg)));
             }

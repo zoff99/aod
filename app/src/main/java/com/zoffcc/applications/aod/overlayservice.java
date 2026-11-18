@@ -1004,6 +1004,8 @@ public class overlayservice extends AccessibilityService
         // says; LinkedHashMap keeps the arrival order.
         java.util.LinkedHashMap<String, Integer> perApp = new java.util.LinkedHashMap<>();
         java.util.LinkedHashMap<String, Integer> own = new java.util.LinkedHashMap<>();
+        // newest notification per app: it decides which symbol is drawn
+        java.util.LinkedHashMap<String, NotificationItem> first = new java.util.LinkedHashMap<>();
         boolean fromApp = Prefs.iconCountFromApp(this);
         boolean add = Prefs.iconCountAdd(this);
         if (testMode)
@@ -1018,6 +1020,7 @@ public class overlayservice extends AccessibilityService
             for (NotificationItem n : items)
             {
                 if (n.batteryEvent || n.pkg == null || n.pkg.isEmpty()) { continue; }
+                if (!first.containsKey(n.pkg)) { first.put(n.pkg, n); }
                 Integer have = perApp.get(n.pkg);
                 perApp.put(n.pkg, have == null ? 1 : have + 1);
                 Integer num = own.get(n.pkg);
@@ -1028,18 +1031,35 @@ public class overlayservice extends AccessibilityService
         }
 
         String tint = Prefs.iconTint(this);
+        boolean notifIcons = Prefs.iconFromNotification(this);
         ArrayList<android.graphics.Bitmap> list = new ArrayList<>();
         ArrayList<Integer> counts = new ArrayList<>();
         StringBuilder numbers = new StringBuilder();
+        StringBuilder symbols = new StringBuilder();
         for (java.util.Map.Entry<String, Integer> e : perApp.entrySet())
         {
-            android.graphics.Bitmap b = AppIconCache.get(this, e.getKey(), tint, cfg.sizePx);
+            String pkg = e.getKey();
+            NotificationItem item = first.get(pkg);
+            android.graphics.Bitmap b = null;
+            if (notifIcons && item != null && item.iconRes != 0)
+            {
+                int color = iconColorFor(pkg, item);
+                b = AppIconCache.getNotificationIcon(this, pkg, item.iconRes, tint, cfg.sizePx, color);
+                if (b != null)
+                {
+                    if (symbols.length() > 0) { symbols.append(','); }
+                    symbols.append(pkg).append('=')
+                            .append(String.format("#%08X", color));
+                }
+            }
+            // no status-bar symbol (or it could not be loaded): the app icon
+            if (b == null) { b = AppIconCache.get(this, pkg, tint, cfg.sizePx); }
             if (b != null)
             {
                 list.add(b);
-                counts.add(shownCount(e.getKey(), e.getValue(), own.get(e.getKey()), fromApp));
+                counts.add(shownCount(pkg, e.getValue(), own.get(pkg), fromApp));
                 if (numbers.length() > 0) { numbers.append(','); }
-                numbers.append(e.getValue()).append('/').append(own.get(e.getKey()));
+                numbers.append(e.getValue()).append('/').append(own.get(pkg));
             }
             if (list.size() >= cfg.maxIcons) { break; }
         }
@@ -1048,11 +1068,39 @@ public class overlayservice extends AccessibilityService
 
         view.setIcons(list, nums, cfg);
         Dbg.log("overlay", "icons: apps=" + perApp.size() + " drawn=" + list.size()
-                + " tint=" + tint + " px=" + cfg.sizePx + " plate=" + cfg.plate
+                + " tint=" + tint + " iconSrc=" + (notifIcons ? "notification" : "app")
+                + " px=" + cfg.sizePx + " plate=" + cfg.plate
                 + " shift=" + Prefs.iconShift(this) + " counts=" + counts
                 + " src=" + (fromApp ? "app" : "notifications") + (add ? "+sum" : "+max")
                 + " notif/own=[" + numbers + "] summary=" + appNumbers
+                + (symbols.length() > 0 ? " symbolColors=[" + symbols + "]" : "")
                 + " layout[" + cfg + "]");
+    }
+
+    /**
+     * The color to fill a status-bar symbol with, best guess first:
+     *
+     *  1. the color the user picked for that app (long press in the picker),
+     *  2. Notification.color - the accent the app itself chose for its own
+     *     notification icon, when it is a real color and not white/grey/black,
+     *  3. the dominant color of that app's launcher icon (already resolved by
+     *     the observer into NotificationItem.color), or the global color.
+     */
+    private int iconColorFor(String pkg, NotificationItem item)
+    {
+        int override = Prefs.appColor(this, pkg);
+        if (override != android.graphics.Color.TRANSPARENT) { return override; }
+        if (item != null && usableAccent(item.accent)) { return item.accent; }
+        return item != null ? item.color : Prefs.color(this);
+    }
+
+    /** An accent is only useful when it is opaque and actually colored. */
+    private static boolean usableAccent(int color)
+    {
+        if (android.graphics.Color.alpha(color) < 250) { return false; }
+        float[] hsv = new float[3];
+        android.graphics.Color.colorToHSV(color, hsv);
+        return hsv[1] >= 0.15f && hsv[2] >= 0.12f;
     }
 
     /**

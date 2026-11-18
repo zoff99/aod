@@ -41,7 +41,8 @@ import java.util.Map;
  *
  * PRIVACY BOUNDARY. This is the only class that ever touches a notification
  * object, and it reads metadata only: package name, key, post time, the
- * clearable/foreground/group flags, Notification.number, and - out of the
+ * clearable/foreground/group flags, Notification.number, Notification.smallIcon
+ * (a resource id, never a bitmap), Notification.color (an accent), and - out of the
  * extras bundle - the progress numbers, the media-session token and the
  * style class name. It never reads, parses, copies, logs or stores any
  * notification title or message text: not EXTRA_TITLE, EXTRA_TEXT,
@@ -221,6 +222,9 @@ public class notificationobserver extends NotificationListenerService
             if (sbn == null) { return false; }
             String pkg = sbn.getPackageName();
             if (pkg == null || pkg.equals(getPackageName()) || pkg.equals("android")) { return false; }
+            // remembered before any filtering, so the picker can offer this
+            // app even while a filter is active (package name only)
+            Prefs.rememberSeenPackage(this, pkg);
             if (!Prefs.appAllowed(this, pkg)) { return false; }
 
             Notification n = sbn.getNotification();
@@ -262,6 +266,15 @@ public class notificationobserver extends NotificationListenerService
             item.key = sbn.getKey();
             item.postTime = sbn.getPostTime();
             item.number = Math.max(0, n.number);
+            // Two more numbers, never content: which status-bar symbol the
+            // app posted, and the accent color it chose for it. Only a
+            // resource id is accepted - an app-supplied bitmap or URI icon is
+            // ignored, so no image data of unknown provenance is ever loaded.
+            android.graphics.drawable.Icon small = n.getSmallIcon();
+            item.iconRes = (small != null
+                    && small.getType() == android.graphics.drawable.Icon.TYPE_RESOURCE)
+                    ? small.getResId() : 0;
+            item.accent = n.color;
             item.color = resolveColor(pkg);
 
             synchronized (items)

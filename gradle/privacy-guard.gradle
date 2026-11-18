@@ -77,6 +77,9 @@ def privacyGuard = tasks.register('verifyNoMessageTextAccess') {
     def banned = [
             [~/Notification\s*\.\s*EXTRA_/, 'Notification.EXTRA_* constants give access to notification content'],
             [~/\btickerText\b/, 'Notification.tickerText is message text'],
+            [~/\b(?:largeIcon|getLargeIcon)\b/, 'the large icon is usually a contact photo'],
+            [~/\bloadDrawable\s*\(/, 'never load an app-supplied Icon; only resource ids are used'],
+            [~/\bIcon\s*\.\s*TYPE_(?:BITMAP|URI|DATA)\b/, 'only resource-type icons are accepted'],
             [~/\b(?:MessagingStyle|NotificationCompat|RemoteInput)\b/, 'messaging/compat APIs expose message text'],
             [~/\bandroid\s*\.\s*app\s*\.\s*Person\b/, 'Person carries names and addresses'],
             [~/\bgetCharSequence(?:Array|ArrayList)?\s*\(/, 'CharSequence values out of a bundle are text'],
@@ -102,7 +105,7 @@ def privacyGuard = tasks.register('verifyNoMessageTextAccess') {
             if (f.name != boundary)
             {
                 if (body =~ /\.\s*extras\b/) { where('only ' + boundary + ' may open Notification.extras') }
-                if (body =~ /\bgetNotification\s*\(/) { where('only ' + boundary + ' may call getNotification()') }
+                if (body =~ /\bgetNotification\s*\(\s*\)/) { where('only ' + boundary + ' may call getNotification()') }
             }
 
             // every use of a Bundle variable must be one of the metadata reads

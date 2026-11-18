@@ -339,6 +339,22 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
             }
         });
 
+        Spinner iconSrc = findViewById(R.id.sp_icon_source);
+        ArrayAdapter<CharSequence> isa = ArrayAdapter.createFromResource(this,
+                R.array.icon_source_entries, R.layout.item_spinner);
+        isa.setDropDownViewResource(R.layout.item_spinner_dropdown);
+        iconSrc.setAdapter(isa);
+        String[] srcVals = {Prefs.ICON_SRC_APP, Prefs.ICON_SRC_NOTIFICATION};
+        iconSrc.setSelection(indexOf(srcVals, Prefs.iconSource(this)));
+        iconSrc.setOnItemSelectedListener(new SimpleItemSelected()
+        {
+            @Override
+            public void onItemSelected(int position)
+            {
+                prefs.edit().putString(Prefs.ICON_SOURCE, srcVals[position]).apply();
+            }
+        });
+
         Spinner countSrc = findViewById(R.id.sp_icon_count_source);
         ArrayAdapter<CharSequence> ca = ArrayAdapter.createFromResource(this,
                 R.array.icon_count_source_entries, R.layout.item_spinner);

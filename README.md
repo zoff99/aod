@@ -64,6 +64,14 @@ icons because they cover many more pixels than a thin ring.
   the camera; original colors, white or black; size 24–96 dp; optional
   background plate; slow drift against burn-in. Completely still — no
   pulsing, flashing or blinking, and no per-frame redraws
+- Icon artwork: the app's launcher icon, or the small symbol it posts to the
+  status bar (`Notification.getSmallIcon()`, loaded by resource id from that
+  app's resources). Status-bar symbols are flat alpha masks, so with
+  "original colors" they are filled with `Notification.color` — the accent
+  the app chose for its own notifications — falling back to the dominant
+  color of its launcher icon, then the global color. Very dark colors are
+  lifted so they stay visible on black; a symbol that already has real
+  colors keeps them; an app without a symbol falls back to its app icon
 - Icon position: center the rows or start them at the left edge, horizontal
   offset ±200 dp, vertical start below the camera / from the top / from the
   bottom with a 0–600 dp offset, icons per row (0 = fill the width, or 1–8),
@@ -82,7 +90,11 @@ icons because they cover many more pixels than a thin ring.
 - Double tap to wake (on the fallback canvas)
 - Charging / battery-full / low-battery light
 - Night quiet hours, Do-Not-Disturb respect
-- App filter (all apps or a selected set)
+- App filter (all apps or a selected set). The picker lists every launchable
+  app — the manifest declares `<queries>` for `ACTION_MAIN`, which Android 11+
+  requires to see them at all, without `QUERY_ALL_PACKAGES` — plus every
+  package that has posted a notification, so apps without a launcher icon can
+  be filtered too
 - Ignore persistent notifications; optional dismiss-on-unlock
 - Camera-ring calibration: automatic cutout detection + manual offset/size
 - Light duration, canvas brightness, thickness sliders

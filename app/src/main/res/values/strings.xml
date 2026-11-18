@@ -42,8 +42,10 @@
 
     <string name="sec_icons">App icons instead of a light</string>
     <string name="sec_icons_sum">Used when the style above is set to \u201cApp icons\u201d. The icons of the apps that have a notification are shown on the black screen instead of a ring, edge or dot. They are completely still: nothing pulses, flashes or blinks, and the screen is redrawn only when the icons move. With no notification the screen stays completely black. The icons belong to the dark always-on screen; while the phone is awake on the lock screen its own clock is left alone.</string>
+    <string name="set_icon_source">Which icon to show</string>
+    <string name="set_icon_source_sum">App icon is the colourful picture you tap on the home screen: familiar, but busy at small sizes. Notification icon is the small symbol the app itself puts in the status bar \u2014 a flat, simple shape made to stay readable when tiny, so all icons look like one family. With \u201cOriginal colors\u201d, a notification symbol is filled with the color that app chose for its own notifications; if it chose none, the color is taken from its app icon, and a very dark color is brightened so it stays visible on black. White and black work the same for both. If an app has no status-bar symbol, its app icon is used instead. A few apps use a plain generic symbol, so those can look alike.</string>
     <string name="set_icon_tint">Icon color</string>
-    <string name="set_icon_tint_sum">Original colors keeps the artwork as it is. White turns each icon into a light monochrome glyph, which is the calmest look on a black screen. Black is the inverted form and is always drawn on a light plate so it stays visible.</string>
+    <string name="set_icon_tint_sum">Original colors keeps an app icon as it is, and fills a notification symbol with that app\u2019s own color. White turns each icon into a light monochrome glyph, which is the calmest look on a black screen. Black is the inverted form and is always drawn on a light plate so it stays visible.</string>
     <string name="lbl_icon_size">Icon size: %1$d dp</string>
     <string name="set_icon_plate">Background plate behind icons</string>
     <string name="set_icon_plate_sum">Draws a rounded plate behind every icon, which helps icons with transparent or busy artwork stand out. Black icons always get a light plate, whatever this switch says.</string>
@@ -123,6 +125,10 @@
         <item>Screen edge</item>
         <item>LED dot</item>
         <item>App icons (no light)</item>
+    </string-array>
+    <string-array name="icon_source_entries">
+        <item>App icon (home screen)</item>
+        <item>Notification icon (status bar)</item>
     </string-array>
     <string-array name="icon_tint_entries">
         <item>Original colors</item>

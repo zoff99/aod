@@ -200,6 +200,17 @@
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
                 android:orientation="horizontal" android:gravity="center_vertical"
                 android:minHeight="48dp">
+                <TextView style="@style/InlineLabel" android:text="@string/set_icon_source"
+                    android:labelFor="@+id/sp_icon_source" />
+                <Spinner android:id="@+id/sp_icon_source" android:layout_width="0dp"
+                    android:layout_height="wrap_content" android:layout_weight="1"
+                    android:backgroundTint="@color/hc_accent" />
+            </LinearLayout>
+            <TextView style="@style/SettingSummary" android:text="@string/set_icon_source_sum" />
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:gravity="center_vertical"
+                android:minHeight="48dp">
                 <TextView style="@style/InlineLabel" android:text="@string/set_icon_tint"
                     android:labelFor="@+id/sp_icon_tint" />
                 <Spinner android:id="@+id/sp_icon_tint" android:layout_width="0dp"

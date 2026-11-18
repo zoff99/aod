@@ -53,9 +53,11 @@ public final class Prefs
     // ---- app filter -----------------------------------------------------
     public static final String FILTER_MODE = "filter_mode";         // all | selected
     public static final String FILTER_APPS = "filter_apps";         // set of package names
+    public static final String SEEN_PKGS = "seen_pkgs";             // packages that ever notified
     public static final String APP_COLORS = "app_colors";           // "pkg=#AARRGGBB;..." overrides
 
     // ---- app icons on the always-on screen -------------------------------
+    public static final String ICON_SOURCE = "icon_source";         // app | notification artwork
     public static final String ICON_TINT = "icon_tint";             // color | white | black
     public static final String ICON_SIZE_DP = "icon_size_dp";       // 24..96 dp
     public static final String ICON_PLATE = "icon_plate";           // rounded plate behind each icon
@@ -102,6 +104,8 @@ public final class Prefs
     public static final String ANIM_ROTATE = "rotate";
     public static final String ANIM_FLASH = "flash";
     public static final String ANIM_STEADY = "steady";
+    public static final String ICON_SRC_APP = "app";
+    public static final String ICON_SRC_NOTIFICATION = "notification";
     public static final String ICON_TINT_COLOR = "color";
     public static final String ICON_TINT_WHITE = "white";
     public static final String ICON_TINT_BLACK = "black";
@@ -149,6 +153,12 @@ public final class Prefs
     public static int brightness(Context c) { return get(c).getInt(BRIGHTNESS, 35); }
     public static int strokeDp(Context c) { return get(c).getInt(STROKE_DP, 5); }
     public static int dotX(Context c) { return get(c).getInt(DOT_X, 50); }
+
+    /** Which artwork the icons style draws: the launcher icon of the app,
+     *  or the small symbol that app posts to the status bar. */
+    public static String iconSource(Context c) { return get(c).getString(ICON_SOURCE, ICON_SRC_APP); }
+    public static boolean iconFromNotification(Context c)
+    { return ICON_SRC_NOTIFICATION.equals(iconSource(c)); }
 
     public static String iconTint(Context c) { return get(c).getString(ICON_TINT, ICON_TINT_COLOR); }
     public static int iconSizeDp(Context c) { return get(c).getInt(ICON_SIZE_DP, 24); }
@@ -209,6 +219,33 @@ public final class Prefs
     public static boolean ignorePersistent(Context c) { return get(c).getBoolean(IGNORE_PERSISTENT, true); }
 
     public static boolean filterSelected(Context c) { return "selected".equals(get(c).getString(FILTER_MODE, "all")); }
+
+    /**
+     * Remember that a package has posted a notification, so the app picker can
+     * offer it even when it has no launcher icon (system helpers, download
+     * services). Package names only - never any notification content.
+     */
+    public static void rememberSeenPackage(Context c, String pkg)
+    {
+        if (pkg == null || pkg.isEmpty()) { return; }
+        SharedPreferences p = get(c);
+        java.util.Set<String> have = p.getStringSet(SEEN_PKGS, null);
+        if (have != null && have.contains(pkg)) { return; }
+        java.util.Set<String> next = new java.util.HashSet<>();
+        if (have != null) { next.addAll(have); }
+        if (next.size() >= 400) { return; }   // bounded: this is a picker aid, not a history
+        next.add(pkg);
+        p.edit().putStringSet(SEEN_PKGS, next).apply();
+    }
+
+    /** Copy of the remembered package names; never the live preference set. */
+    public static java.util.Set<String> seenPackages(Context c)
+    {
+        java.util.Set<String> have = get(c).getStringSet(SEEN_PKGS, null);
+        java.util.Set<String> out = new java.util.HashSet<>();
+        if (have != null) { out.addAll(have); }
+        return out;
+    }
 
     public static boolean appAllowed(Context c, String pkg)
     {

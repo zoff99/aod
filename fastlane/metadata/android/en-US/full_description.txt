@@ -1,12 +1,12 @@
 AoD gives your phone a notification light — even if it has no LED.
 
-When a notification arrives, a light glows around the front camera, along the screen edges, as a small dot in the status bar, or as the icons of the apps that are waiting for you. It shows on the lock screen and while the display is in its always-on / doze state. No root, no Xposed, no hardware LED required.
+When a notification arrives, a light glows around the front camera, along the screen edges, as a small dot in the status bar, or as the icons of the apps that are waiting for you. It shows on the lock screen and in the always-on / doze state. No root, no Xposed, no hardware LED required.
 
 STYLES
-• Camera ring — a colored ring around the front camera cutout, with automatic cutout detection and manual calibration
+• Camera ring — a colored ring around the front camera cutout, with automatic detection and manual calibration
 • Edge glow — light along the screen edges, covering the status-bar band as well
 • LED dot — a small dot in the status bar
-• App icons — one icon per app that has a notification, in centered rows below the camera: original colors, white or black, 24–96 dp, optional background plate. Completely still: no pulsing, no flashing, no blinking.
+• App icons — one icon per app that has a notification, in centered rows below the camera: either the app's launcher icon or the small symbol it shows in the status bar, in original colors, white or black, 24–96 dp, optional background plate. Status-bar symbols take the color the app chose for its notifications. Completely still: no pulsing, no flashing, no blinking.
 
 DARK WHEN THERE IS NOTHING TO SHOW
 With no notification the screen stays completely black. The overlay hides the system always-on clock and widgets, so an idle phone is a static black field: no animation, no per-frame redraws, nothing that keeps the panel awake. The whole panel is covered by default; if you prefer, only the top two thirds can be covered so the bottom third stays as the phone draws it. Pressing the power button turns the display off and it stays off.
@@ -17,9 +17,9 @@ COLORS AND BEHAVIOR
 • ECO mode (fewer frames) and interval mode (on/off cycling) to save battery
 • Adjustable light duration, night quiet hours, Do-Not-Disturb is respected
 • Charging, battery-full and low-battery light
-• App filter: all apps, or only the ones you pick in a searchable list with icons
-• Place the icon block wherever you want it: centered or left-aligned, horizontal offset, vertical start below the camera or measured from the top or bottom edge, icons per row, spacing between icons and rows, and a limit on how many are shown
-• Optional number under each icon: either how many notifications that app has, or the app's own unread counter when it publishes one, with adjustable text size and an optional badge
+• App filter: all apps, or only the ones you pick in a searchable list with icons, including apps that have no launcher icon
+• Place the icon block anywhere: centered or left-aligned, horizontal offset, vertical start below the camera or from the top or bottom edge, icons per row, spacing, and a limit on how many are shown
+• Optional number under each icon: how many notifications that app has, or its own unread counter, with adjustable text size and an optional badge
 • Hide on unlock and light up again when the phone re-locks
 • Burn-in protection: the light and the icons slowly change position while shown
 
@@ -28,7 +28,7 @@ AoD requests no INTERNET permission at all. No ads, no analytics, no accounts, n
 
 AoD never reads your notification titles or message text: no headline, no body, no expanded, summary or sub text, no chat messages. They are never fetched, never kept, never stored, never logged. It only sees which app posted, when, and the app's own unread counter. A build-time check blocks any code that tries to read message content.
 
-The accessibility service is used purely as a privilege to draw the overlay window: it subscribes to no events and reads no screen content. Notification access is what lets AoD know that a notification exists. Using an accessibility overlay also means no "display over other apps" permission is needed.
+The accessibility service is only a privilege to draw the overlay window: it subscribes to no events, reads no screen content, and needs no "display over other apps" permission. Notification access is what tells AoD that a notification exists.
 
 SETUP
 1. Install and open AoD
@@ -37,10 +37,10 @@ SETUP
 4. Allow ignoring battery optimizations, so the timers survive doze
 
 GOOD TO KNOW
-• Android 9 or newer. An OLED panel is strongly recommended: black pixels are effectively off, which is what makes the idle screen cheap. On an LCD the black field still costs backlight.
-• Whether the light stays visible on top of your phone's own always-on display depends on the manufacturer. Where it does not, an opt-in dark canvas is available.
-• Any long-lived static light can contribute to burn-in. The built-in position shifting mitigates this, but use it at your own risk.
+• Android 9 or newer. OLED is strongly recommended: black pixels are effectively off, which makes the idle screen cheap. On an LCD the black field still costs backlight.
+• Whether the light shows on top of your phone's own always-on display depends on the manufacturer; where it does not, an opt-in dark canvas is available.
+• Any long-lived static light can contribute to burn-in. Position shifting mitigates this, but use it at your own risk.
 • The light geometry is portrait-only.
 
-Open source, written in plain Java, with no Kotlin and no tracking libraries.
+Open source, plain Java, no Kotlin, no tracking libraries.
 Source code: https://github.com/zoff99/aod

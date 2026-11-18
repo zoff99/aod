@@ -11,9 +11,14 @@
         android:name="android.permission.WRITE_SECURE_SETTINGS"
         tools:ignore="ProtectedPermissions" />
 
-    <!-- Android 11+ package visibility: make all launchable apps visible
-     to the app picker's ACTION_MAIN/CATEGORY_LAUNCHER query. -->
+    <!-- Android 11+ filters which installed apps are visible to us. Declaring
+         the MAIN intent makes every launchable app visible to the app picker,
+         without asking for QUERY_ALL_PACKAGES (which would also expose apps
+         that have nothing to do with notifications). -->
     <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+        </intent>
         <intent>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
