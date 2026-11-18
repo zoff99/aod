@@ -55,7 +55,7 @@ import java.util.Locale;
  */
 public class MainActivity extends AppCompatActivity implements CustomListAdapter.OnItemLongClick
 {
-    private static final String TAG = "D7:main";
+    private static final String TAG = Dbg.TAG_PREFIX + "Main";
 
     @SuppressLint("StaticFieldLeak")
     public static TextView debug_text = null;

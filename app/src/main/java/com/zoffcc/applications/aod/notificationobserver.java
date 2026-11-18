@@ -54,7 +54,7 @@ import java.util.Map;
  */
 public class notificationobserver extends NotificationListenerService
 {
-    private static final String TAG = "D7:ntfobs";
+    private static final String TAG = Dbg.TAG_PREFIX + "Notifications";
 
     public static final String ACTION_ITEMS = "com.zoffcc.applications.aod.ITEMS";
     public static final String ACTION_TEST = "com.zoffcc.applications.aod.TEST";
@@ -104,7 +104,7 @@ public class notificationobserver extends NotificationListenerService
         Dbg.log("observer", "onListenerConnected");
 
         briefLock = ((PowerManager) getSystemService(POWER_SERVICE))
-                .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "aod:ntf");
+                .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "aod:notifications");
         briefLock.setReferenceCounted(false);
 
         batteryReceiver = new battery_receiver();

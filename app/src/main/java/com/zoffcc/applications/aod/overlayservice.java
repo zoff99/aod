@@ -58,7 +58,7 @@ import java.util.List;
 public class overlayservice extends AccessibilityService
         implements SharedPreferences.OnSharedPreferenceChangeListener
 {
-    private static final String TAG = "D7:olaysrv";
+    private static final String TAG = Dbg.TAG_PREFIX + "Overlay";
 
     private static final int OVERLAY_FLAGS =
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |

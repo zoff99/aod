@@ -14,7 +14,7 @@ import android.util.Log;
  */
 public class autostart_service extends BroadcastReceiver
 {
-    private static final String TAG = "D7:autostart";
+    private static final String TAG = Dbg.TAG_PREFIX + "Boot";
 
     @Override
     public void onReceive(Context context, Intent intent)

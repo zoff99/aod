@@ -165,6 +165,28 @@ for t in one two three; do
 done
 ```
 
+## Logging
+
+Two streams, nothing else:
+
+| Tag | What it carries |
+|---|---|
+| `AODDBG` | the verbose troubleshooting log (`Dbg.log`): state transitions, icon layout, counters, suppression decisions. Switchable. |
+| `AOD-Overlay`, `AOD-Notifications`, `AOD-Main`, `AOD-Boot` | a handful of lifecycle and error messages per component, always on |
+
+```
+adb logcat -s AODDBG                                   # troubleshooting only
+adb logcat -s AODDBG AOD-Overlay AOD-Notifications AOD-Main AOD-Boot
+```
+
+`Dbg.DEBUG_LOGGING = false` silences the `AODDBG` stream completely; the
+component tags are built from `Dbg.TAG_PREFIX` so they cannot drift apart.
+Neither stream ever contains notification titles or message text — the app
+never reads them (see [PRIVACY.md](PRIVACY.md)).
+
+Wake locks appear in `dumpsys power` as `aod:notifications`, `aod:light`,
+`aod:draw` and `aod:wake`.
+
 ## Build
 
 - JDK 17, Android SDK 34, Gradle 8.9 (wrapper included)
