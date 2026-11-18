@@ -78,6 +78,8 @@ public final class Prefs
     public static final String ICON_COUNT_ALWAYS = "icon_count_always"; // also draw a "1"
     public static final String ICON_COUNT_SIZE_DP = "icon_count_size_dp"; // 10..28 dp text
     public static final String ICON_COUNT_BADGE = "icon_count_badge";     // rounded badge behind it
+    public static final String ICON_COUNT_SOURCE = "icon_count_source";   // notifications | app
+    public static final String ICON_COUNT_ADD = "icon_count_add";         // add up several counters
 
     // ---- cutout calibration ----------------------------------------------
     public static final String CUTOUT_LEFT = "cutout_left";
@@ -106,6 +108,8 @@ public final class Prefs
     public static final String ICON_Y_CAMERA = "camera";
     public static final String ICON_Y_TOP = "top";
     public static final String ICON_Y_BOTTOM = "bottom";
+    public static final String ICON_COUNT_SRC_NOTIFICATIONS = "notifications";
+    public static final String ICON_COUNT_SRC_APP = "app";
 
     public static SharedPreferences get(Context c)
     {
@@ -154,6 +158,18 @@ public final class Prefs
     public static boolean iconCountAlways(Context c) { return get(c).getBoolean(ICON_COUNT_ALWAYS, false); }
     public static int iconCountSizeDp(Context c) { return get(c).getInt(ICON_COUNT_SIZE_DP, 13); }
     public static boolean iconCountBadge(Context c) { return get(c).getBoolean(ICON_COUNT_BADGE, false); }
+
+    /**
+     * What the number under an icon means: the notifications of that app, or
+     * the counter the app itself publishes (Notification.number), which is
+     * often a count of unread messages rather than of notifications.
+     */
+    public static String iconCountSource(Context c)
+    { return get(c).getString(ICON_COUNT_SOURCE, ICON_COUNT_SRC_APP); }
+    public static boolean iconCountFromApp(Context c)
+    { return ICON_COUNT_SRC_APP.equals(iconCountSource(c)); }
+    /** Add the counters of several notifications instead of taking the highest. */
+    public static boolean iconCountAdd(Context c) { return get(c).getBoolean(ICON_COUNT_ADD, false); }
 
     /** Position and spacing only: colors, size, plate and the count settings
      *  are deliberately left alone by "reset position". */

@@ -348,6 +348,7 @@ public class overlayservice extends AccessibilityService
                     ArrayList<NotificationItem> list =
                             intent.getParcelableArrayListExtra(notificationobserver.EXTRA_ITEMS);
                     items = list != null ? list : new ArrayList<>();
+                    appNumbers = readAppNumbers(intent);
                     onItemsChanged();
                     break;
                 }
@@ -975,6 +976,21 @@ public class overlayservice extends AccessibilityService
      * every other style keeps the drawn light. Nothing is shown when there
      * is no notification, so the idle screen stays completely black.
      */
+    /** Per-app counters taken from the group summaries (app-wide totals). */
+    private java.util.HashMap<String, Integer> appNumbers = new java.util.HashMap<>();
+
+    @SuppressWarnings("unchecked")
+    private static java.util.HashMap<String, Integer> readAppNumbers(Intent intent)
+    {
+        try
+        {
+            java.io.Serializable s = intent.getSerializableExtra(notificationobserver.EXTRA_APP_NUMBERS);
+            if (s instanceof java.util.HashMap) { return (java.util.HashMap<String, Integer>) s; }
+        }
+        catch (Exception ignored) {}
+        return new java.util.HashMap<>();
+    }
+
     private void syncIcons()
     {
         if (view == null) { return; }
@@ -986,14 +1002,19 @@ public class overlayservice extends AccessibilityService
         IconLayout cfg = IconLayout.from(this);
         cfg.overUi = testMode;
 
-        // One entry per app, newest app first, with the number of notifications
-        // that app currently has. LinkedHashMap keeps the arrival order.
+        // One entry per app, newest app first. Per app we track how many
+        // notifications it has and what its own counter (Notification.number)
+        // says; LinkedHashMap keeps the arrival order.
         java.util.LinkedHashMap<String, Integer> perApp = new java.util.LinkedHashMap<>();
+        java.util.LinkedHashMap<String, Integer> own = new java.util.LinkedHashMap<>();
+        boolean fromApp = Prefs.iconCountFromApp(this);
+        boolean add = Prefs.iconCountAdd(this);
         if (testMode)
         {
             // "Test light" previews our own icon with a demo count of 2, so the
             // number under the icon can be checked without a second device.
             perApp.put(getPackageName(), 2);
+            own.put(getPackageName(), 0);
         }
         else
         {
@@ -1002,19 +1023,26 @@ public class overlayservice extends AccessibilityService
                 if (n.batteryEvent || n.pkg == null || n.pkg.isEmpty()) { continue; }
                 Integer have = perApp.get(n.pkg);
                 perApp.put(n.pkg, have == null ? 1 : have + 1);
+                Integer num = own.get(n.pkg);
+                int value = Math.max(0, n.number);
+                if (num == null) { own.put(n.pkg, value); }
+                else { own.put(n.pkg, add ? num + value : Math.max(num, value)); }
             }
         }
 
         String tint = Prefs.iconTint(this);
         ArrayList<android.graphics.Bitmap> list = new ArrayList<>();
         ArrayList<Integer> counts = new ArrayList<>();
+        StringBuilder numbers = new StringBuilder();
         for (java.util.Map.Entry<String, Integer> e : perApp.entrySet())
         {
             android.graphics.Bitmap b = AppIconCache.get(this, e.getKey(), tint, cfg.sizePx);
             if (b != null)
             {
                 list.add(b);
-                counts.add(e.getValue());
+                counts.add(shownCount(e.getKey(), e.getValue(), own.get(e.getKey()), fromApp));
+                if (numbers.length() > 0) { numbers.append(','); }
+                numbers.append(e.getValue()).append('/').append(own.get(e.getKey()));
             }
             if (list.size() >= cfg.maxIcons) { break; }
         }
@@ -1025,7 +1053,28 @@ public class overlayservice extends AccessibilityService
         Dbg.log("overlay", "icons: apps=" + perApp.size() + " drawn=" + list.size()
                 + " tint=" + tint + " px=" + cfg.sizePx + " plate=" + cfg.plate
                 + " shift=" + Prefs.iconShift(this) + " counts=" + counts
+                + " src=" + (fromApp ? "app" : "notifications") + (add ? "+sum" : "+max")
+                + " notif/own=[" + numbers + "] summary=" + appNumbers
                 + " layout[" + cfg + "]");
+    }
+
+    /**
+     * The number to print under one app's icon.
+     *
+     * In "notifications" mode it is simply how many notifications that app
+     * has. In "app" mode the app's own counter (Notification.number, possibly
+     * only published on its group summary) is used when it has one — but never
+     * less than the number of notifications, so an app that always writes 1
+     * cannot hide the fact that three notifications are waiting. Apps that
+     * publish nothing (0) fall back to the notification count.
+     */
+    private int shownCount(String pkg, int notifications, Integer ownCounter, boolean fromApp)
+    {
+        if (!fromApp) { return notifications; }
+        int app = ownCounter == null ? 0 : ownCounter;
+        Integer summary = appNumbers.get(pkg);
+        if (summary != null) { app = Math.max(app, summary); }
+        return Math.max(app, notifications);
     }
 
     /**

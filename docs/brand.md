@@ -119,7 +119,7 @@ bitmaps at 48/72/96/144/192 px.
 fastlane/metadata/android/en-US/
 ├── title.txt                 23 / 30 chars
 ├── short_description.txt     75 / 80 chars
-├── full_description.txt    3769 / 4000 chars
+├── full_description.txt    3824 / 4000 chars
 └── images/
     ├── icon.png             512 × 512, 32-bit PNG, full square
     └── featureGraphic.png  1024 × 500, 24-bit PNG, no alpha

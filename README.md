@@ -71,8 +71,9 @@ icons because they cover many more pixels than a thin ring.
   "reset position" button. Offsets are limited so the block stays on the panel
 - Notification counts: optional number under each icon (from two upwards, or
   always), text size 10–28 dp, optional rounded badge; the row height reserves
-  room for it so rows never overlap the number. It counts *notifications*, not
-  messages — an app that groups five messages into one notification shows 1
+  room for it so rows never overlap the number. Two sources: the number of
+  notifications of that app, or the app's own counter (`Notification.number`,
+  usually unread messages) when it publishes one
 - Animations (light styles): pulse, rotate, flash, steady; adjustable speed
 - ECO mode (reduced frame rate) and interval mode (on/off cycling)
 - Per-app colors (long-press an app icon in the strip), auto color from
@@ -86,6 +87,35 @@ icons because they cover many more pixels than a thin ring.
 - Camera-ring calibration: automatic cutout detection + manual offset/size
 - Light duration, canvas brightness, thickness sliders
 - Test button, live debug log, boot persistence
+
+## What the number under an icon counts
+
+`Notification.number` is an optional field an app sets with
+`Notification.Builder.setNumber()`; it is what Android's own launcher badge
+shows. A messenger typically writes its unread message count there, so five
+messages bundled into a single notification can show **5** instead of **1**.
+
+Rules used here:
+
+- **Notifications** mode: plain count of that app's notifications.
+- **App's own counter** mode (default): the highest counter among that app's
+  notifications, or their sum if *add up* is switched on, combined with the
+  counter of its group summary (often the only place the app-wide total is
+  published — summaries are read for the number, never drawn as an icon).
+- The result is never lower than the number of notifications, so an app that
+  always writes `1` cannot hide that three notifications are waiting.
+- `0` or no counter at all → fall back to the notification count.
+
+The field is voluntary and its meaning is up to the app: some write per-chat
+unread, some the app-wide total on every notification (hence *highest* by
+default, *add up* as the alternative). To see what your apps really publish:
+
+```
+adb logcat -s AODDBG | grep -E "icons:|summary counter"
+```
+
+`notif/own=[1/5]` means one notification carrying the counter 5; `summary=`
+shows the counters taken from group summaries.
 
 ## Setup
 

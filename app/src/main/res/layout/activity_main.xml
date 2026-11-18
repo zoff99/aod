@@ -331,6 +331,22 @@
                 android:text="@string/set_icon_count" />
             <TextView style="@style/SettingSummary" android:text="@string/set_icon_count_sum" />
 
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:gravity="center_vertical"
+                android:minHeight="48dp">
+                <TextView style="@style/InlineLabel" android:text="@string/set_icon_count_source"
+                    android:labelFor="@+id/sp_icon_count_source" />
+                <Spinner android:id="@+id/sp_icon_count_source" android:layout_width="0dp"
+                    android:layout_height="wrap_content" android:layout_weight="1"
+                    android:backgroundTint="@color/hc_accent" />
+            </LinearLayout>
+            <TextView style="@style/SettingSummary" android:text="@string/set_icon_count_source_sum" />
+
+            <androidx.appcompat.widget.SwitchCompat android:id="@+id/sw_icon_count_add" style="@style/SettingSwitch"
+                app:thumbTint="@color/switch_thumb" app:trackTint="@color/switch_track"
+                android:text="@string/set_icon_count_add" />
+            <TextView style="@style/SettingSummary" android:text="@string/set_icon_count_add_sum" />
+
             <androidx.appcompat.widget.SwitchCompat android:id="@+id/sw_icon_count_always" style="@style/SettingSwitch"
                 app:thumbTint="@color/switch_thumb" app:trackTint="@color/switch_track"
                 android:text="@string/set_icon_count_always" />

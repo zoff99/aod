@@ -255,6 +255,7 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
         bindSwitch(R.id.sw_icon_count, Prefs.ICON_COUNT, true);
         bindSwitch(R.id.sw_icon_count_always, Prefs.ICON_COUNT_ALWAYS, false);
         bindSwitch(R.id.sw_icon_count_badge, Prefs.ICON_COUNT_BADGE, false);
+        bindSwitch(R.id.sw_icon_count_add, Prefs.ICON_COUNT_ADD, false);
         bindSwitch(R.id.sw_auto_color, Prefs.AUTO_COLOR, true);
         bindSwitch(R.id.sw_eco, Prefs.ECO, false);
         bindSwitch(R.id.sw_interval, Prefs.INTERVAL, false);
@@ -327,6 +328,22 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
             public void onItemSelected(int position)
             {
                 prefs.edit().putString(Prefs.ICON_TINT, tintVals[position]).apply();
+            }
+        });
+
+        Spinner countSrc = findViewById(R.id.sp_icon_count_source);
+        ArrayAdapter<CharSequence> ca = ArrayAdapter.createFromResource(this,
+                R.array.icon_count_source_entries, R.layout.item_spinner);
+        ca.setDropDownViewResource(R.layout.item_spinner_dropdown);
+        countSrc.setAdapter(ca);
+        String[] countVals = {Prefs.ICON_COUNT_SRC_NOTIFICATIONS, Prefs.ICON_COUNT_SRC_APP};
+        countSrc.setSelection(indexOf(countVals, Prefs.iconCountSource(this)));
+        countSrc.setOnItemSelectedListener(new SimpleItemSelected()
+        {
+            @Override
+            public void onItemSelected(int position)
+            {
+                prefs.edit().putString(Prefs.ICON_COUNT_SOURCE, countVals[position]).apply();
             }
         });
 

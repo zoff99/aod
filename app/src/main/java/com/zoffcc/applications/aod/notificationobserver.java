@@ -52,6 +52,8 @@ public class notificationobserver extends NotificationListenerService
     public static final String ACTION_AOD_GONE = "com.zoffcc.applications.aod.AOD_GONE";
     public static final String ACTION_WAKE = "com.zoffcc.applications.aod.WAKE";
     public static final String EXTRA_ITEMS = "items";
+    public static final String EXTRA_APP_NUMBERS = "app_numbers";
+
 
     public static final String PKG_CHARGING = "aod.battery.charging";
     public static final String PKG_FULL = "aod.battery.full";
@@ -61,6 +63,9 @@ public class notificationobserver extends NotificationListenerService
     public static volatile List<NotificationItem> latest = new ArrayList<>();
 
     private final LinkedHashMap<String, NotificationItem> items = new LinkedHashMap<>();
+    /** Group summaries: never shown as an icon, but their Notification.number
+     *  is often the only place an app publishes its app-wide unread total. */
+    private final LinkedHashMap<String, NotificationItem> summaries = new LinkedHashMap<>();
     private final HashMap<String, Integer> iconColorCache = new HashMap<>();
     private final Handler handler = new Handler(Looper.getMainLooper());
     private PowerManager.WakeLock briefLock;
@@ -102,6 +107,7 @@ public class notificationobserver extends NotificationListenerService
                 androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED);
 
         items.clear();
+        synchronized (summaries) { summaries.clear(); }
         try
         {
             StatusBarNotification[] active = getActiveNotifications();
@@ -143,8 +149,11 @@ public class notificationobserver extends NotificationListenerService
     {
         acquireBrief();
         boolean accepted = consider(sbn);
+        Notification posted = sbn.getNotification();
+        boolean summary = posted != null && (posted.flags & Notification.FLAG_GROUP_SUMMARY) != 0;
         Dbg.log("observer", "posted pkg=" + sbn.getPackageName() + " key=" + sbn.getKey()
-                + " accepted=" + accepted);
+                + " number=" + (posted == null ? 0 : posted.number)
+                + " accepted=" + accepted + (summary ? " (summary: counter only, no icon)" : ""));
         if (accepted)
         {
             handler.removeCallbacks(publishRunnable);
@@ -160,6 +169,10 @@ public class notificationobserver extends NotificationListenerService
         synchronized (items)
         {
             changed = items.remove(sbn.getKey()) != null;
+        }
+        synchronized (summaries)
+        {
+            if (summaries.remove(sbn.getKey()) != null) { changed = true; }
         }
         Dbg.log("observer", "removed pkg=" + sbn.getPackageName() + " key=" + sbn.getKey()
                 + " changed=" + changed);
@@ -200,7 +213,10 @@ public class notificationobserver extends NotificationListenerService
             Notification n = sbn.getNotification();
             if (n == null) { return false; }
 
-            if ((n.flags & Notification.FLAG_GROUP_SUMMARY) != 0) { return false; }
+            if ((n.flags & Notification.FLAG_GROUP_SUMMARY) != 0)
+            {
+                return rememberSummary(sbn.getKey(), pkg, n.number);
+            }
             if (Prefs.ignorePersistent(this) &&
                 ((n.flags & Notification.FLAG_FOREGROUND_SERVICE) != 0 ||
                  (n.flags & Notification.FLAG_NO_CLEAR) != 0 || !sbn.isClearable()))
@@ -236,6 +252,7 @@ public class notificationobserver extends NotificationListenerService
                 item.title = t == null ? "" : t.toString().trim();
                 item.text = x == null ? "" : x.toString().trim();
             }
+            item.number = Math.max(0, n.number);
             item.color = resolveColor(pkg);
 
             synchronized (items)
@@ -249,6 +266,42 @@ public class notificationobserver extends NotificationListenerService
             Log.w(TAG, "consider: " + e);
             return false;
         }
+    }
+
+    /**
+     * Store a group summary's counter. Returns true when the value changed, so
+     * a new app-wide total republishes even though no icon changes.
+     */
+    private boolean rememberSummary(String key, String pkg, int number)
+    {
+        int value = Math.max(0, number);
+        synchronized (summaries)
+        {
+            NotificationItem old = summaries.get(key);
+            if (old != null && old.number == value && old.pkg.equals(pkg)) { return false; }
+            NotificationItem s = new NotificationItem();
+            s.pkg = pkg;
+            s.key = key;
+            s.number = value;
+            summaries.put(key, s);
+        }
+        Dbg.log("observer", "summary counter pkg=" + pkg + " number=" + value);
+        return true;
+    }
+
+    /** Highest summary counter per package, for the icon counts. */
+    private HashMap<String, Integer> summaryNumbers()
+    {
+        HashMap<String, Integer> out = new HashMap<>();
+        synchronized (summaries)
+        {
+            for (NotificationItem s : summaries.values())
+            {
+                Integer have = out.get(s.pkg);
+                if (have == null || s.number > have) { out.put(s.pkg, s.number); }
+            }
+        }
+        return out;
     }
 
     private int resolveColor(String pkg)
@@ -367,13 +420,16 @@ public class notificationobserver extends NotificationListenerService
         }
         latest = list;
 
+        HashMap<String, Integer> numbers = summaryNumbers();
         Intent intent = new Intent(ACTION_ITEMS);
         intent.setPackage(getPackageName());
         intent.putParcelableArrayListExtra(EXTRA_ITEMS, list);
+        intent.putExtra(EXTRA_APP_NUMBERS, numbers);
         sendBroadcast(intent);
         Log.i(TAG, "publish: " + list.size() + " item(s)");
         Dbg.log("observer", "publish n=" + list.size() + " dnd=" + dndSuppressed()
-                + " newest=" + (list.isEmpty() ? "-" : list.get(0).key));
+                + " newest=" + (list.isEmpty() ? "-" : list.get(0).key)
+                + " summaryNumbers=" + numbers);
     }
 
     // ---- night boundary alarm ---------------------------------------------------------

@@ -80,6 +80,10 @@
     <string name="sec_icon_count_sum">Shows how many notifications are waiting in each app as a number below its icon. The number is part of the same still image: it does not blink and it moves with the icons.</string>
     <string name="set_icon_count">Show the number of notifications</string>
     <string name="set_icon_count_sum">Prints the count under each app icon. A single notification shows no number unless the switch below is on, so a quiet screen stays quiet. Counts above 99 are shown as \u201c99+\u201d. Room for the number is reserved, so rows never overlap it. It counts notifications, not messages: an app that bundles five messages into one notification shows 1, and posting a notification with the same tag again replaces it instead of adding one.</string>
+    <string name="set_icon_count_source">What to count</string>
+    <string name="set_icon_count_source_sum">“Notifications” counts how many notifications an app has posted. “The app\u2019s own counter” uses the number the app itself publishes, which for a messenger is usually its unread messages — so five messages bundled into one notification show 5 instead of 1. Apps publish this voluntarily: if an app sends no counter, or sends 0, the plain notification count is used instead. The number shown is never lower than the number of notifications, so an app that always writes 1 cannot hide that three are waiting. The counter of an app\u2019s summary notification is read too, because that is often the only place the total appears.</string>
+    <string name="set_icon_count_add">Add up the counters of several notifications</string>
+    <string name="set_icon_count_add_sum">Only relevant when an app has more than one notification and each carries a counter. Off takes the highest counter, which is right for apps that repeat their overall total on every notification. On adds them up, which is right for apps that count per conversation. If the number looks doubled, turn this off; if it looks too small, turn it on.</string>
     <string name="set_icon_count_always">Also show a count of 1</string>
     <string name="set_icon_count_always_sum">On: every icon gets a number, even when the app has only one notification. Off: the number appears from two notifications upwards.</string>
     <string name="lbl_icon_count_size">Count text size: %1$d dp</string>
@@ -129,6 +133,10 @@
         <item>Original colors</item>
         <item>White</item>
         <item>Black</item>
+    </string-array>
+    <string-array name="icon_count_source_entries">
+        <item>Notifications of that app</item>
+        <item>The app\u2019s own counter, if it has one</item>
     </string-array>
     <string-array name="icon_y_anchor_entries">
         <item>Below the camera</item>

@@ -16,6 +16,9 @@ public final class NotificationItem implements Parcelable
     public int color = Prefs.DEFAULT_COLOR;
     public long postTime = 0L;
     public boolean batteryEvent = false;
+    /** Notification.number: what the app says this notification stands for
+     *  (e.g. unread messages). 0 when the app does not publish a counter. */
+    public int number = 0;
 
     public NotificationItem() {}
 
@@ -28,6 +31,7 @@ public final class NotificationItem implements Parcelable
         color = in.readInt();
         postTime = in.readLong();
         batteryEvent = in.readByte() != 0;
+        number = in.readInt();
     }
 
     @Override
@@ -40,6 +44,7 @@ public final class NotificationItem implements Parcelable
         dest.writeInt(color);
         dest.writeLong(postTime);
         dest.writeByte((byte) (batteryEvent ? 1 : 0));
+        dest.writeInt(number);
     }
 
     @Override
