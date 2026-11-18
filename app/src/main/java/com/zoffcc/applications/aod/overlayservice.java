@@ -441,6 +441,14 @@ public class overlayservice extends AccessibilityService
         public void run()
         {
             if (!lightActive) { return; }
+            if (testMode)
+            {
+                // "Test light" is pressed while the phone is unlocked, so the
+                // keyguard is open by design. Treating that as an unlock cut
+                // every test off after two polls (~600 ms).
+                h.postDelayed(this, 300L);
+                return;
+            }
             boolean locked = km == null || km.isKeyguardLocked();
             // only an awake device can be "unlocked"; while the screen is off
             // the keyguard may lag a fresh lock, which is not an unlock
@@ -482,7 +490,8 @@ public class overlayservice extends AccessibilityService
                 + " screenOnLight=" + Prefs.screenOnLight(this)
                 + " relight=" + Prefs.relightRelock(this)
                 + " fallbackCanvas=" + Prefs.canvasFallback(this)
-                + " style=" + Prefs.style(this);
+                + " style=" + Prefs.style(this)
+                + " blackoutFull=" + Prefs.blackoutFull(this);
     }
 
     private static String dispName(int st)
@@ -591,6 +600,11 @@ public class overlayservice extends AccessibilityService
     private void onItemsChanged()
     {
         Dbg.log("overlay", "onItemsChanged " + state());
+        if (testMode)
+        {
+            Dbg.log("overlay", "items: real notification supersedes test mode");
+            testMode = false;
+        }
         if (!Prefs.enabled(this)) { Dbg.log("overlay", "items: disabled -> stop"); stopBurst(false, "masterOff-items"); return; }
 
         if (items.isEmpty())
@@ -834,6 +848,13 @@ public class overlayservice extends AccessibilityService
         h.removeCallbacks(screenOnRecheck);
         cancelTimers();
         lightActive = false;
+        if (testMode)
+        {
+            // otherwise the test color, the demo icon and the "no preview"
+            // rule would leak into every later real notification
+            Dbg.log("overlay", "test mode cleared by stopBurst (" + reason + ")");
+            testMode = false;
+        }
         if (view != null)
         {
             view.stop();
@@ -900,6 +921,7 @@ public class overlayservice extends AccessibilityService
     private void syncOverlay()
     {
         if (view == null || !viewAdded) { return; }
+        view.setBlackoutFull(Prefs.blackoutFull(this));
         boolean off = effectiveScreenOff();
         Dbg.log("overlay", "syncOverlay blackout=" + off + " lightActive=" + lightActive);
         view.setBlackout(off);
@@ -1030,6 +1052,7 @@ public class overlayservice extends AccessibilityService
         Rect cam = CutoutLocator.cameraRect(this);
         Point size = CutoutLocator.realSize(this);
         view.setGeometry(cam, size);
+        view.setBlackoutFull(Prefs.blackoutFull(this));
     }
 
     // ---- system helpers ------------------------------------------------------------------
@@ -1124,6 +1147,12 @@ public class overlayservice extends AccessibilityService
         if (Prefs.NIGHT.equals(key) || Prefs.NIGHT_START.equals(key) || Prefs.NIGHT_END.equals(key))
         {
             sendLocal(notificationobserver.ACTION_REEVAL);
+        }
+        if (Prefs.BLACKOUT_FULL.equals(key))
+        {
+            Dbg.log("overlay", "blackout extent changed: full=" + Prefs.blackoutFull(this));
+            refreshGeometry();
+            syncOverlay();
         }
         if (Prefs.STYLE.equals(key) || Prefs.ICON_TINT.equals(key) || Prefs.ICON_SIZE_DP.equals(key)
                 || Prefs.ICON_PLATE.equals(key) || Prefs.ICON_SHIFT.equals(key))

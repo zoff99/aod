@@ -23,6 +23,7 @@ public final class Prefs
     public static final String CLEAR_ON_UNLOCK = "clear_on_unlock"; // dismiss notifications on unlock
     public static final String RELIGHT_RELOCK = "relight_relock";   // light again after unlock + re-lock
     public static final String CANVAS_FALLBACK = "canvas_fallback"; // dim activity canvas, phones without AOD
+    public static final String BLACKOUT_FULL = "blackout_full";     // also cover the bottom third
 
     // ---- appearance -----------------------------------------------------
     public static final String STYLE = "style";                     // ring | edge | dot
@@ -100,6 +101,8 @@ public final class Prefs
     /** Opt-in only: the fallback canvas is an activity that turns the panel
      *  on, so it must never be used on a phone that has its own AOD. */
     public static boolean canvasFallback(Context c) { return get(c).getBoolean(CANVAS_FALLBACK, false); }
+    /** Off by default: the bottom third of the panel is left untouched. */
+    public static boolean blackoutFull(Context c) { return get(c).getBoolean(BLACKOUT_FULL, false); }
 
     public static String style(Context c) { return get(c).getString(STYLE, STYLE_RING); }
     public static String anim(Context c) { return get(c).getString(ANIM, ANIM_PULSE); }

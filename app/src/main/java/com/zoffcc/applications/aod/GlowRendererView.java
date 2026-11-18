@@ -41,9 +41,11 @@ import java.util.List;
  */
 public class GlowRendererView extends View
 {
-    /** Safety: black out only this fraction of the display height (top);
-     *  the remainder at the bottom is left untouched. */
-    private static final float BLACKOUT_HEIGHT_FRACTION = 0.66f;
+    /** Default: black out only this fraction of the display height (top),
+     *  leaving the bottom third untouched. The user can extend it to the
+     *  whole panel with {@link #setBlackoutFull(boolean)}. */
+    private static final float BLACKOUT_DEFAULT_FRACTION = 0.66f;
+    private float blackoutFraction = BLACKOUT_DEFAULT_FRACTION;
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint blackPaint = new Paint();
     private final Path edgePath = new Path();
@@ -164,6 +166,20 @@ public class GlowRendererView extends View
     /** Opaque black background (hides the system AOD clock). Drawn even
      *  when the animation is stopped, so an idle screen-off overlay is a
      *  static, near-zero-cost black field. */
+    /** Extend the black field over the whole panel instead of the top part.
+     *  Touches still pass through to the system either way: this only
+     *  changes what is visible. */
+    public void setBlackoutFull(boolean full)
+    {
+        float f = full ? 1f : BLACKOUT_DEFAULT_FRACTION;
+        if (blackoutFraction != f)
+        {
+            blackoutFraction = f;
+            layoutIcons();
+            invalidate();
+        }
+    }
+
     public void setBlackout(boolean on)
     {
         if (blackout != on)
@@ -273,7 +289,7 @@ public class GlowRendererView extends View
         int rows = (icons.size() + cols - 1) / cols;
 
         float top = Math.max(camera.bottom + 22f * density, screenH * 0.10f);
-        float limit = screenH * BLACKOUT_HEIGHT_FRACTION - margin;
+        float limit = screenH * blackoutFraction - margin;
         int fit = Math.max(1, (int) ((limit - top + iconGap) / (iconPx + iconGap)));
         if (rows > fit) { rows = fit; }
 
@@ -328,15 +344,15 @@ public class GlowRendererView extends View
     {
         if (blackout)
         {
-            // Safety: cover only the top two-thirds of the display; the bottom
-            // third is left as-is. Opaque black hides the system AOD clock; on
-            // OLED these pixels are effectively off, so a static blackout costs
-            // almost nothing.
-            canvas.drawRect(0f, 0f, screenW, screenH * BLACKOUT_HEIGHT_FRACTION, blackPaint);
+            // Cover the top two thirds by default, or the whole panel when
+            // the user asks for it. Opaque black hides the system AOD clock
+            // and widgets; on OLED these pixels are effectively off, so a
+            // static blackout costs almost nothing.
+            canvas.drawRect(0f, 0f, screenW, screenH * blackoutFraction, blackPaint);
             if (running)
             {
                 float density = getResources().getDisplayMetrics().density;
-                float textTop = screenH * BLACKOUT_HEIGHT_FRACTION * 0.5f;
+                float textTop = screenH * blackoutFraction * 0.5f;
                 if (icons != null)
                 {
                     drawIcons(canvas);
@@ -346,7 +362,7 @@ public class GlowRendererView extends View
                 {
                     // centered, below the light or the icons, and moving with
                     // the same slow burn-in shift; skipped if it would not fit
-                    float bottom = screenH * BLACKOUT_HEIGHT_FRACTION - 4f * density;
+                    float bottom = screenH * blackoutFraction - 4f * density;
                     if (textTop + previewLayout.getHeight() <= bottom)
                     {
                         float x = (screenW - previewLayout.getWidth()) / 2f + shiftX;

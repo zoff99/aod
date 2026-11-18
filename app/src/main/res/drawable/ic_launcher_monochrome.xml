@@ -1,0 +1,13 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Single-colour silhouette for themed icons (Android 13+). The system
+         supplies the tint, so everything here is plain white; the lens is a
+         real hole, made with an even-odd fill. -->
+    <path android:fillColor="#FFFFFFFF" android:fillType="evenOdd"
+        android:pathData="M27,54 a27,27 0 1,0 54,0 a27,27 0 1,0 -54,0 M33,54 a21,21 0 1,0 42,0 a21,21 0 1,0 -42,0" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M67.4,34 a6.6,6.6 0 1,0 13.2,0 a6.6,6.6 0 1,0 -13.2,0" />
+</vector>
