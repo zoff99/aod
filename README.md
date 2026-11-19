@@ -1,4 +1,4 @@
-# AoD — notification light for Android
+# AoD - Notification Light for Android
 
 > **Almost 100% of this app was written by AI.** The code was produced by an AI
 > assistant from plain-language instructions; a human set the requirements,
