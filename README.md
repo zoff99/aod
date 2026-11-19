@@ -212,9 +212,51 @@ Wake locks appear in `dumpsys power` as `aod:notifications`, `aod:light`,
 - `./gradlew assembleDebug` (shrinking is on in both variants: unused
   library code is dropped, no obfuscation — see `app/proguard-rules.pro`)
 - `python3 tools/check_apk_privacy.py <apk>` — verifies the finished APK
+- `tools/find_non_ascii_chars_in_source.sh` — source encoding guard, runs
+  before every compile (see below)
 - minSdk 28 (Android 9), targetSdk 34
 - Dependencies: appcompat, recyclerview (UI only). Everything else is
   platform API.
+
+## Source encoding, and why it is checked
+
+A review diff shows glyphs, not code points. A right-to-left override can make
+a line read as something other than what it compiles to ("Trojan Source"), a
+zero-width character can split an identifier while looking like nothing at
+all, and a homoglyph can hide a Cyrillic `a` inside an ASCII word. None of that
+is visible in a normal review of a contribution, so it is checked mechanically
+instead of by eye.
+
+The rules:
+
+| files | rule |
+|---|---|
+| source (`*.java`, `*.xml`, `*.gradle`, `*.sh`, `*.py`, `*.pro`, `*.properties`, ...) | **pure ASCII** — string resources use `\uXXXX` escapes, comments use `--` |
+| documentation and store text (`*.md`, `*.txt`, `*.svg`) | a fixed list of visible typographic characters (dashes, quotes, ellipsis, bullet, arrow, box drawing, ...) |
+| every file | hidden characters are **never** allowed: bidi overrides and isolates, zero-width characters, BOM, soft hyphen, tag characters, variation selectors, private-use areas, C1 controls |
+
+The last rule cannot be opened by an allowlist: `check_nonascii.sh -a 202E`
+still refuses U+202E.
+
+```
+tools/find_non_ascii_chars_in_source.sh            # whole repo (tracked files)
+tools/find_non_ascii_chars_in_source.sh -v         # also list the allowed ones
+tools/find_non_ascii_chars_in_source.sh --staged   # only what is being committed
+tools/check_nonascii.sh -a 2014,2192 README.md     # one file, own allowlist
+tools/check_nonascii.sh -b -a E9 file              # raw byte mode
+```
+
+`./gradlew :app:verifyAsciiSources` runs the repo check on its own, and
+`preBuild` depends on it, so a build fails on a violation. As a pre-commit
+hook:
+
+```
+printf '#!/bin/sh\nexec tools/find_non_ascii_chars_in_source.sh --staged\n' \
+    > .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+```
+
+`--staged` reads the staged blobs, not the working tree, so editing a file
+after `git add` cannot smuggle anything past it.
 
 ## Brightness of the always-on screen
 

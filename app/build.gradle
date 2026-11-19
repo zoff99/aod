@@ -4,6 +4,7 @@ plugins {
 
 // Fails the build if any notification title or message text could be read.
 apply from: "$rootDir/gradle/privacy-guard.gradle"
+apply from: "$rootDir/gradle/ascii-guard.gradle"
 
 def getGitHash = { ->
     try

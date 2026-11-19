@@ -11,7 +11,7 @@ import android.text.TextUtils;
  *
  * Replacing a package makes the system re-evaluate its accessibility
  * bindings, and on many builds the service ends up switched off. An app may
- * not grant itself accessibility — unless the user handed it
+ * not grant itself accessibility -- unless the user handed it
  * WRITE_SECURE_SETTINGS through adb, which is a deliberate, one-time act and
  * survives updates (only an uninstall clears it).
  *

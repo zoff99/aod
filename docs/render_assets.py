@@ -231,15 +231,15 @@ def render_feature(font_path, w=1024, h=500, ss=2):
     title = "AoD"
     tagline = "A notification light for phones that do not have one"
     tracking = 2.2 * ss
-    for kicker in ("NO ROOT  ·  NO ADS  ·  NO INTERNET PERMISSION",
-                   "NO ROOT  ·  NO INTERNET PERMISSION",
-                   "NO ROOT  ·  NO ADS  ·  OPEN SOURCE"):
+    for kicker in ("NO ROOT  \u00b7  NO ADS  \u00b7  NO INTERNET PERMISSION",
+                   "NO ROOT  \u00b7  NO INTERNET PERMISSION",
+                   "NO ROOT  \u00b7  NO ADS  \u00b7  OPEN SOURCE"):
         if tracked_width(d, kicker, f_kick, tracking) <= max_w:
             break
 
     tag_lines = wrap(d, tagline, f_tag, max_w)
     if tracked_width(d, kicker, f_kick, tracking) > max_w:
-        kicker = "NO ROOT  ·  NO ADS  ·  OPEN SOURCE"
+        kicker = "NO ROOT  \u00b7  NO ADS  \u00b7  OPEN SOURCE"
 
     lh = int(42 * ss)
     gap1, gap2 = int(20 * ss), int(26 * ss)

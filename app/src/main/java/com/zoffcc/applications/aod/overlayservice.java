@@ -1543,7 +1543,7 @@ public class overlayservice extends AccessibilityService
      *
      * In "notifications" mode it is simply how many notifications that app
      * has. In "app" mode the app's own counter (Notification.number, possibly
-     * only published on its group summary) is used when it has one — but never
+     * only published on its group summary) is used when it has one -- but never
      * less than the number of notifications, so an app that always writes 1
      * cannot hide the fact that three notifications are waiting. Apps that
      * publish nothing (0) fall back to the notification count.

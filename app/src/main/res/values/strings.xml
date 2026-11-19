@@ -10,7 +10,7 @@
     <string name="btn_accessibility">Accessibility</string>
     <string name="btn_battery">Battery</string>
     <string name="btn_auto_enable">Auto-enable accessibility (ADB permission granted)</string>
-    <string name="btn_select_apps">Choose apps…</string>
+    <string name="btn_select_apps">Choose apps\u2026</string>
     <string name="btn_detect_cutout">Detect camera cutout</string>
     <string name="btn_test">Test light</string>
     <string name="btn_hide">Hide</string>
@@ -81,7 +81,7 @@
     <string name="set_icon_count">Show the number of notifications</string>
     <string name="set_icon_count_sum">Prints the count under each app icon. A single notification shows no number unless the switch below is on, so a quiet screen stays quiet. Counts above 99 are shown as \u201c99+\u201d. Room for the number is reserved, so rows never overlap it. It counts notifications, not messages: an app that bundles five messages into one notification shows 1, and posting a notification with the same tag again replaces it instead of adding one.</string>
     <string name="set_icon_count_source">What to count</string>
-    <string name="set_icon_count_source_sum">“Notifications” counts how many notifications an app has posted. “The app\u2019s own counter” uses the number the app itself publishes, which for a messenger is usually its unread messages — so five messages bundled into one notification show 5 instead of 1. Apps publish this voluntarily: if an app sends no counter, or sends 0, the plain notification count is used instead. The number shown is never lower than the number of notifications, so an app that always writes 1 cannot hide that three are waiting. The counter of an app\u2019s summary notification is read too, because that is often the only place the total appears.</string>
+    <string name="set_icon_count_source_sum">\u201CNotifications\u201D counts how many notifications an app has posted. \u201CThe app\u2019s own counter\u201D uses the number the app itself publishes, which for a messenger is usually its unread messages \u2014 so five messages bundled into one notification show 5 instead of 1. Apps publish this voluntarily: if an app sends no counter, or sends 0, the plain notification count is used instead. The number shown is never lower than the number of notifications, so an app that always writes 1 cannot hide that three are waiting. The counter of an app\u2019s summary notification is read too, because that is often the only place the total appears.</string>
     <string name="set_icon_count_add">Add up the counters of several notifications</string>
     <string name="set_icon_count_add_sum">Only relevant when an app has more than one notification and each carries a counter. Off takes the highest counter, which is right for apps that repeat their overall total on every notification. On adds them up, which is right for apps that count per conversation. If the number looks doubled, turn this off; if it looks too small, turn it on.</string>
     <string name="set_icon_count_always">Also show a count of 1</string>
@@ -120,7 +120,7 @@
     <string name="lbl_cutout_scale">Ring size: %1$d%%</string>
 
 
-    <string name="status_line">listener: %1$s · accessibility: %2$s · battery exempt: %3$s</string>
+    <string name="status_line">listener: %1$s \u00B7 accessibility: %2$s \u00B7 battery exempt: %3$s</string>
     <string name="on">ON</string>
     <string name="off">off</string>
 
@@ -128,7 +128,7 @@
     <string name="dlg_app_color">Light color for %1$s</string>
     <string name="color_auto">Auto / default</string>
     <string name="cutout_detected">Cutout position saved</string>
-    <string name="cutout_none">No cutout reported — using fallback position</string>
+    <string name="cutout_none">No cutout reported \u2014 using fallback position</string>
 
     <string-array name="style_entries">
         <item>Camera ring</item>
@@ -166,7 +166,7 @@
     </string-array>
 
     <string name="picker_title">Show light for these apps</string>
-    <string name="picker_search_hint">Search apps…</string>
+    <string name="picker_search_hint">Search apps\u2026</string>
     <string name="picker_selected_count">%1$d of %2$d selected</string>
     <string name="picker_all">Select all</string>
     <string name="picker_none">Clear</string>
@@ -180,7 +180,7 @@
         <item>Selected only</item>
         <item>Not selected</item>
     </string-array>
-    <string name="picker_loading">Loading apps…</string>
+    <string name="picker_loading">Loading apps\u2026</string>
     <string name="btn_back">Back</string>
     <string name="app_icon_desc">App icon</string>
     <string name="log_show">Show debug log</string>

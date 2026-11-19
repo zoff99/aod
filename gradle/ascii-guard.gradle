@@ -1,0 +1,63 @@
+/*
+ * Build-time source encoding guard.
+ *
+ * Rule of the project: source files are pure ASCII, documentation may use a
+ * short list of typographic characters, and hidden characters (bidi
+ * overrides, zero-width characters, BOM, tag characters, private-use areas)
+ * are refused everywhere.
+ *
+ * Why: a review diff shows glyphs, not code points. A right-to-left override
+ * can make a line read as something other than what it compiles to, and a
+ * zero-width character can split an identifier in two while looking like
+ * nothing at all. Neither belongs in a contribution, and neither is visible
+ * in a normal review.
+ *
+ * The logic lives in the shell tools so it can also be run by hand and as a
+ * pre-commit hook:
+ *
+ *   tools/find_non_ascii_chars_in_source.sh          # whole repo
+ *   tools/find_non_ascii_chars_in_source.sh --staged # what is being committed
+ *   tools/check_nonascii.sh -a 2014,2192 README.md   # one file
+ *
+ * This task runs the same check before every compile.
+ */
+
+def asciiGuard = tasks.register('verifyAsciiSources') {
+    group = 'verification'
+    description = 'Refuses non-ASCII source characters and hidden/bidi characters anywhere.'
+    def script = new File(rootDir, 'tools/find_non_ascii_chars_in_source.sh')
+    outputs.upToDateWhen { false }
+    doLast {
+        if (!script.isFile())
+        {
+            throw new GradleException('ascii guard: missing ' + script)
+        }
+        def out = new StringBuffer()
+        def err = new StringBuffer()
+        Process p
+        try
+        {
+            p = new ProcessBuilder('bash', script.absolutePath)
+                    .directory(rootDir).start()
+            p.waitForProcessOutput(out, err)
+        }
+        catch (IOException ignored)
+        {
+            // No bash on this machine (typically Windows). Say so loudly rather
+            // than pretending the check ran; Linux CI and the pre-commit hook
+            // still enforce it.
+            logger.warn('ascii guard: bash not available, source encoding check SKIPPED')
+            return
+        }
+        def text = out.toString().trim()
+        if (p.exitValue() != 0)
+        {
+            throw new GradleException('ASCII GUARD FAILED - see tools/check_nonascii.sh:\n' +
+                    text + '\n' + err.toString().trim())
+        }
+        text.readLines().findAll { it.startsWith('checked ') || it.startsWith('OK:') }
+                .each { logger.lifecycle('ascii guard: ' + it) }
+    }
+}
+
+tasks.matching { it.name == 'preBuild' }.configureEach { it.dependsOn(asciiGuard) }
