@@ -154,9 +154,11 @@ jobs:
           disable-animations: true
           disable-spellchecker: true
           script: |
-            # NOTE: the runner executes each line below in its own `sh -c`, so
-            # no shell variable survives from one line to the next. Anything
-            # that needs state lives in tools/ci_emulator_shots.sh instead.
+            # NOTE 1: the runner executes each line below in its own `sh -c`,
+            # so no shell variable survives from one line to the next.
+            # Anything that needs state lives in tools/ci_emulator_shots.sh.
+            # NOTE 2: connectedDebugAndroidTest uninstalls the app when it
+            # finishes; the screenshot script installs it again first.
             adb root || true
             adb wait-for-device
             ./gradlew --no-daemon :app:installDebug :app:connectedDebugAndroidTest

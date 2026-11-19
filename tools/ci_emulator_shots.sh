@@ -26,9 +26,33 @@ shot() {
     ls -l "$OUT/$1" || true
 }
 
+start() {
+    out=$(adb shell am start -W -n "$PKG/$1" 2>&1)
+    echo "$out"
+    case "$out" in
+        *Error*) echo "WARNING: launching $1 failed - the capture will not show it" >&2 ;;
+    esac
+}
+
 adb root || true
 adb wait-for-device || true
 sleep 3
+
+# ---------------------------------------------------------------------------
+# :app:connectedDebugAndroidTest UNINSTALLS both APKs when it finishes. The app
+# is therefore not on the device any more when this script starts, which is why
+# the first runs produced "run-as: unknown package" and "Activity class does
+# not exist" while the package name was perfectly correct. Put it back first.
+# ---------------------------------------------------------------------------
+APK="${APK:-app/build/outputs/apk/debug/app-debug.apk}"
+say "install $APK (the connected-test task removes the app when it finishes)"
+adb install -r -g "$APK" || adb install -r "$APK" || true
+if ! adb shell pm path "$PKG" | grep -q package
+then
+    echo "ERROR: $PKG is not installed - cannot take app screenshots" >&2
+    exit 1
+fi
+adb shell pm path "$PKG"
 
 # ---------------------------------------------------------------------------
 # An AOSP emulator has no always-on panel, so a screen-off capture is just
@@ -53,9 +77,32 @@ cat > "$TMPXML" <<'XML'
 </map>
 XML
 adb push "$TMPXML" /data/local/tmp/aod_settings.xml || true
-adb shell run-as "$PKG" mkdir -p shared_prefs || true
-adb shell run-as "$PKG" cp /data/local/tmp/aod_settings.xml shared_prefs/aod_settings.xml || true
 rm -f "$TMPXML"
+
+PREFS="/data/data/$PKG/shared_prefs/aod_settings.xml"
+adb shell run-as "$PKG" mkdir -p shared_prefs 2>/dev/null || true
+adb shell run-as "$PKG" cp /data/local/tmp/aod_settings.xml shared_prefs/aod_settings.xml 2>/dev/null || true
+
+# run-as often cannot read /data/local/tmp (SELinux: shell_data_file vs the app
+# domain). On an AOSP image adb is root, so write it directly and hand the file
+# to the app's own uid instead.
+if ! adb shell ls "$PREFS" 2>&1 | grep -q aod_settings
+then
+    say "run-as copy did not land, writing as root"
+    UID_APP=$(adb shell stat -c '%u' "/data/data/$PKG" | tr -d '\r')
+    adb shell mkdir -p "/data/data/$PKG/shared_prefs" || true
+    adb shell cp /data/local/tmp/aod_settings.xml "$PREFS" || true
+    adb shell chown "$UID_APP:$UID_APP" "/data/data/$PKG/shared_prefs" "$PREFS" || true
+    adb shell chmod 771 "/data/data/$PKG/shared_prefs" || true
+    adb shell chmod 660 "$PREFS" || true
+    adb shell restorecon -R "/data/data/$PKG/shared_prefs" 2>/dev/null || true
+fi
+if adb shell ls "$PREFS" 2>&1 | grep -q aod_settings
+then
+    say "preferences in place: canvas fallback on"
+else
+    echo "WARNING: could not write the preferences, shot 03 may be black" >&2
+fi
 
 say "grant the notification listener and the accessibility service"
 adb shell cmd notification allow_listener "$PKG/$PKG.notificationobserver" || true
@@ -64,12 +111,12 @@ adb shell settings put secure accessibility_enabled 1 || true
 sleep 6
 
 say "01 settings screen"
-adb shell am start -W -n "$PKG/.MainActivity" || true
+start .MainActivity
 sleep 10
 shot aod_nightly_settings.png
 
 say "02 app picker"
-adb shell am start -W -n "$PKG/.AppPickerActivity" || true
+start .AppPickerActivity
 sleep 8
 shot aod_nightly_picker.png
 
@@ -96,3 +143,10 @@ say "logs"
 adb logcat -d -s AODDBG AOD-Overlay AOD-Notifications AOD-Main AOD-Boot > "$OUT/aod_log.txt" || true
 adb logcat -d > "$OUT/adb_log.txt" || true
 ls -l "$OUT"/aod_nightly_*.png || true
+
+# A cheap tripwire: identical captures mean the activities never came up and
+# both pictures are just whatever was on screen before.
+if cmp -s "$OUT/aod_nightly_settings.png" "$OUT/aod_nightly_picker.png"
+then
+    echo "WARNING: settings and picker captures are identical - the launches did not work" >&2
+fi
