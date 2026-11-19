@@ -16,11 +16,32 @@ on:
 jobs:
 
   # -------------------------------------------------------------------------
+  # Move the nightly tag to this commit. Only on a push to master; on pull
+  # requests and other branches this job is skipped, and the jobs below treat
+  # "skipped" exactly like "success" so they still run.
+  # -------------------------------------------------------------------------
+  update-nightly-tag:
+    name: Update nightly release tag
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - name: Move nightly tag to head for nightly release
+        run: git tag -f nightly && git push origin nightly -f
+
+  # -------------------------------------------------------------------------
   # Everything that does not need an emulator: source encoding, privacy guard,
   # host unit tests, the APK itself and the APK privacy scan. Fast, and a
   # failure here stops before an emulator is booted.
   # -------------------------------------------------------------------------
   checks:
+    needs: [update-nightly-tag]
+    if: |
+      always() &&
+      (needs.update-nightly-tag.result == 'success' ||
+        needs.update-nightly-tag.result == 'skipped')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -70,7 +91,12 @@ jobs:
   # Device tests and screenshots on an emulator.
   # -------------------------------------------------------------------------
   android-linux-test:
-    needs: checks
+    needs: [update-nightly-tag, checks]
+    if: |
+      always() &&
+      (needs.update-nightly-tag.result == 'success' ||
+        needs.update-nightly-tag.result == 'skipped') &&
+      needs.checks.result == 'success'
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -147,12 +173,12 @@ jobs:
             # 01: the settings screen
             adb shell am start -n $PKG/.MainActivity
             sleep 12
-            adb exec-out screencap -p > ~/info_screen01_settings_${{ matrix.api-level }}.png || true
+            adb exec-out screencap -p > ~/aod_nightly_settings.png || true
 
             # 02: the app picker
             adb shell am start -n $PKG/.AppPickerActivity
             sleep 10
-            adb exec-out screencap -p > ~/info_screen02_picker_${{ matrix.api-level }}.png || true
+            adb exec-out screencap -p > ~/aod_nightly_picker.png || true
 
             # 03: the dark always-on screen with an icon.
             # An AOSP emulator has no always-on panel of its own, so this one
@@ -162,17 +188,17 @@ jobs:
             sleep 3
             adb shell input keyevent 26
             sleep 12
-            adb exec-out screencap -p > ~/info_screen03_aod_${{ matrix.api-level }}.png || true
+            adb exec-out screencap -p > ~/aod_nightly_aod.png || true
             adb shell dumpsys display | grep -E 'mScreenState|mScreenBrightness' > ~/display_state.txt || true
 
             # 04: the lock screen, still locked, with the light on it
             adb shell input keyevent 26
             sleep 10
-            adb exec-out screencap -p > ~/info_screen04_lockscreen_${{ matrix.api-level }}.png || true
+            adb exec-out screencap -p > ~/aod_nightly_lockscreen.png || true
 
             adb logcat -d -s AODDBG AOD-Overlay AOD-Notifications AOD-Main AOD-Boot > ~/aod_log.txt || true
             adb logcat -d > ~/adb_log.txt || true
-            ls -al ~/info_screen*.png || true
+            ls -al ~/aod_nightly_*.png || true
 
       - name: upload screenshots
         if: always()
@@ -180,7 +206,7 @@ jobs:
         with:
           name: linuxscreen_${{ matrix.api-level }}
           path: |
-            /home/runner/info_screen*.png
+            /home/runner/aod_nightly_*.png
 
       - name: upload logs
         if: always()
@@ -201,9 +227,13 @@ jobs:
             app/build/reports/androidTests
             app/build/outputs/androidTest-results
 
+      # Screenshots only, and always under the same four names, so the nightly
+      # release carries one current set instead of a growing pile of files.
+      # One matrix entry uploads: with fixed names the others would overwrite
+      # each other anyway.
       - name: Upload to nightly release
         uses: ncipollo/release-action@v1
-        if: github.ref == 'refs/heads/master'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master' && matrix.api-level == 34
         with:
           allowUpdates: true
           tag: nightly
@@ -212,4 +242,4 @@ jobs:
           prerelease: true
           replacesArtifacts: true
           token: ${{ secrets.GITHUB_TOKEN }}
-          artifacts: "/home/runner/info_screen*.png"
+          artifacts: "/home/runner/aod_nightly_settings.png,/home/runner/aod_nightly_picker.png,/home/runner/aod_nightly_aod.png,/home/runner/aod_nightly_lockscreen.png"

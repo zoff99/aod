@@ -230,7 +230,11 @@ Wake locks appear in `dumpsys power` as `aod:notifications`, `aod:light`,
   screen builds and both services are declared
 - `.github/workflows/info_test.yml` — CI: source encoding check, privacy
   guard, unit tests, APK build and scan, then device tests and screenshots on
-  an emulator (uploaded as artifacts, and to the `nightly` release on master)
+  an emulator. On a push to master the `nightly` tag is moved to that commit
+  and the four screenshots are published to the `nightly` release under the
+  same names every time (`aod_nightly_settings.png`, `_picker`, `_aod`,
+  `_lockscreen`), replacing the previous set
+- `.github/dependabot.yml` — weekly dependency and GitHub Actions updates
 - minSdk 28 (Android 9), targetSdk 34
 - Dependencies: appcompat, recyclerview (UI only). Everything else is
   platform API.
