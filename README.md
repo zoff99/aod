@@ -20,6 +20,10 @@ No root, no Xposed, no hardware LED required.
 
 Pure Java, no Kotlin, no tracking, **no internet permission at all**.
 
+## Latest Automated Screenshots
+
+<img src="https://github.com/zoff99/aod/releases/download/nightly/aod_nightly_settings.png" width="220">&nbsp;<img src="https://github.com/zoff99/aod/releases/download/nightly/aod_nightly_picker.png" width="220">&nbsp;<img src="https://github.com/zoff99/aod/releases/download/nightly/aod_nightly_lockscreen.png" width="220">&nbsp;<img src="https://github.com/zoff99/aod/releases/download/nightly/aod_nightly_aod.png" width="220">
+
 ## How it works (no root)
 
 The app combines three standard Android mechanisms:
