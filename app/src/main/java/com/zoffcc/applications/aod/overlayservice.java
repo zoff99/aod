@@ -109,6 +109,7 @@ public class overlayservice extends AccessibilityService
     private boolean awakeTried = false;     // one wake attempt per burst
     private long awakeAttemptAt = 0L;
     private long awakeBackoffUntil = 0L;
+    private int awakeLateOffs = 0;
     private boolean timersViaAlarm = false;
     private long burstEndsAt = 0L;
     private PowerManager.WakeLock drawLock;
@@ -363,8 +364,7 @@ public class overlayservice extends AccessibilityService
                         && SystemClock.elapsedRealtime() - canvasLaunchAt > 3000L)
                 {
                     canvasBackoffUntil = 0L;
-                    awakeBackoffUntil = 0L;
-                    Dbg.log("overlay", "user woke the phone -> awake panel/canvas allowed again");
+                    Dbg.log("overlay", "user woke the phone -> canvas allowed again");
                 }
                 if (canvasShown)
                 {
@@ -680,6 +680,10 @@ public class overlayservice extends AccessibilityService
         Dbg.log("overlay", "handleUnlock via=" + via + " " + state());
         screenOn = true;
         lastUserPresentAt = SystemClock.elapsedRealtime();
+        // A genuine unlock means a person is using the phone: the next dark
+        // screen is a fresh start, so the awake panel may be tried again.
+        awakeLateOffs = 0;
+        awakeBackoffUntil = 0L;
         burstPending = false;
         stopBurst(false, "unlock:" + via);
         sendLocal(notificationobserver.ACTION_HIDE);
@@ -858,13 +862,18 @@ public class overlayservice extends AccessibilityService
         kmUnlockedSeen = 0;
         armKeyguardWatch();
 
-        long lockFor = durationMs + 4000L;
+        boolean anim = animating();
+        // A still image needs the CPU only while something is actually drawn:
+        // the first frame here, then a short hold per later change. Holding it
+        // for the whole burst kept the phone awake for minutes to show a
+        // picture that never moves. An animating style does need it throughout.
+        long lockFor = anim ? durationMs + 4000L : 1500L;
         burstEndsAt = SystemClock.elapsedRealtime() + durationMs;
         // A still image draws nothing between its rare frames, so its timers
         // can be alarms and the CPU is left to sleep. Anything that animates
         // or toggles keeps the Handler timers and the lock they need.
-        timersViaAlarm = !animating() && canExactAlarms();
-        Dbg.log("overlay", "timers: path=" + (animating() ? "animated" : "static")
+        timersViaAlarm = !anim && canExactAlarms();
+        Dbg.log("overlay", "timers: path=" + (anim ? "animated" : "static")
                 + " via=" + (timersViaAlarm ? "alarm" : "handler")
                 + " exactAlarms=" + canExactAlarms()
                 + " cpuLock=" + (needsCpuLock() ? "needed" : "none"));
@@ -993,6 +1002,7 @@ public class overlayservice extends AccessibilityService
             view.clearIcons();
         }
         releaseAwakePanel(false);
+        briefDraw(800L);    // one last frame to take the light off the panel
         syncOverlay();
         release(partialLock);
         cpuLockHeld = false;
@@ -1075,7 +1085,7 @@ public class overlayservice extends AccessibilityService
         float scale = Prefs.STYLE_ICONS.equals(Prefs.style(this)) ? 2.6f : 1f;
         float dx = SHIFTS[shiftIndex][0] * d * scale;
         float dy = SHIFTS[shiftIndex][1] * d * scale;
-        if (view != null) { view.setShift(dx, dy); }
+        if (view != null) { briefDraw(800L); view.setShift(dx, dy); }
         Dbg.log("overlay", "burn-in shift slot=" + shiftIndex + " dx=" + (int) dx
                 + " dy=" + (int) dy + " (next in " + (SHIFT_INTERVAL_MS / 60000L) + " min)");
     }
@@ -1109,9 +1119,10 @@ public class overlayservice extends AccessibilityService
      * canvas on some ROMs. The flag alone does not wake a sleeping panel, so
      * one short wake is requested per burst; after that the flag holds it.
      *
-     * Any screen-off while we hold it means the power key or the ROM refused,
-     * and both are answered the same way: let go and stay dozing for a while.
-     * Never fight the user or the ROM in a wake loop.
+     * A screen-off while we hold it means either the power key or a ROM that
+     * refuses to stay awake. How long the panel stayed up tells them apart:
+     * a few seconds is the ROM, half a minute is a human. Never fight either
+     * in a wake loop.
      */
     private void syncAwakePanel()
     {
@@ -1147,13 +1158,32 @@ public class overlayservice extends AccessibilityService
         catch (Exception e) { Log.w(TAG, "awake flag: " + e); }
     }
 
-    private void releaseAwakePanel(boolean backoff)
+    private void releaseAwakePanel(boolean screenOff)
     {
-        if (backoff && awakeHeld)
+        if (screenOff && awakeHeld)
         {
-            awakeBackoffUntil = SystemClock.elapsedRealtime() + 120000L;
+            long now = SystemClock.elapsedRealtime();
+            long held = now - awakeAttemptAt;
+            long pause;
+            if (held < 12000L)
+            {
+                // Went back to sleep by itself within seconds: this ROM does
+                // not allow an awake always-on field. Stop trying for a while.
+                pause = 120000L;
+                awakeLateOffs = 0;
+            }
+            else
+            {
+                // It stayed up and then went off: the power key. Honour it,
+                // but only briefly - a later notification may light up again.
+                // Repeated presses mean the user wants it dark: long pause.
+                pause = (++awakeLateOffs >= 3) ? 120000L : 20000L;
+            }
+            awakeBackoffUntil = now + pause;
             awakeTried = false;   // one retry when the pause is over
-            Dbg.log("overlay", "awake panel refused (power key or ROM) -> dozing for 2 min");
+            Dbg.log("overlay", "awake panel off after " + held + "ms -> pause "
+                    + (pause / 1000L) + "s (" + (held < 12000L ? "ROM refused" : "power key")
+                    + ", presses=" + awakeLateOffs + ")");
         }
         awakeHeld = false;
         applyAwakeFlag(false);
@@ -1228,6 +1258,18 @@ public class overlayservice extends AccessibilityService
     private void briefCpu(long ms)
     {
         try { if (briefLock != null) { briefLock.acquire(ms); } }
+        catch (Exception ignored) {}
+    }
+
+    /** Hold the draw lock just long enough to push one frame to a dozing
+     *  panel. Every path that changes what is on screen calls this, so no
+     *  long-held lock is needed anywhere for a still image. */
+    private void briefDraw(long ms)
+    {
+        // An animating style already holds the lock for its whole run, and a
+        // non-reference-counted acquire would *shorten* that hold.
+        if (animating()) { return; }
+        try { if (drawCapable && drawLock != null) { drawLock.acquire(ms); } }
         catch (Exception ignored) {}
     }
 
@@ -1353,6 +1395,7 @@ public class overlayservice extends AccessibilityService
         if (view == null) { return; }
         int color = testMode ? testColor : items.isEmpty() ? Prefs.color(this) : items.get(0).color;
         float strokePx = Prefs.strokeDp(this) * getResources().getDisplayMetrics().density;
+        briefDraw(800L);
         view.configure(Prefs.style(this), Prefs.anim(this), color, Prefs.eco(this),
                 Prefs.speedMs(this), strokePx, Prefs.dotX(this));
         syncIcons();
@@ -1457,6 +1500,7 @@ public class overlayservice extends AccessibilityService
         int[] nums = new int[counts.size()];
         for (int i = 0; i < nums.length; i++) { nums[i] = counts.get(i); }
 
+        briefDraw(1200L);   // rasterising and drawing the icons
         view.setIcons(list, nums, cfg);
         Dbg.log("overlay", "icons: apps=" + perApp.size() + " drawn=" + list.size()
                 + " tint=" + tint + " iconSrc=" + (notifIcons ? "notification" : "app")
@@ -1518,6 +1562,7 @@ public class overlayservice extends AccessibilityService
         if (view == null) { return; }
         Rect cam = CutoutLocator.cameraRect(this);
         Point size = CutoutLocator.realSize(this);
+        briefDraw(800L);
         view.setGeometry(cam, size);
         view.setBlackoutFull(Prefs.blackoutFull(this));
     }

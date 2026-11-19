@@ -573,8 +573,8 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
                 prefs.getInt(Prefs.STROKE_DP, 5) - 2, R.string.lbl_stroke,
                 p -> prefs.edit().putInt(Prefs.STROKE_DP, p + 2).apply());
         bindSlider(R.id.sb_icon_size, R.id.lbl_icon_size,
-                prefs.getInt(Prefs.ICON_SIZE_DP, 24) - 24, R.string.lbl_icon_size,
-                p -> prefs.edit().putInt(Prefs.ICON_SIZE_DP, p + 24).apply());
+                prefs.getInt(Prefs.ICON_SIZE_DP, 18) - 18, R.string.lbl_icon_size,
+                p -> prefs.edit().putInt(Prefs.ICON_SIZE_DP, p + 18).apply());
         bindSlider(R.id.sb_icon_offset_x, R.id.lbl_icon_offset_x,
                 prefs.getInt(Prefs.ICON_OFFSET_X_DP, 0) + 200, R.string.lbl_icon_offset_x, -200,
                 p -> prefs.edit().putInt(Prefs.ICON_OFFSET_X_DP, p - 200).apply());

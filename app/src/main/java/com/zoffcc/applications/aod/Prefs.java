@@ -62,7 +62,7 @@ public final class Prefs
     // ---- app icons on the always-on screen -------------------------------
     public static final String ICON_SOURCE = "icon_source";         // app | notification artwork
     public static final String ICON_TINT = "icon_tint";             // color | white | black
-    public static final String ICON_SIZE_DP = "icon_size_dp";       // 24..96 dp
+    public static final String ICON_SIZE_DP = "icon_size_dp";       // 18..96 dp
     public static final String ICON_PLATE = "icon_plate";           // rounded plate behind each icon
     public static final String ICON_SHIFT = "icon_shift";           // slow drift against burn-in
 
@@ -167,7 +167,7 @@ public final class Prefs
      *  stays awake, which is what lets the phone's own brightness drive it.
      *  Off: the panel dozes - cheaper, but pinned to the phone's own fixed
      *  always-on brightness unless an own brightness is requested. */
-    public static boolean awakePanel(Context c) { return get(c).getBoolean(AWAKE_PANEL, true); }
+    public static boolean awakePanel(Context c) { return get(c).getBoolean(AWAKE_PANEL, false); }
     public static int strokeDp(Context c) { return get(c).getInt(STROKE_DP, 5); }
     public static int dotX(Context c) { return get(c).getInt(DOT_X, 50); }
 
@@ -178,7 +178,7 @@ public final class Prefs
     { return ICON_SRC_NOTIFICATION.equals(iconSource(c)); }
 
     public static String iconTint(Context c) { return get(c).getString(ICON_TINT, ICON_TINT_COLOR); }
-    public static int iconSizeDp(Context c) { return get(c).getInt(ICON_SIZE_DP, 24); }
+    public static int iconSizeDp(Context c) { return get(c).getInt(ICON_SIZE_DP, 18); }
     public static boolean iconPlate(Context c) { return get(c).getBoolean(ICON_PLATE, false); }
     public static boolean iconShift(Context c) { return get(c).getBoolean(ICON_SHIFT, true); }
 

@@ -94,7 +94,6 @@ public class GlowRendererView extends View
     public GlowRendererView(Context context)
     {
         super(context);
-        setLayerType(LAYER_TYPE_HARDWARE, null);
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeCap(Paint.Cap.ROUND);
         paint.setStrokeJoin(Paint.Join.ROUND);
@@ -117,6 +116,11 @@ public class GlowRendererView extends View
         this.anim = anim == null ? Prefs.ANIM_PULSE : anim;
         this.color = color;
         this.eco = eco;
+        // A still image is drawn once and then sits unchanged in the window
+        // surface: a GPU layer would cost memory and per-frame upkeep for
+        // nothing. Only the styles that really animate get one.
+        int layer = Prefs.STYLE_ICONS.equals(this.style) ? LAYER_TYPE_NONE : LAYER_TYPE_HARDWARE;
+        if (getLayerType() != layer) { setLayerType(layer, null); }
         this.speedMs = Math.max(300, speedMs);
         this.strokePx = Math.max(2f, strokePx);
         this.dotXPercent = Math.max(0, Math.min(100, dotXPercent));
@@ -153,6 +157,7 @@ public class GlowRendererView extends View
     public void stop()
     {
         running = false;
+        removeCallbacks(frameTick);
         invalidate();
     }
 
@@ -396,7 +401,10 @@ public class GlowRendererView extends View
         long now = SystemClock.elapsedRealtime();
         if (eco && now - lastFrame < 66L)
         {
-            postInvalidateOnAnimation();
+            // Sleep until the next allowed frame instead of asking for every
+            // vsync and throwing the frames away.
+            removeCallbacks(frameTick);
+            postDelayed(frameTick, 66L - (now - lastFrame));
             return;
         }
         lastFrame = now;
@@ -450,16 +458,20 @@ public class GlowRendererView extends View
         }
     }
 
+    /** One reusable tick: a new Runnable per frame is needless garbage. */
+    private final Runnable frameTick = new Runnable()
+    {
+        @Override
+        public void run()
+        {
+            if (running) { invalidate(); }
+        }
+    };
+
     private void postDelayedInvalidate()
     {
-        postDelayed(new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                if (running) { invalidate(); }
-            }
-        }, eco ? 250L : 100L);
+        removeCallbacks(frameTick);
+        postDelayed(frameTick, eco ? 250L : 100L);
     }
 
     // ---- styles -------------------------------------------------------------

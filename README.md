@@ -241,8 +241,9 @@ is being dragged it uses a temporary value that is never published at all
 So matching the phone is not a value to compute, it is interference to
 avoid. Two switches decide what happens:
 
-- **Keep the panel awake for the dark screen** (`AWAKE_PANEL`, on by
-  default): the overlay window itself carries `FLAG_KEEP_SCREEN_ON` while a
+- **Keep the panel awake for the dark screen** (`AWAKE_PANEL`, **off by
+  default** and recommended off): the overlay window itself carries
+  `FLAG_KEEP_SCREEN_ON` while a
   light is showing, so rule 3 applies instead of rule 2. The flag cannot wake
   an already sleeping panel, so one short `ACQUIRE_CAUSES_WAKEUP` request is
   sent per burst and the flag then holds it. No activity is involved: a
@@ -253,10 +254,12 @@ avoid. Two switches decide what happens:
   brightness of its own (`BRIGHTNESS_OVERRIDE_NONE`), so rule 1 never kicks
   in either.
 
-Any `ACTION_SCREEN_OFF` that arrives while the flag is held means either the
-power key or the ROM refusing to stay awake. Both are answered identically:
-clear the flag, stay dozing for two minutes, then try once more. The app never
-fights the power button or the ROM in a wake loop.
+Any `ACTION_SCREEN_OFF` that arrives while the flag is held clears it at
+once. How long the panel stayed up tells the two causes apart: under 12 s is
+the ROM refusing (pause 2 minutes), longer is a power-key press (pause 20 s,
+or 2 minutes after three presses in a row). A genuine unlock resets both. A
+wake by the user deliberately does *not* shorten the pause, or the next power
+press would be answered by waking the panel again. No wake loops.
 
 That gives three states:
 
@@ -290,7 +293,7 @@ display). The settings screen says so instead of pretending otherwise.
 
 The debug log prints `dark`, `panel` (`awake (window flag)` / `awake canvas` /
 `dozing`), `mode`, `awake`, `follow`, `pct` and `requested` for every change,
-plus `awake panel: HOLDING display awake` / `released` / `refused`.
+plus `awake panel: HOLDING display awake` / `released` / `off after …ms -> pause …s`.
 
 ## Battery and CPU
 
@@ -308,6 +311,22 @@ timing is built around that:
   dozing panel with no alarms available. An awake panel already keeps the
   phone awake, so no lock is taken there at all. It is acquired and released
   as the panel state changes, not once per burst.
+- **The draw lock is held for drawing, not for the burst.** A still image
+  takes 1.5 s at the start and under a second for each later change (new
+  notification, burn-in move, geometry or colour change, taking the light
+  down). Only an animating style holds it for its whole run. Previously it
+  was held for the entire burst — minutes of awake CPU to show a picture
+  that never moves.
+- **A still image gets no GPU layer.** `LAYER_TYPE_HARDWARE` is only set for
+  the styles that animate; the icons style draws straight into the window
+  surface, which gives back roughly 10 MB of GPU memory and the per-frame
+  layer upkeep.
+- **ECO mode really sleeps between frames** instead of asking for every
+  vsync and discarding the frames, and the slow redraw tick is one reusable
+  `Runnable` rather than a fresh allocation every 100 ms.
+- **The battery receiver only exists while the battery light is on.**
+  `ACTION_BATTERY_CHANGED` arrives on every level and charge change; with
+  the feature off it was waking the process for nothing.
 - **No keyguard polling while the panel is off.** An unlock always arrives as
   `ACTION_SCREEN_ON`, which re-arms the 300 ms watch; polling a dozing phone
   every two seconds only woke the CPU (~145 needless wakeups per burst).

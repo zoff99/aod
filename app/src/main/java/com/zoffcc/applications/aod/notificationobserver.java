@@ -108,10 +108,7 @@ public class notificationobserver extends NotificationListenerService
                 .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "aod:notifications");
         briefLock.setReferenceCounted(false);
 
-        batteryReceiver = new battery_receiver();
-        IntentFilter f = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
-        Intent sticky = registerReceiver(batteryReceiver, f);
-        if (sticky != null) { handleBattery(sticky); }
+        syncBatteryReceiver();
 
         commandReceiver = new command_receiver();
         IntentFilter cf = new IntentFilter();
@@ -141,6 +138,10 @@ public class notificationobserver extends NotificationListenerService
         Dbg.log("observer", "onListenerDisconnected");
         connected = false;
         super.onListenerDisconnected();
+        // The system can unbind this listener on its own (update, crash, ROM
+        // housekeeping). Without asking to be rebound the app would silently
+        // stop seeing notifications until the user toggled the setting again.
+        requestRebind(this);
         try { if (batteryReceiver != null) { unregisterReceiver(batteryReceiver); } }
         catch (Exception ignored) {}
         batteryReceiver = null;
@@ -203,6 +204,38 @@ public class notificationobserver extends NotificationListenerService
         // DND state changed -> re-publish so the light reacts immediately
         handler.removeCallbacks(publishRunnable);
         handler.post(publishRunnable);
+    }
+
+    /**
+     * ACTION_BATTERY_CHANGED is broadcast on every level and charge change.
+     * Listening to it while the battery light is switched off only wakes this
+     * process for nothing, so the receiver exists only when it is used.
+     */
+    private void syncBatteryReceiver()
+    {
+        boolean want = Prefs.batteryLight(this);
+        if (want && batteryReceiver == null)
+        {
+            batteryReceiver = new battery_receiver();
+            IntentFilter f = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+            Intent sticky = registerReceiver(batteryReceiver, f);
+            if (sticky != null) { handleBattery(sticky); }
+            Dbg.log("observer", "battery receiver: registered (battery light on)");
+        }
+        else if (!want && batteryReceiver != null)
+        {
+            try { unregisterReceiver(batteryReceiver); } catch (Exception ignored) {}
+            batteryReceiver = null;
+            batteryState = "";
+            // take any battery light that is on screen off again
+            synchronized (items)
+            {
+                items.remove(PKG_CHARGING);
+                items.remove(PKG_FULL);
+                items.remove(PKG_LOW);
+            }
+            Dbg.log("observer", "battery receiver: unregistered (battery light off)");
+        }
     }
 
     private void acquireBrief()
@@ -499,6 +532,7 @@ public class notificationobserver extends NotificationListenerService
             }
             else if (ACTION_REEVAL.equals(a))
             {
+                syncBatteryReceiver();
                 iconColorCache.clear();
                 batteryState = "";
                 handler.removeCallbacks(publishRunnable);

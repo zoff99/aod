@@ -238,7 +238,7 @@
                 android:labelFor="@+id/sb_icon_size" />
             <SeekBar android:id="@+id/sb_icon_size" android:layout_width="match_parent"
                 android:layout_height="wrap_content" android:minHeight="48dp"
-                android:max="72"
+                android:max="78"
                 android:progressTint="@color/hc_accent" android:thumbTint="@color/hc_accent"
                 android:secondaryProgressTint="@color/hc_border" />
 
