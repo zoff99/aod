@@ -222,7 +222,7 @@ public final class Prefs
                 .apply();
     }
 
-    public static int timeoutSec(Context c) { return get(c).getInt(TIMEOUT_SEC, 290); }
+    public static int timeoutSec(Context c) { return get(c).getInt(TIMEOUT_SEC, 300); }
     public static boolean interval(Context c) { return get(c).getBoolean(INTERVAL, false); }
     public static int intervalOnSec(Context c) { return get(c).getInt(INTERVAL_ON_SEC, 4); }
     public static int intervalOffSec(Context c) { return get(c).getInt(INTERVAL_OFF_SEC, 6); }

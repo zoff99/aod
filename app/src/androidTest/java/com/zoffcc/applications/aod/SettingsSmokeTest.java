@@ -3,6 +3,10 @@ package com.zoffcc.applications.aod;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.pm.ServiceInfo;
+import android.view.View;
+import android.widget.EditText;
+import android.widget.SeekBar;
+import android.widget.TextView;
 
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -16,8 +20,9 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Device smoke test: the settings screen builds and the two services the app
- * depends on are declared. Run with ./gradlew :app:connectedDebugAndroidTest
+ * Device smoke test: the settings screen builds, its sections fold, the
+ * search finds a setting, the duration slider is stepped, and the two
+ * services the app depends on are declared. Run with ./gradlew :app:connectedDebugAndroidTest
  */
 @RunWith(AndroidJUnit4.class)
 public class SettingsSmokeTest
@@ -57,5 +62,56 @@ public class SettingsSmokeTest
         ServiceInfo overlay = c.getPackageManager().getServiceInfo(
                 new ComponentName(c, overlayservice.class), 0);
         assertNotNull(overlay);
+    }
+
+    @Test
+    public void sectionsFoldAndSearchFindsSettings()
+    {
+        try (ActivityScenario<MainActivity> s = ActivityScenario.launch(MainActivity.class))
+        {
+            s.onActivity(a -> {
+                View basics = a.findViewById(R.id.body_basics);
+                assertNotNull("basics section missing", basics);
+                int before = basics.getVisibility();
+                a.findViewById(R.id.hdr_basics).performClick();
+                assertTrue("tapping a header must fold or unfold its section",
+                        basics.getVisibility() != before);
+
+                EditText search = a.findViewById(R.id.et_settings_search);
+                assertNotNull("settings search field missing", search);
+                search.setText("brightness");
+                assertEquals("search must open the section that matches",
+                        View.VISIBLE, a.findViewById(R.id.body_time).getVisibility());
+                assertEquals("the matching setting must be on screen",
+                        View.VISIBLE, a.findViewById(R.id.sw_follow_brightness).getVisibility());
+                assertEquals("a section without a match must be hidden",
+                        View.GONE, a.findViewById(R.id.hdr_cutout).getVisibility());
+
+                search.setText("");
+                assertEquals("clearing the search must bring every section back",
+                        View.VISIBLE, a.findViewById(R.id.hdr_cutout).getVisibility());
+            });
+        }
+    }
+
+    @Test
+    public void lightDurationIsOneOfTheSteps()
+    {
+        try (ActivityScenario<MainActivity> s = ActivityScenario.launch(MainActivity.class))
+        {
+            s.onActivity(a -> {
+                SeekBar sb = a.findViewById(R.id.sb_timeout);
+                assertEquals("the slider must have one position per step",
+                        LightDuration.count() - 1, sb.getMax());
+                int stored = Prefs.timeoutSec(a);
+                boolean isStep = false;
+                for (int step : LightDuration.STEPS_SEC) { if (step == stored) { isStep = true; } }
+                assertTrue("stored duration " + stored + " is not a step", isStep);
+                TextView lbl = a.findViewById(R.id.lbl_timeout);
+                String text = lbl.getText().toString();
+                assertTrue("duration must be labelled in min or h, not seconds: " + text,
+                        text.contains("min") || text.contains(" h"));
+            });
+        }
     }
 }

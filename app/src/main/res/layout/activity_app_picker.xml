@@ -102,17 +102,17 @@
         android:background="@drawable/bg_tip"
         android:layout_marginStart="16dp"
         android:layout_marginEnd="16dp"
-        android:layout_marginTop="6dp"
+        android:layout_marginTop="4dp"
         android:paddingStart="12dp"
         android:paddingEnd="14dp"
-        android:paddingTop="9dp"
-        android:paddingBottom="9dp">
+        android:paddingTop="6dp"
+        android:paddingBottom="6dp">
 
         <ImageView
-            android:layout_width="20dp"
-            android:layout_height="20dp"
+            android:layout_width="18dp"
+            android:layout_height="18dp"
             android:layout_marginTop="1dp"
-            android:layout_marginEnd="10dp"
+            android:layout_marginEnd="8dp"
             android:src="@drawable/ic_info"
             android:importantForAccessibility="no" />
 
@@ -121,10 +121,12 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:lineSpacingExtra="3dp"
+            android:lineSpacingExtra="1dp"
             android:text="@string/picker_hint"
             android:textColor="@color/hc_text_dim"
-            android:textSize="15sp" />
+            android:textSize="14sp"
+            android:maxLines="2"
+            android:ellipsize="end" />
     </LinearLayout>
 
     <LinearLayout

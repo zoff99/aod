@@ -15,6 +15,28 @@
     <string name="btn_test">Test light</string>
     <string name="btn_hide">Hide</string>
 
+    <!-- Settings screen: compact search field and foldable sections -->
+    <string name="settings_search_hint">Search settings\u2026</string>
+    <string name="settings_search_clear">Clear search</string>
+    <string name="settings_no_match">No setting matches your search. Try one short word, for example brightness, count or night.</string>
+    <string name="sec_open_hint">%1$s, closed. Tap to open.</string>
+    <string name="sec_close_hint">%1$s, open. Tap to close.</string>
+    <plurals name="sec_settings_count">
+        <item quantity="one">%1$d setting</item>
+        <item quantity="other">%1$d settings</item>
+    </plurals>
+
+    <string name="sec_basics">Basics</string>
+    <string name="sec_basics_sum">The master switch, and the moments in which the light may appear at all.</string>
+    <string name="sec_look">Light and color</string>
+    <string name="sec_look_sum">What the light looks like: its shape, its movement, its color, and how much of the screen is blacked out.</string>
+    <string name="sec_time">Duration and battery</string>
+    <string name="sec_time_sum">How long one light lasts, and the settings that trade brightness and smoothness against battery.</string>
+    <string name="sec_when">When to light up</string>
+    <string name="sec_when_sum">Which apps may light up, and the times and phone states in which the light stays off.</string>
+    <string name="sec_advanced">Advanced and testing</string>
+    <string name="sec_advanced_sum">For phones without an always-on panel, plus the test light and the debug log.</string>
+
     <string name="set_enabled">Enabled (master)</string>
     <string name="set_aod_light">Light when screen off / AOD</string>
     <string name="set_aod_light_sum">The main always-on light: it glows while the display is off or in the phone\u2019s own always-on mode, for the light duration set below. Notifications that arrive while you use the phone are saved and shown the next time the screen goes off.</string>
@@ -30,23 +52,25 @@
     <string name="set_canvas_fallback_sum">Leave this OFF if your phone has its own always-on display. It is only for phones that show nothing when the display is off: it opens a very dim black screen so the light has something to sit on. That screen keeps the panel awake, just like \u201cKeep the panel awake for the dark screen\u201d below, which is the switch to use if you want that for brightness reasons. The power button still turns the display off. With both off, the light and the black background are drawn without waking anything.</string>
     <string name="set_relight_relock_sum">Unlocking the phone hides the light. With this on, turning the display off or locking the phone again brings the light back for any notification you have not dismissed. Dismissed notifications never light up again.</string>
 
-    <string name="sec_appearance">Appearance</string>
     <string name="set_color">Light color</string>
     <string name="set_style">Style</string>
     <string name="set_anim">Animation</string>
     <string name="set_auto_color">Auto color from app icon</string>
     <string name="set_eco">ECO mode (fewer frames)</string>
+    <string name="set_eco_sum">Fewer redraws per second while the light moves. The animation looks slightly less smooth and the phone does noticeably less work. No effect on the still app icons.</string>
     <string name="set_interval">Interval mode (on/off cycling)</string>
+    <string name="set_interval_sum">Turns the whole light slowly on and off instead of keeping it on: the two numbers below say how many seconds it is on and how many it is off. Saves battery on panels that cannot dim themselves. The light duration above still ends it.</string>
     <string name="set_interval_on">On (s)</string>
     <string name="set_interval_off">Off (s)</string>
 
-    <string name="sec_icons">App icons instead of a light</string>
+    <string name="sec_icons">App icons</string>
     <string name="sec_icons_sum">Used when the style above is set to \u201cApp icons\u201d. The icons of the apps that have a notification are shown on the black screen instead of a ring, edge or dot. They are completely still: nothing pulses, flashes or blinks, and the screen is redrawn only when the icons move. With no notification the screen stays completely black. The icons belong to the dark always-on screen; while the phone is awake on the lock screen its own clock is left alone.</string>
     <string name="set_icon_source">Which icon to show</string>
     <string name="set_icon_source_sum">App icon is the colourful picture you tap on the home screen: familiar, but busy at small sizes. Notification icon is the small symbol the app itself puts in the status bar \u2014 a flat, simple shape made to stay readable when tiny, so all icons look like one family. With \u201cOriginal colors\u201d, a notification symbol is filled with the color that app chose for its own notifications; if it chose none, the color is taken from its app icon, and a very dark color is brightened so it stays visible on black. White and black work the same for both. If an app has no status-bar symbol, its app icon is used instead. A few apps use a plain generic symbol, so those can look alike.</string>
     <string name="set_icon_tint">Icon color</string>
     <string name="set_icon_tint_sum">Original colors keeps an app icon as it is, and fills a notification symbol with that app\u2019s own color. White turns each icon into a light monochrome glyph, which is the calmest look on a black screen. Black is the inverted form and is always drawn on a light plate so it stays visible.</string>
     <string name="lbl_icon_size">Icon size: %1$d dp</string>
+    <string name="set_icon_size_sum">How large each app icon is drawn, from 18 dp (small and unobtrusive) to 96 dp (easy to see from across the room).</string>
     <string name="set_icon_plate">Background plate behind icons</string>
     <string name="set_icon_plate_sum">Draws a rounded plate behind every icon, which helps icons with transparent or busy artwork stand out. Black icons always get a light plate, whatever this switch says.</string>
     <string name="set_icon_shift">Move icons slowly (burn-in protection)</string>
@@ -76,7 +100,7 @@
     <string name="btn_icon_reset">Reset position</string>
     <string name="icon_pos_reset">Icon position back to the defaults</string>
 
-    <string name="sec_icon_count">Notification count under the icon</string>
+    <string name="sec_icon_count">Notification counts</string>
     <string name="sec_icon_count_sum">Shows how many notifications are waiting in each app as a number below its icon. The number is part of the same still image: it does not blink and it moves with the icons.</string>
     <string name="set_icon_count">Show the number of notifications</string>
     <string name="set_icon_count_sum">Prints the count under each app icon. A single notification shows no number unless the switch below is on, so a quiet screen stays quiet. Counts above 99 are shown as \u201c99+\u201d. Room for the number is reserved, so rows never overlap it. It counts notifications, not messages: an app that bundles five messages into one notification shows 1, and posting a notification with the same tag again replaces it instead of adding one.</string>
@@ -90,7 +114,6 @@
     <string name="set_icon_count_badge">Rounded badge behind the number</string>
     <string name="set_icon_count_badge_sum">Draws the number on a small dark rounded badge instead of straight onto the black screen. Slightly easier to read next to bright icons; it also makes the block a little taller.</string>
 
-    <string name="sec_behavior">Behavior</string>
     <string name="set_night">Night quiet hours</string>
     <string name="set_night_start">From</string>
     <string name="set_night_end">To</string>
@@ -101,7 +124,11 @@
 
     <string name="sec_cutout">Camera ring calibration</string>
 
-    <string name="lbl_timeout">Light duration: %1$d s</string>
+    <string name="lbl_timeout">Light duration: %1$s</string>
+    <string name="set_timeout_sum">How long one light lasts after the last notification, from 1 minute to 3 hours. The slider snaps to fixed steps, so a useful value is always one tap away. When the time is up the screen goes completely black until the next notification arrives. A longer time costs more battery.</string>
+    <string name="dur_min">%1$d min</string>
+    <string name="dur_h">%1$d h</string>
+    <string name="dur_h_min">%1$d h %2$d min</string>
     <string name="lbl_brightness">Always-on brightness: %1$d%% (own)</string>
     <string name="lbl_brightness_system">Always-on brightness: same as the phone</string>
     <string name="set_awake_panel">Keep the panel awake for the dark screen</string>
@@ -171,7 +198,7 @@
     <string name="picker_all">Select all</string>
     <string name="picker_none">Clear</string>
     <string name="picker_empty">No apps match your search</string>
-    <string name="picker_hint">Long press an app to choose the color of its light: the ring, the screen edge, the status-bar dot or its icon on the dark screen.</string>
+    <string name="picker_hint">Long press an app to set its light color.</string>
     <string name="picker_filter">Show:</string>
     <string name="picker_empty_none">Nothing selected yet</string>
     <string name="picker_empty_all">Every app here is already selected</string>

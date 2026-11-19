@@ -73,7 +73,7 @@ cat > "$TMPXML" <<'XML'
     <boolean name="blackout_full" value="true" />
     <boolean name="relight_relock" value="true" />
     <string name="style">icons</string>
-    <int name="timeout_sec" value="290" />
+    <int name="timeout_sec" value="300" />
 </map>
 XML
 adb push "$TMPXML" /data/local/tmp/aod_settings.xml || true

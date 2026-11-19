@@ -109,6 +109,9 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
         bindSliders();
         bindTextInputs();
         bindButtons();
+        // sections and search last: the search index reads the labels and the
+        // spinner choices, so every control has to be populated first
+        SettingsSections.install(this, prefs);
 
         itemsReceiver = new items_receiver();
         IntentFilter f = new IntentFilter(notificationobserver.ACTION_ITEMS);
@@ -564,11 +567,53 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
         });
     }
 
+    /**
+     * Light duration: a stepped slider. The seek bar position is the index
+     * into LightDuration.STEPS_SEC, so every position is one of the twelve
+     * useful values and the thumb always lands on a tick mark.
+     */
+    private void bindTimeoutRow()
+    {
+        SeekBar sb = findViewById(R.id.sb_timeout);
+        TextView lbl = findViewById(R.id.lbl_timeout);
+        sb.setMax(LightDuration.count() - 1);
+
+        int stored = Prefs.timeoutSec(this);
+        int index = LightDuration.nearestIndex(stored);
+        if (LightDuration.seconds(index) != stored)
+        {
+            // an off-grid value from an older version: settle on the nearest step
+            prefs.edit().putInt(Prefs.TIMEOUT_SEC, LightDuration.seconds(index)).apply();
+        }
+        sb.setProgress(index);
+        lbl.setText(getString(R.string.lbl_timeout, LightDuration.label(this, index)));
+        ((TextView) findViewById(R.id.lbl_timeout_min)).setText(LightDuration.label(this, 0));
+        ((TextView) findViewById(R.id.lbl_timeout_max))
+                .setText(LightDuration.label(this, LightDuration.count() - 1));
+
+        sb.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener()
+        {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser)
+            {
+                lbl.setText(getString(R.string.lbl_timeout, LightDuration.label(MainActivity.this, progress)));
+                if (fromUser)
+                {
+                    prefs.edit().putInt(Prefs.TIMEOUT_SEC, LightDuration.seconds(progress)).apply();
+                }
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {}
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {}
+        });
+    }
+
     private void bindSliders()
     {
-        bindSlider(R.id.sb_timeout, R.id.lbl_timeout,
-                prefs.getInt(Prefs.TIMEOUT_SEC, 290) - 10, R.string.lbl_timeout,
-                p -> prefs.edit().putInt(Prefs.TIMEOUT_SEC, p + 10).apply());
+        bindTimeoutRow();
         bindSlider(R.id.sb_stroke, R.id.lbl_stroke,
                 prefs.getInt(Prefs.STROKE_DP, 5) - 2, R.string.lbl_stroke,
                 p -> prefs.edit().putInt(Prefs.STROKE_DP, p + 2).apply());

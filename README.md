@@ -114,8 +114,32 @@ them to one spot.
 - Ignore persistent notifications; optional dismiss-on-unlock
 - Camera-ring calibration: automatic cutout detection + manual offset/size
 - Always-on brightness that follows the system brightness slider
-- Light duration, brightness percentage, thickness sliders
+- Light duration on a snapped slider: 1, 2, 5, 10, 15, 20, 30, 45 min,
+  1 h, 1.5 h, 2 h, 3 h -- twelve stops, each one a tick mark, no odd
+  second counts; brightness percentage and thickness stay free sliders
+- Settings in nine foldable sections with a small search line on top
 - Test button, live debug log, boot persistence
+
+## The settings screen
+
+The screen is a short list of named sections instead of one long column:
+**Basics**, **Light and color**, **Duration and battery**, **App icons**,
+**Icon position and layout**, **Notification counts**,
+**When to light up**, **Camera ring calibration**, **Advanced and testing**.
+Tap a header to fold or unfold it; the chevron and the number of settings in
+that section show its state. Only *Basics* is open on a fresh install, and
+every section remembers how you left it, so the screen stays as short as you
+made it.
+
+The search line above the list is one small row that never scrolls away. It
+filters all sections at once: type `night`, `count` or `brightness` and only
+the matching settings remain, in sections that open themselves. Clearing the
+field brings back your own folded state. The search reads the setting names,
+their plain-language explanations and the choices inside the dropdowns, so
+`edge` finds the light style and `unread` finds the counter source.
+
+Layout-wise every setting is one container -- control plus explanation --
+which is what makes both the folding and the search possible.
 
 ## What the number under an icon counts
 
@@ -231,10 +255,12 @@ Wake locks appear in `dumpsys power` as `aod:notifications`, `aod:light`,
 - `python3 tools/check_apk_privacy.py <apk>` — verifies the finished APK
 - `tools/find_non_ascii_chars_in_source.sh` — source encoding guard, runs
   before every compile (see below)
-- `./gradlew :app:testDebugUnitTest` — host tests for the icon grid and the
-  counter rules (`IconMath`, no device needed)
+- `./gradlew :app:testDebugUnitTest` — host tests for the icon grid, the
+  counter rules (`IconMath`) and the duration steps (`LightDuration`), no
+  device needed
 - `./gradlew :app:connectedDebugAndroidTest` — device smoke test: the settings
-  screen builds and both services are declared
+  screen builds, sections fold, search finds a setting, the duration slider is
+  stepped, and both services are declared
 - `.github/workflows/info_test.yml` — CI: source encoding check, privacy
   guard, unit tests, APK build and scan, then device tests and screenshots on
   an emulator (`tools/ci_emulator_shots.sh`, which also switches on the canvas
