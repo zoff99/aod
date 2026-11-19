@@ -237,7 +237,9 @@ Wake locks appear in `dumpsys power` as `aod:notifications`, `aod:light`,
   screen builds and both services are declared
 - `.github/workflows/info_test.yml` — CI: source encoding check, privacy
   guard, unit tests, APK build and scan, then device tests and screenshots on
-  an emulator. On a push to master the `nightly` tag is moved to that commit
+  an emulator (`tools/ci_emulator_shots.sh`, which also switches on the canvas
+  fallback so the dark screen is capturable on an emulator that has no
+  always-on panel). On a push to master the `nightly` tag is moved to that commit
   and the four screenshots are published to the `nightly` release under the
   same names every time (`aod_nightly_settings.png`, `_picker`, `_aod`,
   `_lockscreen`), replacing the previous set

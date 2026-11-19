@@ -154,51 +154,13 @@ jobs:
           disable-animations: true
           disable-spellchecker: true
           script: |
-            # AOSP image: root is allowed, which makes granting the two
-            # services and starting the non-exported picker reliable.
+            # NOTE: the runner executes each line below in its own `sh -c`, so
+            # no shell variable survives from one line to the next. Anything
+            # that needs state lives in tools/ci_emulator_shots.sh instead.
             adb root || true
             adb wait-for-device
-            sleep 5
-
-            # Device tests first: a failure here fails the job.
             ./gradlew --no-daemon :app:installDebug :app:connectedDebugAndroidTest
-
-            PKG=com.zoffcc.applications.aod
-            adb shell cmd notification allow_listener $PKG/$PKG.notificationobserver || true
-            adb shell settings put secure enabled_accessibility_services $PKG/$PKG.overlayservice || true
-            adb shell settings put secure accessibility_enabled 1 || true
-            adb shell appops set $PKG SYSTEM_ALERT_WINDOW allow || true
-            sleep 5
-
-            # 01: the settings screen
-            adb shell am start -n $PKG/.MainActivity
-            sleep 12
-            adb exec-out screencap -p > ~/aod_nightly_settings.png || true
-
-            # 02: the app picker
-            adb shell am start -n $PKG/.AppPickerActivity
-            sleep 10
-            adb exec-out screencap -p > ~/aod_nightly_picker.png || true
-
-            # 03: the dark always-on screen with an icon.
-            # An AOSP emulator has no always-on panel of its own, so this one
-            # can come out black; 04 is the state that always renders.
-            adb shell locksettings set-pin 1234 || true
-            adb shell cmd notification post -S bigtext -t 'AOD CI' ci1 'test' || true
-            sleep 3
-            adb shell input keyevent 26
-            sleep 12
-            adb exec-out screencap -p > ~/aod_nightly_aod.png || true
-            adb shell dumpsys display | grep -E 'mScreenState|mScreenBrightness' > ~/display_state.txt || true
-
-            # 04: the lock screen, still locked, with the light on it
-            adb shell input keyevent 26
-            sleep 10
-            adb exec-out screencap -p > ~/aod_nightly_lockscreen.png || true
-
-            adb logcat -d -s AODDBG AOD-Overlay AOD-Notifications AOD-Main AOD-Boot > ~/aod_log.txt || true
-            adb logcat -d > ~/adb_log.txt || true
-            ls -al ~/aod_nightly_*.png || true
+            bash tools/ci_emulator_shots.sh /home/runner
 
       - name: upload screenshots
         if: always()
