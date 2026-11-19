@@ -105,6 +105,10 @@ public class overlayservice extends AccessibilityService
     private PowerManager.WakeLock partialLock;
     private PowerManager.WakeLock briefLock;
     private boolean cpuLockHeld = false;
+    private boolean awakeHeld = false;      // our window holds the display awake
+    private boolean awakeTried = false;     // one wake attempt per burst
+    private long awakeAttemptAt = 0L;
+    private long awakeBackoffUntil = 0L;
     private boolean timersViaAlarm = false;
     private long burstEndsAt = 0L;
     private PowerManager.WakeLock drawLock;
@@ -295,6 +299,7 @@ public class overlayservice extends AccessibilityService
         try { if (prefs != null) { prefs.unregisterOnSharedPreferenceChangeListener(this); } }
         catch (Exception ignored) {}
         stopBurst(false, "serviceDestroy");
+        releaseAwakePanel(false);
         cancelAlarms();
         release(briefLock);
         if (viewAdded && view != null)
@@ -335,6 +340,7 @@ public class overlayservice extends AccessibilityService
                     canvasBackoffUntil = SystemClock.elapsedRealtime() + 45000L;
                     Dbg.log("overlay", "power button while canvas up -> canvas paused 45s");
                 }
+                releaseAwakePanel(true);
                 screenOn = false;
                 // the evaluation below is 450 ms away, and the relock watch
                 // polls for up to 1.5 s: keep the CPU for that window only
@@ -350,6 +356,16 @@ public class overlayservice extends AccessibilityService
                 screenOn = true;
                 h.removeCallbacks(relockWatch);
                 armKeyguardWatch();
+                // The pause after a power-button press exists to stop an
+                // off -> canvas -> on loop. Once the user has genuinely woken
+                // the phone (not our own canvas launch), it is over.
+                if (!canvasShown && canvasBackoffUntil > 0
+                        && SystemClock.elapsedRealtime() - canvasLaunchAt > 3000L)
+                {
+                    canvasBackoffUntil = 0L;
+                    awakeBackoffUntil = 0L;
+                    Dbg.log("overlay", "user woke the phone -> awake panel/canvas allowed again");
+                }
                 if (canvasShown)
                 {
                     Dbg.log("overlay", "SCREEN_ON: canvas shown -> leave burst to canvas lifecycle");
@@ -530,9 +546,16 @@ public class overlayservice extends AccessibilityService
             // promptly. While the panel is off there is nothing to unlock at
             // all, and every unlock arrives as SCREEN_ON, which re-arms this
             // watch - so polling a dozing phone would only wake the CPU.
-            if (screenOn || canvasShown)
+            if (screenOn && !canvasShown)
             {
-                h.postDelayed(this, 300L);
+                h.postDelayed(this, 300L);   // real lock screen: hide instantly
+            }
+            else if (canvasShown)
+            {
+                // Our canvas sits over the keyguard, but a fingerprint unlock
+                // leaves it on top, so the unlock still has to be noticed -
+                // just not at the rate the real lock screen needs.
+                h.postDelayed(this, 1000L);
             }
             else
             {
@@ -577,7 +600,9 @@ public class overlayservice extends AccessibilityService
 
     private boolean effectiveScreenOff()
     {
-        return !screenOn || canvasShown;
+        // Holding the display awake ourselves is still the always-on field:
+        // the panel is on, but it shows our black field, not the lock screen.
+        return !screenOn || canvasShown || awakeHeld;
     }
 
     /** Awake on the real lock screen (not our canvas): may the light show? */
@@ -819,6 +844,7 @@ public class overlayservice extends AccessibilityService
         }
         catch (Exception ignored) {}
         cancelTimers();
+        awakeTried = false;
 
         int color = testMode ? testColor : items.isEmpty() ? Prefs.color(this) : items.get(0).color;
         if (!testMode && !items.isEmpty()) { lastBurstKey = items.get(0).key; }
@@ -840,7 +866,8 @@ public class overlayservice extends AccessibilityService
         timersViaAlarm = !animating() && canExactAlarms();
         Dbg.log("overlay", "timers: path=" + (animating() ? "animated" : "static")
                 + " via=" + (timersViaAlarm ? "alarm" : "handler")
-                + " exactAlarms=" + canExactAlarms());
+                + " exactAlarms=" + canExactAlarms()
+                + " cpuLock=" + (needsCpuLock() ? "needed" : "none"));
         if (drawCapable && drawLock != null)
         {
             try { drawLock.acquire(lockFor); } catch (Exception ignored) {}
@@ -965,6 +992,7 @@ public class overlayservice extends AccessibilityService
             view.stop();
             view.clearIcons();
         }
+        releaseAwakePanel(false);
         syncOverlay();
         release(partialLock);
         cpuLockHeld = false;
@@ -984,6 +1012,27 @@ public class overlayservice extends AccessibilityService
         h.removeCallbacks(keyguardWatch);
         h.removeCallbacks(relockWatch);
     }
+
+    /** One rebuild for a burst of preference changes. Writing several keys
+     *  in a single apply() notifies once per key, and the cutout report does
+     *  exactly that with six of them. */
+    private final Runnable appearanceRefresh = new Runnable()
+    {
+        @Override
+        public void run()
+        {
+            if (!lightActive) { return; }
+            applyAppearance();
+            refreshGeometry();
+            syncCpuLock();
+        }
+    };
+
+    private final Runnable geometryRefresh = new Runnable()
+    {
+        @Override
+        public void run() { refreshGeometry(); }
+    };
 
     private final Runnable shiftRunnable = new Runnable()
     {
@@ -1050,6 +1099,64 @@ public class overlayservice extends AccessibilityService
         }
         applyShift();
         armNextShift();
+    }
+
+    /**
+     * Keep the display awake with our own window instead of an activity.
+     *
+     * A window flag needs no background activity launch, cannot be dismissed
+     * by the keyguard, and has no lifecycle to lose - which is what killed the
+     * canvas on some ROMs. The flag alone does not wake a sleeping panel, so
+     * one short wake is requested per burst; after that the flag holds it.
+     *
+     * Any screen-off while we hold it means the power key or the ROM refused,
+     * and both are answered the same way: let go and stay dozing for a while.
+     * Never fight the user or the ROM in a wake loop.
+     */
+    private void syncAwakePanel()
+    {
+        long now = SystemClock.elapsedRealtime();
+        boolean want = lightActive && Prefs.awakePanel(this) && !canvasShown
+                && now >= awakeBackoffUntil;
+        if (want != awakeHeld)
+        {
+            awakeHeld = want;
+            applyAwakeFlag(want);
+            Dbg.log("overlay", "awake panel: " + (want ? "HOLDING display awake" : "released")
+                    + " backoffLeft=" + Math.max(0L, awakeBackoffUntil - now) + "ms");
+        }
+        if (want && !awakeTried)
+        {
+            awakeTried = true;
+            awakeAttemptAt = now;
+            try { wakeBridge.acquire(1500L); } catch (Exception ignored) {}
+            Dbg.log("overlay", "awake panel: one wake request sent");
+        }
+    }
+
+    private void applyAwakeFlag(boolean on)
+    {
+        if (view == null || !viewAdded) { return; }
+        WindowManager.LayoutParams lp = (WindowManager.LayoutParams) view.getLayoutParams();
+        if (lp == null) { return; }
+        int flags = on ? (lp.flags | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                : (lp.flags & ~WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        if (flags == lp.flags) { return; }
+        lp.flags = flags;
+        try { wm.updateViewLayout(view, lp); }
+        catch (Exception e) { Log.w(TAG, "awake flag: " + e); }
+    }
+
+    private void releaseAwakePanel(boolean backoff)
+    {
+        if (backoff && awakeHeld)
+        {
+            awakeBackoffUntil = SystemClock.elapsedRealtime() + 120000L;
+            awakeTried = false;   // one retry when the pause is over
+            Dbg.log("overlay", "awake panel refused (power key or ROM) -> dozing for 2 min");
+        }
+        awakeHeld = false;
+        applyAwakeFlag(false);
     }
 
     // ---- timers, wake locks ------------------------------------------------------
@@ -1174,6 +1281,7 @@ public class overlayservice extends AccessibilityService
     private void syncOverlay()
     {
         if (view == null || !viewAdded) { return; }
+        syncAwakePanel();
         view.setBlackoutFull(Prefs.blackoutFull(this));
         boolean off = effectiveScreenOff();
         Dbg.log("overlay", "syncOverlay blackout=" + off + " lightActive=" + lightActive);
@@ -1232,7 +1340,7 @@ public class overlayservice extends AccessibilityService
         try { wm.updateViewLayout(view, lp); }
         catch (Exception e) { Log.w(TAG, "brightness: " + e); }
         Dbg.log("overlay", "brightness: dark=" + dark
-                + " panel=" + (canvasShown ? "awake canvas" : "dozing")
+                + " panel=" + (awakeHeld ? "awake (window flag)" : (canvasShown ? "awake canvas" : "dozing"))
                 + " mode=" + (Brightness.auto(this) ? "adaptive" : "manual")
                 + " awake=" + Prefs.awakePanel(this)
                 + " follow=" + Prefs.followBrightness(this)
@@ -1439,7 +1547,7 @@ public class overlayservice extends AccessibilityService
      */
     private boolean canvasWanted()
     {
-        return Prefs.canvasFallback(this) || Prefs.awakePanel(this);
+        return Prefs.canvasFallback(this);
     }
 
     private void launchCanvas()
@@ -1552,16 +1660,18 @@ public class overlayservice extends AccessibilityService
                 sendLocal(notificationobserver.ACTION_HIDE);
             }
         }
-        if (lightActive)
+        if (lightActive && key != null && !key.startsWith("cutout_"))
         {
-            applyAppearance();
-            refreshGeometry();
-            syncCpuLock();   // e.g. icons -> ring starts producing frames
+            // geometry-only keys are handled below; everything else may change
+            // what is drawn, so rebuild once for the whole batch
+            h.removeCallbacks(appearanceRefresh);
+            h.postDelayed(appearanceRefresh, 60L);
         }
-        if (Prefs.CUTOUT_LEFT.equals(key) || Prefs.CUTOUT_OFF_X.equals(key) ||
-            Prefs.CUTOUT_OFF_Y.equals(key) || Prefs.CUTOUT_SCALE.equals(key))
+        if (key != null && key.startsWith("cutout_"))
         {
-            refreshGeometry();
+            // the camera report writes six of these at once
+            h.removeCallbacks(geometryRefresh);
+            h.postDelayed(geometryRefresh, 60L);
         }
     }
 }

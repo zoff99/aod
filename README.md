@@ -242,21 +242,29 @@ So matching the phone is not a value to compute, it is interference to
 avoid. Two switches decide what happens:
 
 - **Keep the panel awake for the dark screen** (`AWAKE_PANEL`, on by
-  default): the dark field is painted by `AodScreenActivity`, which keeps
-  the panel **awake** (`FLAG_KEEP_SCREEN_ON`, `setShowWhenLocked`,
-  `setTurnScreenOn`), so rule 3 applies instead of rule 2.
+  default): the overlay window itself carries `FLAG_KEEP_SCREEN_ON` while a
+  light is showing, so rule 3 applies instead of rule 2. The flag cannot wake
+  an already sleeping panel, so one short `ACQUIRE_CAUSES_WAKEUP` request is
+  sent per burst and the flag then holds it. No activity is involved: a
+  `showWhenLocked` activity used for this was dismissed by some ROMs within
+  milliseconds of appearing, which produced a wake/sleep loop.
 - **Use the system brightness** (`FOLLOW_BRIGHTNESS`, on by default, only
-  available while the panel is kept awake): neither that activity nor the
-  overlay asks for any brightness (`BRIGHTNESS_OVERRIDE_NONE`), so rule 1
-  never kicks in either.
+  available while the panel is kept awake): the overlay asks for no
+  brightness of its own (`BRIGHTNESS_OVERRIDE_NONE`), so rule 1 never kicks
+  in either.
+
+Any `ACTION_SCREEN_OFF` that arrives while the flag is held means either the
+power key or the ROM refusing to stay awake. Both are answered identically:
+clear the flag, stay dozing for two minutes, then try once more. The app never
+fights the power button or the ROM in a wake loop.
 
 That gives three states:
 
 | keep awake | use system | panel | brightness | cost |
 |---|---|---|---|---|
 | on | on | awake | the phone's own, slider live | highest |
-| on | off | awake | own percentage, always honoured | middle |
-| off | — | dozing | own percentage, ROM may clamp it | lowest |
+| on | off | awake | own percentage, usually honoured | middle |
+| off | — | dozing | own percentage, ROM may clamp or ignore it | lowest |
 
 In the first state the always-on screen is literally driven by the same
 brightness as the lock screen, and the status-bar slider moves it live.
@@ -267,14 +275,22 @@ What the awake panel costs: a dozing panel refreshes itself and lets the SoC
 sleep, an awake one keeps the display pipeline running — roughly 100–400 mW
 extra on OLED (very roughly 0.5–2 % of battery per hour of light-up time),
 considerably more on LCD, where the backlight lights the whole panel. It is
-bounded, not all-night: the canvas exists only while a light is showing, the
+bounded, not all-night: the flag is held only while a light is showing, the
 burst timeout ends it, no notification means nothing is woken at all, and a
-power-button press pauses canvas launches for 45 s so the button stays
-authoritative (the light keeps working on the dozing panel meanwhile). That
-time also shows up as screen-on time in Android's battery stats.
+screen-off while holding it backs off for two minutes so the power button
+stays authoritative (the light keeps working on the dozing panel meanwhile).
+That time also shows up as screen-on time in Android's battery stats.
 
-The debug log prints `dark`, `panel` (`awake canvas` / `dozing`), `mode`,
-`awake`, `follow`, `pct` and `requested` for every change.
+Some ROMs run their own always-on display outside the framework path and pin
+its backlight themselves. On those, neither a window brightness request nor
+the system slider changes the dark screen — measured on one such device:
+requesting 100 % and 5 % looked identical. There is no app-side fix for that;
+the brightness lives in the ROM's own settings (Lock screen / Always-on
+display). The settings screen says so instead of pretending otherwise.
+
+The debug log prints `dark`, `panel` (`awake (window flag)` / `awake canvas` /
+`dozing`), `mode`, `awake`, `follow`, `pct` and `requested` for every change,
+plus `awake panel: HOLDING display awake` / `released` / `refused`.
 
 ## Battery and CPU
 
