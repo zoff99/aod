@@ -27,7 +27,7 @@
     <string name="set_clear_unlock">Dismiss notifications on unlock</string>
     <string name="set_relight_relock">Light again when locked again</string>
     <string name="set_canvas_fallback">Fallback dark canvas (phones without AOD)</string>
-    <string name="set_canvas_fallback_sum">Leave this OFF if your phone has its own always-on display. It is only for phones that show nothing when the display is off: it opens a very dim black screen so the light has something to sit on. That screen keeps the panel awake, so while a light is showing the power button may not turn the display off. With this off, the light and the black background are drawn without waking anything.</string>
+    <string name="set_canvas_fallback_sum">Leave this OFF if your phone has its own always-on display. It is only for phones that show nothing when the display is off: it opens a very dim black screen so the light has something to sit on. That screen keeps the panel awake, just like \u201cKeep the panel awake for the dark screen\u201d below, which is the switch to use if you want that for brightness reasons. The power button still turns the display off. With both off, the light and the black background are drawn without waking anything.</string>
     <string name="set_relight_relock_sum">Unlocking the phone hides the light. With this on, turning the display off or locking the phone again brings the light back for any notification you have not dismissed. Dismissed notifications never light up again.</string>
 
     <string name="sec_appearance">Appearance</string>
@@ -102,12 +102,17 @@
     <string name="sec_cutout">Camera ring calibration</string>
 
     <string name="lbl_timeout">Light duration: %1$d s</string>
-    <string name="lbl_brightness">Always-on brightness: %1$d%% of the system</string>
+    <string name="lbl_brightness">Always-on brightness: %1$d%% (own)</string>
+    <string name="lbl_brightness_system">Always-on brightness: same as the phone</string>
+    <string name="set_awake_panel">Keep the panel awake for the dark screen</string>
+    <string name="set_awake_panel_sum">On: while a light is showing, the dark screen is drawn with the display awake instead of dozing. That is what makes brightness behave normally \u2014 the phone\u2019s own brightness applies, slider included, and an own brightness is reliably honoured. It costs more battery: a dozing panel refreshes itself and lets the phone sleep, an awake one keeps the display pipeline running. The light\u2019s duration still ends it, the power button still turns the display off, and with no notification nothing is woken at all. Off: the panel dozes, which is much cheaper, but the phone then pins its own fixed always-on brightness and following the system slider is not possible. On LCD screens leaving this off is usually the better choice.</string>
     <string name="set_follow_brightness">Use the system brightness</string>
-    <string name="lbl_brightness_fixed">Always-on brightness: %1$d%% (fixed)</string>
-    <string name="set_follow_brightness_sum">On: the dark always-on screen asks for the brightness the phone itself was using, so it matches the lock screen instead of the fixed dim level Android otherwise uses for an always-on screen. While the phone is awake the app never touches brightness at all: the lock screen and your apps keep the system value. Off: the slider below is the brightness itself, independent of the system slider.</string>
-    <string name="brightness_auto_note">Adaptive brightness is on. Android then publishes the brightness it computed from the light sensor, never your slider position, and in a dark room that value is close to the minimum \u2014 so the always-on screen stays very dim no matter where you put the slider. For an exact match turn adaptive brightness off, or switch \u201cUse the system brightness\u201d off and set a fixed brightness below.</string>
-    <string name="set_brightness_sum">With \u201cUse the system brightness\u201d on: a percentage of the phone\u2019s own brightness, where 100% is identical to the lock screen. With it off: the brightness itself, where 100% is full brightness. That is also the quickest way to check whether your phone accepts brightness requests on an always-on screen at all \u2014 switch following off, set 100%, and the dark screen must become visibly brighter.</string>
+    <string name="set_follow_brightness_sum">Needs \u201cKeep the panel awake\u201d above. On: the always-on screen asks for no brightness of its own, so the phone decides \u2014 it is then exactly as bright as the lock screen and follows the brightness slider live, adaptive brightness included. Off: the brightness set below is used instead, whatever the system slider says. The two cannot be combined: any brightness an app asks for takes the panel off the system slider.</string>
+    <string name="brightness_doze_note">The panel dozes: cheapest, but the phone pins its own fixed always-on brightness there and following the system slider is impossible. The brightness below is requested instead \u2014 some phones clamp it.</string>
+    <string name="brightness_own_note">The panel stays awake and the dark screen uses the brightness below, independent of the system slider.</string>
+    <string name="brightness_adaptive_on">Adaptive brightness is on, and the always-on screen follows it just like every other screen.</string>
+    <string name="brightness_adaptive_off">Adaptive brightness is off, so the always-on screen follows the brightness slider directly.</string>
+    <string name="set_brightness_sum">Used whenever the phone\u2019s brightness is not being followed: this is then the brightness of the dark screen itself, 100% being full brightness and 40% a comfortable night level. With the panel awake it is always honoured; on a dozing panel some phones clamp it to their own always-on level. Higher brightness also means more battery and more burn-in risk.</string>
     <string name="lbl_stroke">Light thickness: %1$d dp</string>
     <string name="lbl_speed">Animation cycle: %1$d ms</string>
     <string name="lbl_cutout_x">Ring offset X: %1$d px</string>

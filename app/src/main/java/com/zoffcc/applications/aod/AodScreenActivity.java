@@ -19,15 +19,17 @@ import android.widget.FrameLayout;
 import androidx.core.content.ContextCompat;
 
 /**
- * A pure-black, very dim, lock-screen-visible activity that acts as a
- * replacement always-on canvas on devices where overlays are not composited
- * during native doze (or which have no AOD at all).
+ * A pure-black, lock-screen-visible activity that acts as the always-on
+ * canvas. It is used on devices where overlays are not composited during
+ * native doze (or which have no AOD at all), and whenever the phone's own
+ * brightness is wanted: an awake panel uses the system brightness, while a
+ * dozing panel is pinned to the ROM's fixed always-on level.
  *
  * Properties that make this work without root:
  *  - setShowWhenLocked(true) + setTurnScreenOn(true): visible over the keyguard;
- *  - FLAG_KEEP_SCREEN_ON: the panel stays lit while the burst runs, but the
- *    window brightness is turned far down and every pixel except the light
- *    is black — on OLED this is nearly free;
+ *  - FLAG_KEEP_SCREEN_ON: the panel stays awake while the burst runs, so the
+ *    phone's own brightness applies - adaptive, manual, slider, live - and
+ *    every pixel except the light is black, which is cheap on OLED;
  *  - the notification light itself is drawn by the accessibility overlay
  *    window, which sits above this activity;
  *  - double tap anywhere wakes the device properly;
@@ -124,10 +126,11 @@ public class AodScreenActivity extends Activity
     }
 
     /**
-     * Same brightness as the rest of the phone, scaled by the configured
-     * percentage - or the fixed percentage when following is off. The value
-     * is never sampled here: this window asks for a brightness itself, so
-     * the published setting describes us, not the phone.
+     * This activity keeps the panel awake, which is what makes brightness
+     * behave normally: asking for nothing here leaves the phone's own
+     * brightness in charge - adaptive, manual, slider, live - so the dark
+     * field is exactly as bright as the lock screen. Only an own brightness
+     * is requested explicitly.
      */
     private void applyBrightness()
     {
@@ -135,10 +138,10 @@ public class AodScreenActivity extends Activity
         float want = Brightness.requested(this);
         attrs.screenBrightness = want;
         getWindow().setAttributes(attrs);
-        Dbg.log("canvas", "brightness: mode=" + (Brightness.auto(this) ? "adaptive" : "manual")
+        Dbg.log("canvas", "brightness: panel=awake mode=" + (Brightness.auto(this) ? "adaptive" : "manual")
+                + " awake=" + Prefs.awakePanel(this)
                 + " follow=" + Prefs.followBrightness(this) + " pct=" + Prefs.brightness(this)
-                + " system=" + String.format("%.3f", Brightness.system(this))
-                + " requested=" + String.format("%.3f", want));
+                + " requested=" + (want < 0 ? "none (phone decides)" : String.format("%.3f", want)));
     }
 
     private void wakeUp()

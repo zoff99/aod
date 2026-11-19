@@ -218,47 +218,63 @@ Wake locks appear in `dumpsys power` as `aod:notifications`, `aod:light`,
 
 ## Brightness of the always-on screen
 
-Android takes the display brightness from the topmost visible window that
-sets `LayoutParams.screenBrightness`. A window that leaves the value at
-`BRIGHTNESS_OVERRIDE_NONE` has no say, and while the panel dozes the system
-then falls back to its own fixed doze brightness — which is why an
-always-on screen otherwise ignores the brightness slider completely.
+Three rules in Android's `DisplayPowerController` decide everything here:
 
-So, with **Use the system brightness** on (the default), the overlay asks
-for the brightness the phone itself was using, times the configured
-percentage, *while it paints the black always-on field*, and withdraws the
-request the moment the phone is awake again. The lock screen and every app
-therefore keep the untouched system value; the app never writes any
-brightness setting.
+1. A window that sets `LayoutParams.screenBrightness` wins over every other
+   source — **and asking switches auto brightness off entirely**
+   (`autoBrightnessEnabled` requires that no brightness has been decided
+   yet). With adaptive brightness on, the slider works *through* the
+   auto-brightness controller, so any request of ours disconnects the panel
+   from the slider.
+2. A **dozing** panel with no request uses the ROM's fixed doze brightness
+   (`config_screenBrightnessDoze`, `REASON_DOZE_DEFAULT`). No slider moves
+   that, and no app can read it.
+3. An **awake** panel with no request uses the system brightness: adaptive
+   or manual, slider included, live.
 
-`Brightness.java` reads the world-readable brightness setting
-(`screen_brightness_float` on Android 12+, `screen_brightness` before that)
-and observes it. Two details matter:
+Reading `Settings.System` does not help: with adaptive brightness on,
+Android writes its *own sensor-computed* value into that setting
+(`REASON_AUTOMATIC` → `updateScreenBrightnessSetting`), and while the slider
+is being dragged it uses a temporary value that is never published at all
+(`REASON_TEMPORARY`). There is no public API for the live brightness.
 
-- **The setting is only sampled while the phone is awake.** Once the panel
-  dozes, the published number describes the dozing panel, not the phone the
-  user was looking at, so re-reading it then would pull the always-on field
-  down to the doze level. The last clean reading is latched, and remembered
-  in the preferences so a service start that happens while dark still has
-  it.
-- **Adaptive brightness cannot be matched exactly.** With it on, Android
-  writes the value it computed from the light sensor into that setting
-  (`DisplayPowerController`, `REASON_AUTOMATIC` → `updateScreenBrightnessSetting`),
-  and while the slider is being dragged it uses a temporary value that is
-  never published at all (`REASON_TEMPORARY`). In a dark room the published
-  number therefore sits near the minimum whatever the slider says, and no
-  public API exposes the live brightness. The settings screen says so
-  plainly. Turning adaptive brightness off makes the setting *be* the slider
-  position, and the match is then exact.
+So matching the phone is not a value to compute, it is interference to
+avoid. Two switches decide what happens:
 
-With **Use the system brightness** off, the percentage is used as an
-absolute brightness instead. That is also the quickest way to check whether
-a given ROM honours window brightness requests while dozing: set 100 % and
-the dark screen must become visibly brighter.
+- **Keep the panel awake for the dark screen** (`AWAKE_PANEL`, on by
+  default): the dark field is painted by `AodScreenActivity`, which keeps
+  the panel **awake** (`FLAG_KEEP_SCREEN_ON`, `setShowWhenLocked`,
+  `setTurnScreenOn`), so rule 3 applies instead of rule 2.
+- **Use the system brightness** (`FOLLOW_BRIGHTNESS`, on by default, only
+  available while the panel is kept awake): neither that activity nor the
+  overlay asks for any brightness (`BRIGHTNESS_OVERRIDE_NONE`), so rule 1
+  never kicks in either.
 
-The debug log prints `dark`, `mode`, `follow`, `pct`, `system`, `published`
-and `requested` for every change, plus a line whenever the setting moves
-while the dark field is up.
+That gives three states:
+
+| keep awake | use system | panel | brightness | cost |
+|---|---|---|---|---|
+| on | on | awake | the phone's own, slider live | highest |
+| on | off | awake | own percentage, always honoured | middle |
+| off | — | dozing | own percentage, ROM may clamp it | lowest |
+
+In the first state the always-on screen is literally driven by the same
+brightness as the lock screen, and the status-bar slider moves it live.
+Following is impossible on a dozing panel, which is why that switch is
+disabled when the panel is allowed to doze.
+
+What the awake panel costs: a dozing panel refreshes itself and lets the SoC
+sleep, an awake one keeps the display pipeline running — roughly 100–400 mW
+extra on OLED (very roughly 0.5–2 % of battery per hour of light-up time),
+considerably more on LCD, where the backlight lights the whole panel. It is
+bounded, not all-night: the canvas exists only while a light is showing, the
+burst timeout ends it, no notification means nothing is woken at all, and a
+power-button press pauses canvas launches for 45 s so the button stays
+authoritative (the light keeps working on the dozing panel meanwhile). That
+time also shows up as screen-on time in Android's battery stats.
+
+The debug log prints `dark`, `panel` (`awake canvas` / `dozing`), `mode`,
+`awake`, `follow`, `pct` and `requested` for every change.
 
 ## Compatibility notes
 
@@ -268,9 +284,10 @@ while the dark field is up.
 - Keeping any light active costs battery; use ECO / interval mode and
   short timeouts. The dark canvas keeps the panel technically "on" at low
   brightness — on OLED this is cheap, on LCD it is not.
-- The always-on field is as bright as the rest of the phone by default. If
-  that is too bright at night, lower the percentage slider; it still follows
-  the system slider, just proportionally dimmer.
+- Matching the system brightness needs the panel kept awake while the light
+  is up, which costs more battery than a dozing always-on screen. Switch
+  **Keep the panel awake for the dark screen** off to let the panel doze
+  and use an own, fixed brightness instead.
 - Long-term static light can contribute to burn-in; the built-in position
   shifting mitigates this, but use at your own risk.
 

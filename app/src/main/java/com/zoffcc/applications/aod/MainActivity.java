@@ -68,6 +68,7 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
     private SharedPreferences prefs;
     private TextView status_text;
     private items_receiver itemsReceiver;
+    private android.database.ContentObserver brightnessObserver;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -281,13 +282,13 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
     private void bindBrightnessRow()
     {
         SeekBar sb = findViewById(R.id.sb_brightness);
-        sb.setProgress(prefs.getInt(Prefs.BRIGHTNESS, 100) - 5);
+        sb.setProgress(prefs.getInt(Prefs.BRIGHTNESS, 40) - 5);
         sb.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener()
         {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser)
             {
-                updateBrightnessRow(Prefs.followBrightness(MainActivity.this));
+                updateBrightnessRows();
                 if (fromUser) { prefs.edit().putInt(Prefs.BRIGHTNESS, progress + 5).apply(); }
             }
 
@@ -298,26 +299,57 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
             public void onStopTrackingTouch(SeekBar seekBar) {}
         });
 
+        SwitchCompat awake = findViewById(R.id.sw_awake_panel);
+        awake.setChecked(Prefs.awakePanel(this));
+        awake.setOnCheckedChangeListener((b, checked) -> {
+            prefs.edit().putBoolean(Prefs.AWAKE_PANEL, checked).apply();
+            updateBrightnessRows();
+        });
+
         SwitchCompat sw = findViewById(R.id.sw_follow_brightness);
         sw.setChecked(Prefs.followBrightness(this));
         sw.setOnCheckedChangeListener((b, checked) -> {
             prefs.edit().putBoolean(Prefs.FOLLOW_BRIGHTNESS, checked).apply();
-            updateBrightnessRow(checked);
+            updateBrightnessRows();
         });
-        updateBrightnessRow(sw.isChecked());
+        updateBrightnessRows();
     }
 
-    private void updateBrightnessRow(boolean follow)
+    /**
+     * Three possible states, and the rows have to say which one is active:
+     * awake + follow  -> the phone's brightness, slider live, no own value;
+     * awake + own     -> an own brightness on an awake panel;
+     * dozing          -> an own brightness on a dozing panel, following is
+     *                    not possible there at all.
+     */
+    private void updateBrightnessRows()
     {
+        boolean awake = Prefs.awakePanel(this);
+        boolean system = Brightness.usesSystem(this);
+        SwitchCompat sw = findViewById(R.id.sw_follow_brightness);
+        sw.setEnabled(awake);
+        sw.setAlpha(awake ? 1f : 0.55f);
+
         SeekBar sb = findViewById(R.id.sb_brightness);
         TextView lbl = findViewById(R.id.lbl_brightness);
-        lbl.setText(getString(follow ? R.string.lbl_brightness : R.string.lbl_brightness_fixed,
-                sb.getProgress() + 5));
-        // Adaptive brightness is the one case where "the system brightness"
-        // is not the slider position, and Android gives apps no way to read
-        // the live value. Say so instead of pretending.
-        findViewById(R.id.tv_brightness_auto).setVisibility(
-                follow && Brightness.auto(this) ? View.VISIBLE : View.GONE);
+        TextView note = findViewById(R.id.tv_brightness_auto);
+        // An own percentage cannot be combined with "let the phone decide":
+        // any request of ours would take the panel off the system slider.
+        sb.setEnabled(!system);
+        sb.setAlpha(system ? 0.5f : 1f);
+        lbl.setAlpha(system ? 0.6f : 1f);
+        lbl.setText(system ? getString(R.string.lbl_brightness_system)
+                : getString(R.string.lbl_brightness, sb.getProgress() + 5));
+        note.setVisibility(View.VISIBLE);
+        if (system)
+        {
+            note.setText(Brightness.auto(this)
+                    ? R.string.brightness_adaptive_on : R.string.brightness_adaptive_off);
+        }
+        else
+        {
+            note.setText(awake ? R.string.brightness_own_note : R.string.brightness_doze_note);
+        }
     }
 
     private void bindSpinners()
@@ -733,7 +765,19 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
     {
         super.onResume();
         updateStatus();
-        updateBrightnessRow(Prefs.followBrightness(this));
+        updateBrightnessRows();
+        if (brightnessObserver == null)
+        {
+            brightnessObserver = Brightness.watch(this, this::updateBrightnessRows);
+        }
+    }
+
+    @Override
+    protected void onPause()
+    {
+        super.onPause();
+        Brightness.unwatch(this, brightnessObserver);
+        brightnessObserver = null;
     }
 
     @Override

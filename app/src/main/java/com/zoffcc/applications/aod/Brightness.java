@@ -1,43 +1,44 @@
 package com.zoffcc.applications.aod;
 
-import android.content.ContentResolver;
 import android.content.Context;
 import android.database.ContentObserver;
-import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.Settings;
 import android.view.WindowManager;
 
 /**
- * The brightness the rest of the phone uses, and what our own windows should
- * ask for.
+ * Brightness of the always-on field.
  *
- * Android picks the display brightness from the topmost visible window that
- * sets {@code LayoutParams.screenBrightness}; a window that leaves it at
- * {@link WindowManager.LayoutParams#BRIGHTNESS_OVERRIDE_NONE} has no say.
- * While the panel dozes, the system falls back to its own fixed doze
- * brightness only when nothing else supplied a value - which is why an
- * always-on screen otherwise ignores the brightness slider completely.
+ * What Android actually does with brightness (AOSP DisplayPowerController),
+ * and why this class is so small:
  *
- * Two things make reading "the system brightness" awkward, and both are
- * handled here:
+ *  - A window that asks for a brightness wins over everything else, and
+ *    asking switches auto brightness off completely. So any request of ours
+ *    disconnects the panel from the brightness slider whenever adaptive
+ *    brightness is on: the slider works through the auto-brightness
+ *    controller, which a request disables.
+ *  - A dozing panel that nobody makes a request for uses the ROM's own
+ *    fixed doze brightness. No slider moves that.
+ *  - An awake panel that nobody makes a request for uses the system
+ *    brightness: adaptive or manual, slider included, live.
  *
- * 1. The published setting is not always the slider. With adaptive
- *    brightness on, Android writes the value it computed from the light
- *    sensor into that setting, and while the slider is being dragged it uses
- *    a temporary value that is never published at all. In a dark room the
- *    published number therefore sits near the minimum no matter where the
- *    slider is. There is no public API for the live brightness, so the
- *    published setting is the closest thing available.
+ * So being exactly as bright as the rest of the phone is not something to
+ * compute - it is something to *not interfere with*: paint the dark field
+ * on an awake panel ({@link AodScreenActivity} keeps the screen on) and ask
+ * for nothing. That is what "use the system brightness" does, and it is why
+ * the always-on field then follows the slider like any other screen.
  *
- * 2. While our own dark field is up, the published number describes the
- *    dozing panel, not the phone the user was just looking at. So the value
- *    is only ever sampled while none of our windows asks for a brightness,
- *    and that reading is latched (and remembered across restarts) for as
- *    long as the dark field is painted.
+ * The alternative is an own, fixed brightness. That is requested explicitly
+ * and is honoured on an awake panel as well as on a dozing one.
  *
- * Nothing here ever writes a brightness setting.
+ * Keeping the panel awake is the user's choice ("keep the panel awake"),
+ * because it costs battery. With it off the panel dozes, and following the
+ * system brightness is not possible at all - so an own brightness is used.
+ *
+ * No brightness setting is read to make this decision, and none is ever
+ * written. The only settings access here is the adaptive-brightness mode,
+ * which the settings screen shows as information.
  */
 public final class Brightness
 {
@@ -47,73 +48,32 @@ public final class Brightness
     private static final float FLOOR = 0.01f;
 
     /**
-     * Android 12 keeps the brightness here as 0..1 instead of 0..255. It is
-     * a world-readable settings key, but the SDK does not expose a constant
-     * for it, so the key is named directly. Reading it needs no permission.
+     * What our always-on windows should request: nothing at all when the
+     * phone's own brightness is wanted, otherwise the configured percentage
+     * as an absolute brightness.
      */
-    private static final String KEY_BRIGHTNESS_FLOAT = "screen_brightness_float";
-
-    /** Last brightness seen while no window of ours asked for one. */
-    private static float latched = Float.NaN;
-
-    /**
-     * The brightness setting as published right now, 0..1. While the phone
-     * is awake this is what the display uses; while it dozes it is the
-     * phone's own doze/auto value, so it must not be used as "the system
-     * brightness" then.
-     */
-    public static float raw(Context c)
+    public static float requested(Context c)
     {
-        float v = -1f;
-        if (Build.VERSION.SDK_INT >= 31)
+        if (usesSystem(c))
         {
-            try
-            {
-                v = Settings.System.getFloat(c.getContentResolver(), KEY_BRIGHTNESS_FLOAT, -1f);
-            }
-            catch (Exception ignored) {}
+            return WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE;
         }
-        if (v < 0f)
-        {
-            try
-            {
-                v = Settings.System.getInt(c.getContentResolver(),
-                        Settings.System.SCREEN_BRIGHTNESS, -1) / 255f;
-            }
-            catch (Exception ignored) {}
-        }
-        if (v < 0f) { v = 0.5f; }   // unreadable: a sane middle, not full blast
-        return clamp(v);
+        float pct = Math.max(5, Math.min(100, Prefs.brightness(c))) / 100f;
+        return Math.max(FLOOR, Math.min(1f, pct));
     }
 
     /**
-     * Take the system brightness. Call this only while none of our windows
-     * requests a brightness, i.e. while the phone is awake and showing its
-     * own lock screen or an app.
+     * True when the phone's own brightness drives the always-on field. That
+     * needs both an awake panel (a dozing one is pinned to the ROM's fixed
+     * level) and no brightness request of ours (a request switches auto
+     * brightness off, which is what the slider works through).
      */
-    public static void sample(Context c)
+    public static boolean usesSystem(Context c)
     {
-        latched = raw(c);
+        return Prefs.awakePanel(c) && Prefs.followBrightness(c);
     }
 
-    /** The brightness the rest of the phone uses (last clean reading). */
-    public static float system(Context c)
-    {
-        if (Float.isNaN(latched))
-        {
-            float saved = Prefs.lastBrightness(c);
-            latched = clamp(saved >= 0f ? saved : raw(c));
-        }
-        return latched;
-    }
-
-    /** Keep the last clean reading for a start that happens while dark. */
-    public static void remember(Context c)
-    {
-        if (!Float.isNaN(latched)) { Prefs.setLastBrightness(c, latched); }
-    }
-
-    /** True when adaptive brightness is on. */
+    /** True when adaptive brightness is on (shown in the settings screen). */
     public static boolean auto(Context c)
     {
         try
@@ -125,20 +85,9 @@ public final class Brightness
     }
 
     /**
-     * What our always-on windows should request: either the system
-     * brightness times the configured percentage, or - when the user wants
-     * a brightness of their own - that percentage as an absolute value.
-     */
-    public static float requested(Context c)
-    {
-        float pct = Math.max(5, Math.min(100, Prefs.brightness(c))) / 100f;
-        if (!Prefs.followBrightness(c)) { return clamp(pct); }
-        return clamp(system(c) * pct);
-    }
-
-    /**
-     * Watch the brightness settings. Returns the observer so the caller can
-     * unregister it again; the callback runs on the main thread.
+     * Watch the adaptive-brightness mode so the settings screen can say
+     * which case applies. Returns the observer for unregistering; the
+     * callback runs on the main thread.
      */
     public static ContentObserver watch(Context c, final Runnable onChange)
     {
@@ -147,18 +96,10 @@ public final class Brightness
             @Override
             public void onChange(boolean selfChange) { onChange.run(); }
         };
-        ContentResolver r = c.getContentResolver();
         try
         {
-            r.registerContentObserver(
-                    Settings.System.getUriFor(Settings.System.SCREEN_BRIGHTNESS), false, o);
-            r.registerContentObserver(
+            c.getContentResolver().registerContentObserver(
                     Settings.System.getUriFor(Settings.System.SCREEN_BRIGHTNESS_MODE), false, o);
-            if (Build.VERSION.SDK_INT >= 31)
-            {
-                r.registerContentObserver(
-                        Settings.System.getUriFor(KEY_BRIGHTNESS_FLOAT), false, o);
-            }
         }
         catch (Exception ignored) {}
         return o;
@@ -169,10 +110,5 @@ public final class Brightness
         if (o == null) { return; }
         try { c.getContentResolver().unregisterContentObserver(o); }
         catch (Exception ignored) {}
-    }
-
-    private static float clamp(float v)
-    {
-        return Math.max(FLOOR, Math.min(1f, v));
     }
 }

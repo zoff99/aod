@@ -31,9 +31,9 @@ public final class Prefs
     public static final String ECO = "eco";                         // reduced frame rate
     public static final String COLOR = "color";
     public static final String AUTO_COLOR = "auto_color";           // derive color from the app icon
-    public static final String BRIGHTNESS = "brightness";           // 5..100 % of the system brightness
+    public static final String BRIGHTNESS = "brightness";           // 5..100, own brightness
     public static final String FOLLOW_BRIGHTNESS = "follow_brightness"; // track the brightness slider
-    public static final String LAST_BRIGHTNESS = "last_brightness";     // internal: last clean reading
+    public static final String AWAKE_PANEL = "awake_panel";         // dark field on an awake panel
     public static final String STROKE_DP = "stroke_dp";             // light thickness
     public static final String DOT_X = "dot_x";                     // 0..100 horizontal dot position
 
@@ -156,18 +156,18 @@ public final class Prefs
     public static boolean eco(Context c) { return get(c).getBoolean(ECO, false); }
     public static int color(Context c) { return get(c).getInt(COLOR, DEFAULT_COLOR); }
     public static boolean autoColor(Context c) { return get(c).getBoolean(AUTO_COLOR, true); }
-    /** While awake the app never asks for a brightness, so the setting
-     *  read then is the real one. Remembered for a start while dark. */
-    public static float lastBrightness(Context c) { return get(c).getFloat(LAST_BRIGHTNESS, -1f); }
-    public static void setLastBrightness(Context c, float v)
-    { get(c).edit().putFloat(LAST_BRIGHTNESS, v).apply(); }
-
-    /** Percentage of the system brightness, or the absolute brightness
-     *  when following is switched off. */
-    public static int brightness(Context c) { return get(c).getInt(BRIGHTNESS, 100); }
-    /** On by default: the always-on screen is as bright as the rest of the
-     *  phone. Off: the percentage is used as a fixed brightness instead. */
+    /** Own brightness of the always-on field, only used when the phone's
+     *  own brightness is not wanted. */
+    public static int brightness(Context c) { return get(c).getInt(BRIGHTNESS, 40); }
+    /** On by default: the always-on field asks for no brightness at all and
+     *  is painted on an awake panel, so the phone's own brightness drives
+     *  it. Off: the percentage below is requested as an own brightness. */
     public static boolean followBrightness(Context c) { return get(c).getBoolean(FOLLOW_BRIGHTNESS, true); }
+    /** On by default: the dark always-on field is painted while the panel
+     *  stays awake, which is what lets the phone's own brightness drive it.
+     *  Off: the panel dozes - cheaper, but pinned to the phone's own fixed
+     *  always-on brightness unless an own brightness is requested. */
+    public static boolean awakePanel(Context c) { return get(c).getBoolean(AWAKE_PANEL, true); }
     public static int strokeDp(Context c) { return get(c).getInt(STROKE_DP, 5); }
     public static int dotX(Context c) { return get(c).getInt(DOT_X, 50); }
 

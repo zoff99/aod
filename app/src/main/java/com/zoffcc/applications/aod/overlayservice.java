@@ -95,8 +95,8 @@ public class overlayservice extends AccessibilityService
     private long canvasBackoffUntil = 0L;
     private PowerManager.WakeLock partialLock;
     private PowerManager.WakeLock drawLock;
-    private android.database.ContentObserver brightnessObserver;
     private float appliedBrightness = Float.NaN;
+    private boolean brightnessDark = false;
     private PowerManager.WakeLock wakeBridge;
     private boolean drawCapable = false;
 
@@ -168,17 +168,6 @@ public class overlayservice extends AccessibilityService
 
             buildWindow();
             registerReceivers();
-            brightnessObserver = Brightness.watch(this, () -> {
-                if (effectiveScreenOff())
-                {
-                    // Android publishes its own doze/auto value here, not the
-                    // brightness the user was looking at. Evidence, not input.
-                    Dbg.log("overlay", "brightness setting moved while dark: published="
-                            + String.format("%.3f", Brightness.raw(this))
-                            + " kept=" + String.format("%.3f", appliedBrightness));
-                }
-                applyBrightness();
-            });
             refreshGeometry();
 
             screenOn = displayState() == Display.STATE_ON;
@@ -288,8 +277,6 @@ public class overlayservice extends AccessibilityService
         try { unregisterReceiver(commandReceiver); } catch (Exception ignored) {}
         try { if (prefs != null) { prefs.unregisterOnSharedPreferenceChangeListener(this); } }
         catch (Exception ignored) {}
-        Brightness.unwatch(this, brightnessObserver);
-        brightnessObserver = null;
         stopBurst(false, "serviceDestroy");
         if (viewAdded && view != null)
         {
@@ -319,6 +306,16 @@ public class overlayservice extends AccessibilityService
             if (Intent.ACTION_SCREEN_OFF.equals(a))
             {
                 Dbg.log("overlay", "recv SCREEN_OFF " + state());
+                // The awake canvas keeps the panel on, so a screen-off while
+                // it is up is the power button (or our own lock at the end of
+                // a burst). A power-button press must stay authoritative: no
+                // relaunch for a while, the light keeps working on the dozing
+                // panel meanwhile.
+                if (canvasShown && SystemClock.elapsedRealtime() - lastLockAt > 2500L)
+                {
+                    canvasBackoffUntil = SystemClock.elapsedRealtime() + 45000L;
+                    Dbg.log("overlay", "power button while canvas up -> canvas paused 45s");
+                }
                 screenOn = false;
                 syncOverlay();
                 h.removeCallbacks(relockWatch);
@@ -517,6 +514,8 @@ public class overlayservice extends AccessibilityService
                 + " screenOnLight=" + Prefs.screenOnLight(this)
                 + " relight=" + Prefs.relightRelock(this)
                 + " fallbackCanvas=" + Prefs.canvasFallback(this)
+                + " awakePanel=" + Prefs.awakePanel(this)
+                + " followBrightness=" + Prefs.followBrightness(this)
                 + " style=" + Prefs.style(this)
                 + " blackoutFull=" + Prefs.blackoutFull(this);
     }
@@ -805,15 +804,16 @@ public class overlayservice extends AccessibilityService
         // screen-off (off -> canvas -> on -> off -> ...). It is therefore
         // opt-in only; by default the overlay draws everything and the
         // display is left exactly as the user left it.
-        boolean fallback = Prefs.canvasFallback(this);
-        if (allowCanvas && fallback && !canvasShown && !screenOn)
+        boolean wanted = canvasWanted();
+        if (allowCanvas && wanted && !canvasShown && !screenOn)
         {
-            Dbg.log("overlay", "startBurst -> launchCanvas (fallback canvas enabled)");
+            Dbg.log("overlay", "startBurst -> launchCanvas (fallback=" + Prefs.canvasFallback(this)
+                    + " awakePanel=" + Prefs.awakePanel(this) + ")");
             launchCanvas();
         }
         else if (allowCanvas)
         {
-            Dbg.log("overlay", "startBurst canvas skipped: fallback=" + fallback
+            Dbg.log("overlay", "startBurst canvas skipped: wanted=" + wanted
                     + " canvasShown=" + canvasShown + " screenOn=" + screenOn);
         }
 
@@ -1012,43 +1012,36 @@ public class overlayservice extends AccessibilityService
      * that asks for one, and only falls back to its fixed doze brightness
      * when nobody asks - that is why an always-on screen otherwise ignores
      * the brightness slider. So while the black field is painted we ask for
-     * the brightness the phone had while it was awake times the configured
-     * percentage, and the moment the phone is awake we withdraw the request,
-     * leaving the lock screen and every app on the untouched system value.
+     * the phone's own brightness by asking for nothing, or our own fixed
+     * percentage. While the phone is awake we never ask for anything, so the
+     * lock screen and every app keep the system value.
      *
-     * The system value is only sampled while we make no request: once the
-     * panel dozes, the published setting describes the dozing panel (and
-     * with adaptive brightness it is the light-sensor value, which sits near
-     * the minimum in a dark room), so re-reading it then would drag the
-     * always-on field down to that instead of matching the phone.
+     * Asking for nothing only means "system brightness" on an awake panel:
+     * a dozing panel falls back to the ROM's fixed doze level. That is why
+     * {@link #canvasWanted()} paints the dark field with the awake canvas
+     * whenever the phone's brightness is wanted.
      */
     private void applyBrightness()
     {
-        boolean dark = effectiveScreenOff();
-        int st = displayState();
-        if (!dark && st != Display.STATE_OFF && st != Display.STATE_DOZE
-                && st != Display.STATE_DOZE_SUSPEND)
-        {
-            Brightness.sample(this);
-        }
         if (view == null || !viewAdded) { return; }
+        boolean dark = effectiveScreenOff();
         float want = dark ? Brightness.requested(this)
                 : WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE;
-        if (want == appliedBrightness) { return; }
+        if (want == appliedBrightness && dark == brightnessDark) { return; }
         appliedBrightness = want;
+        brightnessDark = dark;
         WindowManager.LayoutParams lp = (WindowManager.LayoutParams) view.getLayoutParams();
         if (lp == null) { return; }
         lp.screenBrightness = want;
         try { wm.updateViewLayout(view, lp); }
         catch (Exception e) { Log.w(TAG, "brightness: " + e); }
-        if (dark) { Brightness.remember(this); }
         Dbg.log("overlay", "brightness: dark=" + dark
+                + " panel=" + (canvasShown ? "awake canvas" : "dozing")
                 + " mode=" + (Brightness.auto(this) ? "adaptive" : "manual")
+                + " awake=" + Prefs.awakePanel(this)
                 + " follow=" + Prefs.followBrightness(this)
                 + " pct=" + Prefs.brightness(this)
-                + " system=" + String.format("%.3f", Brightness.system(this))
-                + " published=" + String.format("%.3f", Brightness.raw(this))
-                + " requested=" + (want < 0 ? "(system decides)" : String.format("%.3f", want)));
+                + " requested=" + (want < 0 ? "none (phone decides)" : String.format("%.3f", want)));
     }
 
     private void applyAppearance()
@@ -1241,6 +1234,18 @@ public class overlayservice extends AccessibilityService
         }
     }
 
+    /**
+     * Does the dark field need the awake canvas? Either the user asked for
+     * it as a fallback, or they want the panel kept awake - which is what
+     * lets the phone's own brightness drive the field, and what makes an own
+     * brightness request reliably honoured. A dozing panel uses the ROM's
+     * fixed doze level and may not accept brightness changes at all.
+     */
+    private boolean canvasWanted()
+    {
+        return Prefs.canvasFallback(this) || Prefs.awakePanel(this);
+    }
+
     private void launchCanvas()
     {
         long now = SystemClock.elapsedRealtime();
@@ -1303,7 +1308,6 @@ public class overlayservice extends AccessibilityService
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key)
     {
-        if (Prefs.LAST_BRIGHTNESS.equals(key)) { return; }   // our own bookkeeping
         Dbg.log("overlay", "pref changed: " + key);
         if (Prefs.ENABLED.equals(key))
         {
@@ -1319,10 +1323,16 @@ public class overlayservice extends AccessibilityService
         {
             sendLocal(notificationobserver.ACTION_REEVAL);
         }
-        if (Prefs.BRIGHTNESS.equals(key) || Prefs.FOLLOW_BRIGHTNESS.equals(key))
+        if (Prefs.BRIGHTNESS.equals(key) || Prefs.FOLLOW_BRIGHTNESS.equals(key)
+                || Prefs.AWAKE_PANEL.equals(key))
         {
             appliedBrightness = Float.NaN;   // force a fresh request
             applyBrightness();
+            if (canvasWanted() && !screenOn && !canvasShown && lightActive)
+            {
+                Dbg.log("overlay", "awake panel wanted -> canvas needed now");
+                launchCanvas();
+            }
         }
         if (Prefs.BLACKOUT_FULL.equals(key))
         {
@@ -1338,11 +1348,11 @@ public class overlayservice extends AccessibilityService
             refreshGeometry();
             if (lightActive) { armShift(); }
         }
-        if (Prefs.CANVAS_FALLBACK.equals(key))
+        if (Prefs.CANVAS_FALLBACK.equals(key) || Prefs.AWAKE_PANEL.equals(key))
         {
-            if (!Prefs.canvasFallback(this) && canvasShown)
+            if (!canvasWanted() && canvasShown)
             {
-                Dbg.log("overlay", "fallback canvas switched off -> HIDE");
+                Dbg.log("overlay", "awake canvas no longer wanted -> HIDE (panel may doze)");
                 sendLocal(notificationobserver.ACTION_HIDE);
             }
         }
