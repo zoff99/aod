@@ -1460,7 +1460,7 @@ public class overlayservice extends AccessibilityService
                 Integer num = own.get(n.pkg);
                 int value = Math.max(0, n.number);
                 if (num == null) { own.put(n.pkg, value); }
-                else { own.put(n.pkg, add ? num + value : Math.max(num, value)); }
+                else { own.put(n.pkg, IconMath.mergeOwn(num, value, add)); }
             }
         }
 
@@ -1550,11 +1550,9 @@ public class overlayservice extends AccessibilityService
      */
     private int shownCount(String pkg, int notifications, Integer ownCounter, boolean fromApp)
     {
-        if (!fromApp) { return notifications; }
-        int app = ownCounter == null ? 0 : ownCounter;
         Integer summary = appNumbers.get(pkg);
-        if (summary != null) { app = Math.max(app, summary); }
-        return Math.max(app, notifications);
+        return IconMath.shownCount(notifications, ownCounter == null ? 0 : ownCounter,
+                summary == null ? 0 : summary, fromApp);
     }
 
     private void refreshGeometry()

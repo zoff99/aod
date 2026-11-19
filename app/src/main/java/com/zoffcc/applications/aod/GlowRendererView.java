@@ -246,16 +246,13 @@ public class GlowRendererView extends View
         float cellH = iconPx + iconBadgeH;
 
         float avail = screenW - 2f * margin;
-        int cols = iconCfg.perRow > 0
-                ? iconCfg.perRow
-                : (int) ((avail + iconGap) / (iconPx + iconGap));
-        cols = Math.max(1, Math.min(cols, icons.size()));
-        int rows = (icons.size() + cols - 1) / cols;
+        int cols = IconMath.columns(icons.size(), iconCfg.perRow, avail, iconPx, iconGap);
+        int rows = IconMath.rows(icons.size(), cols);
 
         float blockH = rows * cellH + (rows - 1) * iconRowGap;
         float top = iconTopFor(blockH, density);
         float limit = (iconCfg.clipToBlackout ? screenH * blackoutFraction : screenH) - margin;
-        int fit = Math.max(1, (int) ((limit - top + iconRowGap) / (cellH + iconRowGap)));
+        int fit = IconMath.rowsThatFit(top, limit, cellH, iconRowGap);
         if (rows > fit)
         {
             rows = fit;
@@ -309,19 +306,10 @@ public class GlowRendererView extends View
             int inRow = Math.min(iconCols, iconCount - row * iconCols);
             float rowW = inRow * iconPx + (inRow - 1) * iconGap;
 
-            float base;
-            if (iconCfg.centerH)
-            {
-                boolean shortLast = row == iconRows - 1 && inRow < iconCols;
-                float w = shortLast && !iconCfg.lastRowCenter ? fullRowW : rowW;
-                base = (screenW - w) / 2f;
-            }
-            else
-            {
-                base = 16f * density;
-            }
-            // the offset moves the block, but never off the panel
-            base = Math.max(0f, Math.min(base + iconCfg.offsetXPx, Math.max(0f, screenW - rowW)));
+            boolean shortLast = row == iconRows - 1 && inRow < iconCols;
+            // centred or left, then the offset, clamped so nothing leaves the panel
+            float base = IconMath.rowStartX(screenW, rowW, fullRowW, iconCfg.centerH,
+                    shortLast, iconCfg.lastRowCenter, iconCfg.offsetXPx, 16f * density);
 
             float x = base + col * (iconPx + iconGap) + shiftX;
             float y = iconTop + row * (iconPx + iconBadgeH + iconRowGap) + shiftY;

@@ -1,0 +1,215 @@
+name: Android Test
+
+on:
+  push:
+    paths-ignore:
+     - 'README.md'
+  pull_request:
+    paths-ignore:
+     - 'README.md'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: dummy
+        default: dummy
+
+jobs:
+
+  # -------------------------------------------------------------------------
+  # Everything that does not need an emulator: source encoding, privacy guard,
+  # host unit tests, the APK itself and the APK privacy scan. Fast, and a
+  # failure here stops before an emulator is booted.
+  # -------------------------------------------------------------------------
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: |
+            17
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'platforms;android-34 build-tools;34.0.0 platform-tools'
+
+      - name: source encoding check (non-ASCII / hidden bidi characters)
+        run: |
+          chmod +x tools/check_nonascii.sh tools/find_non_ascii_chars_in_source.sh
+          tools/find_non_ascii_chars_in_source.sh
+
+      - name: privacy guard, unit tests, build
+        run: |
+          ./gradlew --no-daemon :app:verifyNoMessageTextAccess :app:testDebugUnitTest :app:assembleDebug
+
+      - name: APK privacy scan
+        run: |
+          python3 tools/check_apk_privacy.py app/build/outputs/apk/debug/app-debug.apk
+
+      - name: upload APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: aod-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+
+      - name: upload test reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: unit-test-reports
+          path: |
+            app/build/reports/tests/testDebugUnitTest
+            app/build/test-results/testDebugUnitTest
+
+  # -------------------------------------------------------------------------
+  # Device tests and screenshots on an emulator.
+  # -------------------------------------------------------------------------
+  android-linux-test:
+    needs: checks
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        api-level: [34]
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: install deps
+        run: |
+          sudo apt-get update && \
+          sudo DEBIAN_FRONTEND=noninteractive \
+          apt-get install -y --no-install-recommends \
+          adb \
+          ca-certificates
+
+      - name: Install Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: |
+            17
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'platforms;android-34 build-tools;34.0.0 platform-tools'
+
+      - name: Enable KVM group perms
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: test java1
+        run: |
+          pwd
+          type java
+          echo "===========1========="
+          java -version || exit 0
+          echo "===========2========="
+
+      - name: android test and screenshots
+        timeout-minutes: 30
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api-level }}
+          target: default
+          profile: pixel_6
+          arch: x86_64
+          force-avd-creation: false
+          emulator-options: -no-snapshot-save -skin 1080x2400 -dpi-device 420 -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          disable-spellchecker: true
+          script: |
+            # AOSP image: root is allowed, which makes granting the two
+            # services and starting the non-exported picker reliable.
+            adb root || true
+            adb wait-for-device
+            sleep 5
+
+            # Device tests first: a failure here fails the job.
+            ./gradlew --no-daemon :app:installDebug :app:connectedDebugAndroidTest
+
+            PKG=com.zoffcc.applications.aod
+            adb shell cmd notification allow_listener $PKG/$PKG.notificationobserver || true
+            adb shell settings put secure enabled_accessibility_services $PKG/$PKG.overlayservice || true
+            adb shell settings put secure accessibility_enabled 1 || true
+            adb shell appops set $PKG SYSTEM_ALERT_WINDOW allow || true
+            sleep 5
+
+            # 01: the settings screen
+            adb shell am start -n $PKG/.MainActivity
+            sleep 12
+            adb exec-out screencap -p > ~/info_screen01_settings_${{ matrix.api-level }}.png || true
+
+            # 02: the app picker
+            adb shell am start -n $PKG/.AppPickerActivity
+            sleep 10
+            adb exec-out screencap -p > ~/info_screen02_picker_${{ matrix.api-level }}.png || true
+
+            # 03: the dark always-on screen with an icon.
+            # An AOSP emulator has no always-on panel of its own, so this one
+            # can come out black; 04 is the state that always renders.
+            adb shell locksettings set-pin 1234 || true
+            adb shell cmd notification post -S bigtext -t 'AOD CI' ci1 'test' || true
+            sleep 3
+            adb shell input keyevent 26
+            sleep 12
+            adb exec-out screencap -p > ~/info_screen03_aod_${{ matrix.api-level }}.png || true
+            adb shell dumpsys display | grep -E 'mScreenState|mScreenBrightness' > ~/display_state.txt || true
+
+            # 04: the lock screen, still locked, with the light on it
+            adb shell input keyevent 26
+            sleep 10
+            adb exec-out screencap -p > ~/info_screen04_lockscreen_${{ matrix.api-level }}.png || true
+
+            adb logcat -d -s AODDBG AOD-Overlay AOD-Notifications AOD-Main AOD-Boot > ~/aod_log.txt || true
+            adb logcat -d > ~/adb_log.txt || true
+            ls -al ~/info_screen*.png || true
+
+      - name: upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: linuxscreen_${{ matrix.api-level }}
+          path: |
+            /home/runner/info_screen*.png
+
+      - name: upload logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: adb_log_${{ matrix.api-level }}
+          path: |
+            /home/runner/adb_log.txt
+            /home/runner/aod_log.txt
+            /home/runner/display_state.txt
+
+      - name: upload device test reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: device-test-reports_${{ matrix.api-level }}
+          path: |
+            app/build/reports/androidTests
+            app/build/outputs/androidTest-results
+
+      - name: Upload to nightly release
+        uses: ncipollo/release-action@v1
+        if: github.ref == 'refs/heads/master'
+        with:
+          allowUpdates: true
+          tag: nightly
+          omitBodyDuringUpdate: true
+          omitNameDuringUpdate: true
+          prerelease: true
+          replacesArtifacts: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+          artifacts: "/home/runner/info_screen*.png"

@@ -1,5 +1,15 @@
 # AoD — notification light for Android
 
+> **Almost 100% of this app was written by AI.** The code was produced by an AI
+> assistant from plain-language instructions; a human set the requirements,
+> tested every build on a real phone and decided what shipped. Commits made
+> that way are marked `[AIassisted]`.
+>
+> This is stated so you know it up front, not as a warning. Everything is here
+> to read and audit: plain Java, no internet permission, no notification text
+> is ever read, and CI runs unit tests, a device smoke test, a privacy scan of
+> the finished APK and a scan for hidden characters in the source.
+
 A notification light / LED for phones that do not have one. When a
 notification arrives, a colored light glows **around the front camera
 cutout**, along the **screen edges**, or as a small **LED dot** — on the
@@ -214,6 +224,13 @@ Wake locks appear in `dumpsys power` as `aod:notifications`, `aod:light`,
 - `python3 tools/check_apk_privacy.py <apk>` — verifies the finished APK
 - `tools/find_non_ascii_chars_in_source.sh` — source encoding guard, runs
   before every compile (see below)
+- `./gradlew :app:testDebugUnitTest` — host tests for the icon grid and the
+  counter rules (`IconMath`, no device needed)
+- `./gradlew :app:connectedDebugAndroidTest` — device smoke test: the settings
+  screen builds and both services are declared
+- `.github/workflows/info_test.yml` — CI: source encoding check, privacy
+  guard, unit tests, APK build and scan, then device tests and screenshots on
+  an emulator (uploaded as artifacts, and to the `nightly` release on master)
 - minSdk 28 (Android 9), targetSdk 34
 - Dependencies: appcompat, recyclerview (UI only). Everything else is
   platform API.
