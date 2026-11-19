@@ -276,6 +276,37 @@ time also shows up as screen-on time in Android's battery stats.
 The debug log prints `dark`, `panel` (`awake canvas` / `dozing`), `mode`,
 `awake`, `follow`, `pct` and `requested` for every change.
 
+## Battery and CPU
+
+A still light should cost nothing between the few frames it draws, so the
+timing is built around that:
+
+- **Still image (the default icons style, interval off):** the end of the
+  light and the ten-minute burn-in move are `AlarmManager` alarms
+  (`setExactAndAllowWhileIdle`). One wakeup each, instead of a wake lock held
+  for the whole burst. A `Handler` timer is armed as well as a free backstop:
+  it costs nothing while the CPU sleeps and ends the burst earlier if the
+  phone happens to be awake anyway. Whichever fires first wins.
+- **The CPU wake lock is only held while something needs it** — an animating
+  style (ring/edge/dot with pulse, flash or rotate), interval mode, or a
+  dozing panel with no alarms available. An awake panel already keeps the
+  phone awake, so no lock is taken there at all. It is acquired and released
+  as the panel state changes, not once per burst.
+- **No keyguard polling while the panel is off.** An unlock always arrives as
+  `ACTION_SCREEN_ON`, which re-arms the 300 ms watch; polling a dozing phone
+  every two seconds only woke the CPU (~145 needless wakeups per burst).
+- Short, bounded locks are used where work really happens: 2.5 s to evaluate
+  a screen-off, 2 s around an alarm's draw, 1 s per notification event.
+
+Exact alarms need `SCHEDULE_EXACT_ALARM` from Android 12 on. Where it is not
+granted ("Alarms & reminders" in the app's system settings), the app logs
+`exactAlarms=false` and falls back to the Handler timers plus the wake lock
+they need — correct, just not as cheap on a dozing panel. Nothing prompts for
+it; the permission is optional.
+
+Every decision is in the log: `timers: path=static|animated via=alarm|handler
+exactAlarms=…` and `cpu lock HELD|released animated=… dark=… alarms=…`.
+
 ## Compatibility notes
 
 - Whether an overlay is visible **on top of the native AOD** depends on

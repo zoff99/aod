@@ -5,6 +5,10 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- Timing the end of a light and the burn-in move with alarms lets the
+         CPU sleep in between instead of being held awake for the whole
+         burst. Optional: without it the app falls back to a wake lock. -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <!-- Optional, grantable via ADB only: lets the app self-enable its
          accessibility service for one-tap setup. Not required otherwise. -->
     <uses-permission

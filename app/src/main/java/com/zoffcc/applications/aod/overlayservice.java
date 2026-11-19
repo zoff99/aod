@@ -2,6 +2,7 @@ package com.zoffcc.applications.aod;
 
 import android.accessibilityservice.AccessibilityService;
 import android.accessibilityservice.AccessibilityServiceInfo;
+import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -80,6 +81,14 @@ public class overlayservice extends AccessibilityService
      *  usually far shorter than this interval. */
     private static final long SHIFT_INTERVAL_MS = 600000L;
 
+    /** Alarm actions for the end of a burst and the burn-in move. An alarm
+     *  wakes the phone once at the right moment; a Handler message would
+     *  need the CPU held awake for the whole burst just to fire on time. */
+    private static final String ACTION_ALARM_END = "com.zoffcc.applications.aod.ALARM_END";
+    private static final String ACTION_ALARM_DRIFT = "com.zoffcc.applications.aod.ALARM_DRIFT";
+    private static final int REQ_ALARM_END = 4101;
+    private static final int REQ_ALARM_DRIFT = 4102;
+
     private final Handler h = new Handler(Looper.getMainLooper());
     private WindowManager wm;
     private GlowRendererView view;
@@ -94,6 +103,10 @@ public class overlayservice extends AccessibilityService
     private long canvasLaunchAt = 0L;
     private long canvasBackoffUntil = 0L;
     private PowerManager.WakeLock partialLock;
+    private PowerManager.WakeLock briefLock;
+    private boolean cpuLockHeld = false;
+    private boolean timersViaAlarm = false;
+    private long burstEndsAt = 0L;
     private PowerManager.WakeLock drawLock;
     private float appliedBrightness = Float.NaN;
     private boolean brightnessDark = false;
@@ -161,6 +174,8 @@ public class overlayservice extends AccessibilityService
             PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
             partialLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "aod:light");
             partialLock.setReferenceCounted(false);
+            briefLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "aod:tick");
+            briefLock.setReferenceCounted(false);
             wakeBridge = pm.newWakeLock(
                     PowerManager.SCREEN_BRIGHT_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP, "aod:wake");
             wakeBridge.setReferenceCounted(false);
@@ -258,6 +273,8 @@ public class overlayservice extends AccessibilityService
         cmd.addAction(notificationobserver.ACTION_AOD_SHOWN);
         cmd.addAction(notificationobserver.ACTION_AOD_GONE);
         cmd.addAction(notificationobserver.ACTION_WAKE);
+        cmd.addAction(ACTION_ALARM_END);
+        cmd.addAction(ACTION_ALARM_DRIFT);
         ContextCompat.registerReceiver(this, commandReceiver, cmd, ContextCompat.RECEIVER_NOT_EXPORTED);
     }
 
@@ -278,6 +295,8 @@ public class overlayservice extends AccessibilityService
         try { if (prefs != null) { prefs.unregisterOnSharedPreferenceChangeListener(this); } }
         catch (Exception ignored) {}
         stopBurst(false, "serviceDestroy");
+        cancelAlarms();
+        release(briefLock);
         if (viewAdded && view != null)
         {
             try { wm.removeViewImmediate(view); } catch (Exception ignored) {}
@@ -317,6 +336,9 @@ public class overlayservice extends AccessibilityService
                     Dbg.log("overlay", "power button while canvas up -> canvas paused 45s");
                 }
                 screenOn = false;
+                // the evaluation below is 450 ms away, and the relock watch
+                // polls for up to 1.5 s: keep the CPU for that window only
+                briefCpu(2500L);
                 syncOverlay();
                 h.removeCallbacks(relockWatch);
                 h.removeCallbacks(evaluateRunnable);
@@ -327,6 +349,7 @@ public class overlayservice extends AccessibilityService
                 Dbg.log("overlay", "recv SCREEN_ON " + state());
                 screenOn = true;
                 h.removeCallbacks(relockWatch);
+                armKeyguardWatch();
                 if (canvasShown)
                 {
                     Dbg.log("overlay", "SCREEN_ON: canvas shown -> leave burst to canvas lifecycle");
@@ -388,6 +411,7 @@ public class overlayservice extends AccessibilityService
                     break;
                 case notificationobserver.ACTION_AOD_SHOWN:
                     canvasShown = true;
+                    armKeyguardWatch();
                     Dbg.log("overlay", "AOD_SHOWN: canvasShown=true lightActive=" + lightActive);
                     if (!lightActive) { reevaluate(); }
                     syncOverlay();
@@ -417,6 +441,16 @@ public class overlayservice extends AccessibilityService
                         stopBurst(false, "aodGone");
                     }
                     syncOverlay();
+                    break;
+                case ACTION_ALARM_END:
+                    Dbg.log("overlay", "alarm: end of burst");
+                    briefCpu(2000L);
+                    endBurst("alarm");
+                    break;
+                case ACTION_ALARM_DRIFT:
+                    Dbg.log("overlay", "alarm: burn-in move");
+                    briefCpu(2000L);
+                    driftStep();
                     break;
                 case notificationobserver.ACTION_WAKE:
                     Dbg.log("overlay", "WAKE: acquire wakeBridge 2s");
@@ -492,10 +526,18 @@ public class overlayservice extends AccessibilityService
                 kmUnlockedSeen = 0;
             }
             lastKmLocked = locked;
-            // While the panel is off there is nothing to unlock: poll lazily
-            // so a still always-on screen costs almost no CPU. An awake lock
-            // screen needs the fast poll to hide the light promptly.
-            h.postDelayed(this, (screenOn || canvasShown) ? 300L : 2000L);
+            // An awake lock screen needs the fast poll to hide the light
+            // promptly. While the panel is off there is nothing to unlock at
+            // all, and every unlock arrives as SCREEN_ON, which re-arms this
+            // watch - so polling a dozing phone would only wake the CPU.
+            if (screenOn || canvasShown)
+            {
+                h.postDelayed(this, 300L);
+            }
+            else
+            {
+                Dbg.log("overlay", "keyguardWatch: panel off -> idle until SCREEN_ON");
+            }
         }
     };
 
@@ -786,14 +828,19 @@ public class overlayservice extends AccessibilityService
         view.setVisibility(android.view.View.VISIBLE);
         view.start();
         lightActive = true;
-        armShift();
         lastKmLocked = km == null || km.isKeyguardLocked();
         kmUnlockedSeen = 0;
-        h.removeCallbacks(keyguardWatch);
-        h.postDelayed(keyguardWatch, 300L);
+        armKeyguardWatch();
 
         long lockFor = durationMs + 4000L;
-        try { partialLock.acquire(lockFor); } catch (Exception ignored) {}
+        burstEndsAt = SystemClock.elapsedRealtime() + durationMs;
+        // A still image draws nothing between its rare frames, so its timers
+        // can be alarms and the CPU is left to sleep. Anything that animates
+        // or toggles keeps the Handler timers and the lock they need.
+        timersViaAlarm = !animating() && canExactAlarms();
+        Dbg.log("overlay", "timers: path=" + (animating() ? "animated" : "static")
+                + " via=" + (timersViaAlarm ? "alarm" : "handler")
+                + " exactAlarms=" + canExactAlarms());
         if (drawCapable && drawLock != null)
         {
             try { drawLock.acquire(lockFor); } catch (Exception ignored) {}
@@ -817,9 +864,28 @@ public class overlayservice extends AccessibilityService
                     + " canvasShown=" + canvasShown + " screenOn=" + screenOn);
         }
 
+        // The alarm is what wakes the phone at the right moment. The Handler
+        // timer is armed as well: it costs nothing while the CPU sleeps and
+        // ends the burst earlier if the phone happens to be awake anyway.
+        // Whichever fires first wins; the other is cancelled in stopBurst().
+        if (timersViaAlarm && !setAlarm(ACTION_ALARM_END, REQ_ALARM_END, durationMs))
+        {
+            timersViaAlarm = false;   // alarms unavailable: the Handler needs the CPU
+        }
+        armEndTimer(durationMs);
+        armShift();
+        syncCpuLock();
+        syncOverlay();
+        Dbg.log("overlay", "burst STARTED dur=" + durationMs + " canvas=" + allowCanvas
+                + " color=#" + Integer.toHexString(color) + " " + state());
+    }
+
+    /** Handler-based end of a burst: for animations, and as the fallback
+     *  when exact alarms are not available. */
+    private void armEndTimer(long durationMs)
+    {
         // Interval mode needs a tick to toggle visibility; otherwise a single
-        // wake-up at the end of the burst is enough (much less CPU while the
-        // panel shows a still image).
+        // wake-up at the end of the burst is enough.
         long tick = Prefs.interval(this) ? 1000L : Math.max(1000L, durationMs);
         timeoutTimer = new CountDownTimer(durationMs, tick)
         {
@@ -859,13 +925,15 @@ public class overlayservice extends AccessibilityService
             }
         };
         timeoutTimer.start();
-        syncOverlay();
-        Dbg.log("overlay", "burst STARTED dur=" + durationMs + " canvas=" + allowCanvas
-                + " color=#" + Integer.toHexString(color) + " " + state());
     }
 
     private void endBurst(String reason)
     {
+        if (!lightActive)
+        {
+            Dbg.log("overlay", "endBurst reason=" + reason + " ignored: no burst");
+            return;
+        }
         boolean wasOff = effectiveScreenOff();
         boolean wasTest = testMode;
         Dbg.log("overlay", "endBurst reason=" + reason + " wasOff=" + wasOff + " wasTest=" + wasTest + " " + state());
@@ -899,6 +967,7 @@ public class overlayservice extends AccessibilityService
         }
         syncOverlay();
         release(partialLock);
+        cpuLockHeld = false;
         release(drawLock);
         if (!keepCanvas && canvasShown)
         {
@@ -909,6 +978,7 @@ public class overlayservice extends AccessibilityService
 
     private void cancelTimers()
     {
+        cancelAlarms();
         if (timeoutTimer != null) { timeoutTimer.cancel(); timeoutTimer = null; }
         h.removeCallbacks(shiftRunnable);
         h.removeCallbacks(keyguardWatch);
@@ -918,14 +988,27 @@ public class overlayservice extends AccessibilityService
     private final Runnable shiftRunnable = new Runnable()
     {
         @Override
-        public void run()
-        {
-            if (!lightActive || view == null) { return; }
-            if (pinned()) { return; }
-            applyShift();
-            h.postDelayed(this, SHIFT_INTERVAL_MS);
-        }
+        public void run() { driftStep(); }
     };
+
+    /** Move the light one slot and arm the next move. */
+    private void driftStep()
+    {
+        if (!lightActive || view == null) { return; }
+        if (pinned()) { return; }
+        applyShift();
+        armNextShift();
+    }
+
+    private void armNextShift()
+    {
+        h.removeCallbacks(shiftRunnable);
+        if (timersViaAlarm && setAlarm(ACTION_ALARM_DRIFT, REQ_ALARM_DRIFT, SHIFT_INTERVAL_MS))
+        {
+            return;
+        }
+        h.postDelayed(shiftRunnable, SHIFT_INTERVAL_MS);
+    }
 
     /** True when the icons style is switched to "pinned to one spot". */
     private boolean pinned()
@@ -958,6 +1041,7 @@ public class overlayservice extends AccessibilityService
     private void armShift()
     {
         h.removeCallbacks(shiftRunnable);
+        cancelAlarm(ACTION_ALARM_DRIFT, REQ_ALARM_DRIFT);
         if (pinned())
         {
             shiftIndex = -1;      // slot 0 = no offset at all
@@ -965,7 +1049,118 @@ public class overlayservice extends AccessibilityService
             return;
         }
         applyShift();
-        h.postDelayed(shiftRunnable, SHIFT_INTERVAL_MS);
+        armNextShift();
+    }
+
+    // ---- timers, wake locks ------------------------------------------------------
+
+    /** Does this configuration produce frames or toggles of its own? */
+    private boolean animating()
+    {
+        return Prefs.interval(this) || !Prefs.STYLE_ICONS.equals(Prefs.style(this));
+    }
+
+    /** Exact alarms need a permission from Android 12 on; without it the
+     *  Handler timers and their wake lock are used instead. */
+    private boolean canExactAlarms()
+    {
+        if (Build.VERSION.SDK_INT < 31) { return true; }
+        try
+        {
+            AlarmManager am = (AlarmManager) getSystemService(ALARM_SERVICE);
+            return am != null && am.canScheduleExactAlarms();
+        }
+        catch (Throwable t) { return false; }
+    }
+
+    private PendingIntent alarmIntent(String action, int req)
+    {
+        Intent i = new Intent(action);
+        i.setPackage(getPackageName());
+        return PendingIntent.getBroadcast(this, req, i,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+    }
+
+    /** @return false when the alarm could not be set, so the caller can fall
+     *          back to a Handler timer rather than lose the event. */
+    private boolean setAlarm(String action, int req, long delayMs)
+    {
+        try
+        {
+            AlarmManager am = (AlarmManager) getSystemService(ALARM_SERVICE);
+            if (am == null) { return false; }
+            am.setExactAndAllowWhileIdle(AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                    SystemClock.elapsedRealtime() + delayMs, alarmIntent(action, req));
+            return true;
+        }
+        catch (Exception e)
+        {
+            Log.w(TAG, "alarm " + action + ": " + e);
+            return false;
+        }
+    }
+
+    private void cancelAlarm(String action, int req)
+    {
+        try
+        {
+            AlarmManager am = (AlarmManager) getSystemService(ALARM_SERVICE);
+            if (am != null) { am.cancel(alarmIntent(action, req)); }
+        }
+        catch (Exception ignored) {}
+    }
+
+    private void cancelAlarms()
+    {
+        cancelAlarm(ACTION_ALARM_END, REQ_ALARM_END);
+        cancelAlarm(ACTION_ALARM_DRIFT, REQ_ALARM_DRIFT);
+    }
+
+    /** An alarm guarantees the CPU only while the receiver runs; drawing a
+     *  frame and locking the screen need a moment more. */
+    private void briefCpu(long ms)
+    {
+        try { if (briefLock != null) { briefLock.acquire(ms); } }
+        catch (Exception ignored) {}
+    }
+
+    private void armKeyguardWatch()
+    {
+        if (!lightActive) { return; }
+        h.removeCallbacks(keyguardWatch);
+        h.postDelayed(keyguardWatch, 300L);
+    }
+
+    /**
+     * Hold the CPU awake only while something depends on it. An awake panel
+     * already keeps the phone awake, and alarm-driven timers wake it on
+     * their own - so a still light on a dozing panel needs no lock at all,
+     * which is the point of the alarm path.
+     */
+    private void syncCpuLock()
+    {
+        boolean want = lightActive && needsCpuLock();
+        if (want == cpuLockHeld) { return; }
+        cpuLockHeld = want;
+        if (want)
+        {
+            long left = Math.max(2000L, burstEndsAt - SystemClock.elapsedRealtime() + 4000L);
+            try { partialLock.acquire(left); } catch (Exception ignored) {}
+        }
+        else
+        {
+            release(partialLock);
+        }
+        Dbg.log("overlay", "cpu lock " + (want ? "HELD" : "released")
+                + " animated=" + animating() + " dark=" + effectiveScreenOff()
+                + " alarms=" + timersViaAlarm);
+    }
+
+    private boolean needsCpuLock()
+    {
+        if (animating()) { return true; }
+        if (!effectiveScreenOff()) { return false; }
+        return !timersViaAlarm;
     }
 
     /**
@@ -1003,6 +1198,7 @@ public class overlayservice extends AccessibilityService
             view.setVisibility(android.view.View.VISIBLE);
         }
         applyBrightness();
+        syncCpuLock();
     }
 
     /**
@@ -1360,6 +1556,7 @@ public class overlayservice extends AccessibilityService
         {
             applyAppearance();
             refreshGeometry();
+            syncCpuLock();   // e.g. icons -> ring starts producing frames
         }
         if (Prefs.CUTOUT_LEFT.equals(key) || Prefs.CUTOUT_OFF_X.equals(key) ||
             Prefs.CUTOUT_OFF_Y.equals(key) || Prefs.CUTOUT_SCALE.equals(key))

@@ -112,7 +112,7 @@
     <string name="brightness_own_note">The panel stays awake and the dark screen uses the brightness below, independent of the system slider.</string>
     <string name="brightness_adaptive_on">Adaptive brightness is on, and the always-on screen follows it just like every other screen.</string>
     <string name="brightness_adaptive_off">Adaptive brightness is off, so the always-on screen follows the brightness slider directly.</string>
-    <string name="set_brightness_sum">Used whenever the phone\u2019s brightness is not being followed: this is then the brightness of the dark screen itself, 100% being full brightness and 40% a comfortable night level. With the panel awake it is always honoured; on a dozing panel some phones clamp it to their own always-on level. Higher brightness also means more battery and more burn-in risk.</string>
+    <string name="set_brightness_sum" formatted="false">Used whenever the phone\u2019s brightness is not being followed: this is then the brightness of the dark screen itself, 100% being full brightness and 40% a comfortable night level. With the panel awake it is always honoured; on a dozing panel some phones clamp it to their own always-on level. Higher brightness also means more battery and more burn-in risk.</string>
     <string name="lbl_stroke">Light thickness: %1$d dp</string>
     <string name="lbl_speed">Animation cycle: %1$d ms</string>
     <string name="lbl_cutout_x">Ring offset X: %1$d px</string>
