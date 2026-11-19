@@ -47,6 +47,12 @@ android {
         buildConfigField "String", "GitHash", "\"${getGitHash()}\""
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        // The androidTest APK is minified too (it follows the tested build
+        // type), but it does not inherit the app's rule files. Without its own
+        // rules R8 fails on optional references inside AndroidX Test, and a
+        // test harness must never be shrunk or renamed anyway.
+        testProguardFiles 'test-proguard-rules.pro'
     }
 
     buildTypes {

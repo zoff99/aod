@@ -221,6 +221,13 @@ Wake locks appear in `dumpsys power` as `aod:notifications`, `aod:light`,
 - JDK 17, Android SDK 34, Gradle 8.9 (wrapper included)
 - `./gradlew assembleDebug` (shrinking is on in both variants: unused
   library code is dropped, no obfuscation — see `app/proguard-rules.pro`)
+- the **test** APK has its own rules (`app/test-proguard-rules.pro`): R8 runs
+  but shrinks, optimises and renames nothing. AGP minifies the androidTest
+  variant because the tested build type is minified, yet it does not inherit
+  the app's rule files, so without them R8 fails on compile-only references
+  inside AndroidX Test (`javax.lang.model.element.Modifier`,
+  `kotlin.jvm.internal.SourceDebugExtension`). A test harness also must not be
+  shrunk: JUnit and Espresso find their classes reflectively
 - `python3 tools/check_apk_privacy.py <apk>` — verifies the finished APK
 - `tools/find_non_ascii_chars_in_source.sh` — source encoding guard, runs
   before every compile (see below)

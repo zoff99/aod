@@ -124,6 +124,10 @@ AndroidX ships notification helpers (`androidx.core.app.NotificationCompat`,
 read titles and message text. Nothing in this app calls them, and both build
 types run R8 shrinking (`app/proguard-rules.pro`: shrink only, no
 obfuscation, no optimisation), so those classes are not in the dex at all.
+This is about the **app** APK. The androidTest APK is a separate, never
+shipped test harness and is deliberately not shrunk
+(`app/test-proguard-rules.pro`); it contains the AndroidX test libraries as
+they come.
 
 You can verify any finished APK yourself, without an SDK:
 
