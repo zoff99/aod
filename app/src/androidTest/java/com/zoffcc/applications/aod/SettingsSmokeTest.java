@@ -2,6 +2,7 @@ package com.zoffcc.applications.aod;
 
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.ServiceInfo;
 import android.view.View;
 import android.widget.EditText;
@@ -16,6 +17,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -47,6 +49,8 @@ public class SettingsSmokeTest
                 assertNotNull("awake panel switch missing", a.findViewById(R.id.sw_awake_panel));
                 assertNotNull("icon size slider missing", a.findViewById(R.id.sb_icon_size));
                 assertNotNull("app picker button missing", a.findViewById(R.id.btn_select_apps));
+                assertNotNull("persistent policy spinner missing", a.findViewById(R.id.sp_persistent_mode));
+                assertNotNull("always-allow picker button missing", a.findViewById(R.id.btn_persistent_apps));
             });
         }
     }
@@ -113,5 +117,30 @@ public class SettingsSmokeTest
                         text.contains("min") || text.contains(" h"));
             });
         }
+    }
+
+    @Test
+    public void alwaysAllowPickerOpensWithItsOwnTitle()
+    {
+        Intent i = new Intent(target(), AppPickerActivity.class);
+        i.putExtra(AppPickerActivity.EXTRA_MODE, AppPickerActivity.MODE_PERSISTENT);
+        try (ActivityScenario<AppPickerActivity> s = ActivityScenario.launch(i))
+        {
+            s.onActivity(a -> {
+                TextView title = a.findViewById(R.id.txt_title);
+                assertEquals("the persistent picker must say what it selects",
+                        a.getString(R.string.picker_persistent_title), title.getText().toString());
+            });
+        }
+    }
+
+    @Test
+    public void callsSurviveTheDefaultPersistentPolicy()
+    {
+        // the default must not swallow a call, and must still hide a player
+        String mode = Prefs.persistentMode(target());
+        assertEquals(PersistentPolicy.CALLS_APPS, mode);
+        assertTrue(PersistentPolicy.allow(mode, true, false));
+        assertFalse(PersistentPolicy.allow(mode, false, false));
     }
 }

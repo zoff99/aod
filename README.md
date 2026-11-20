@@ -117,7 +117,8 @@ them to one spot.
   be filtered too. The list can be narrowed to all / selected / not
   selected apps, and a hint reminds you that a long press sets that app's
   light color
-- Ignore persistent notifications; optional dismiss-on-unlock
+- Persistent notifications: ignore all, allow calls, allow calls + selected
+  apps, or allow all; optional dismiss-on-unlock
 - Camera-ring calibration: automatic cutout detection + manual offset/size
 - Always-on brightness that follows the system brightness slider
 - Light duration on a snapped slider: 1, 2, 5, 10, 15, 20, 30, 45 min,
@@ -146,6 +147,36 @@ their plain-language explanations and the choices inside the dropdowns, so
 
 Layout-wise every setting is one container -- control plus explanation --
 which is what makes both the folding and the search possible.
+
+## Calls and other persistent notifications
+
+An ongoing phone call is a persistent notification, exactly like a music
+player or a download, so a plain "ignore persistent" switch swallows calls
+too. The setting is therefore a choice with four values: *ignore all*,
+*allow calls*, *allow calls + selected apps* (default), *allow all*.
+
+A notification counts as a call when any of these metadata signals is
+present -- no title, text or caller is ever read:
+
+- `Notification.category` is `call`
+- it has a `fullScreenIntent` (an incoming call takes over the screen; on
+  Android 14+ mainly calls and alarms are allowed to do that). Only the
+  *presence* is checked; the intent is never opened or sent
+- it uses the system call layout (`Notification.CallStyle`, recognised by
+  the style class name in `android.template`)
+
+**The catch worth knowing:** the AOSP dialer sets `CATEGORY_CALL` only on
+its *incoming* call notification. Its ongoing in-call notification carries
+no category, no full-screen intent and no call layout -- it is simply
+ongoing and colourised. That is why the always-allow app list exists, and
+why it is **seeded with your default dialer** on first use: tick nothing and
+both incoming and ongoing calls already light up. The same list covers any
+other app whose persistent notifications you want (a navigation app, a
+timer), and it is a second selection mode of the app picker.
+
+Calls look like every other notification: same style, same animation, same
+per-app color, and the light duration ends them like any other burst. The
+app filter still wins: an app you excluded there never lights up.
 
 ## What the number under an icon counts
 

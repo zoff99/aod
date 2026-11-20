@@ -247,6 +247,21 @@ public class notificationobserver extends NotificationListenerService
         catch (Exception ignored) {}
     }
 
+    /**
+     * Is this a call? Three pieces of metadata, no content: the category the
+     * app sets ("call"), whether it takes over the screen (an incoming call
+     * does, and on Android 14+ mainly calls and alarms may), and whether it
+     * uses the system call layout. The AOSP dialer tags only its incoming
+     * call, so its ongoing call is recognised through the always-allow list
+     * instead -- which is seeded with the default dialer for that reason.
+     */
+    private static boolean isCall(Notification n, String template)
+    {
+        if (Notification.CATEGORY_CALL.equals(n.category)) { return true; }
+        if (n.fullScreenIntent != null) { return true; }
+        return template != null && template.contains("CallStyle");
+    }
+
     /** @return true when the map changed. */
     private boolean consider(StatusBarNotification sbn)
     {
@@ -267,16 +282,30 @@ public class notificationobserver extends NotificationListenerService
             {
                 return rememberSummary(sbn.getKey(), pkg, n.number);
             }
-            if (Prefs.ignorePersistent(this) &&
-                ((n.flags & Notification.FLAG_FOREGROUND_SERVICE) != 0 ||
-                 (n.flags & Notification.FLAG_NO_CLEAR) != 0 || !sbn.isClearable()))
+            // Metadata only. The bundle is opened for non-text values; no
+            // title, body or message key is ever requested from it.
+            Bundle extras = n.extras;
+            // the style class name, e.g. "android.app.Notification$CallStyle":
+            // a class name, not content, used inline and never kept
+            String template = extras != null ? extras.getString("android.template") : null;
+
+            // Persistent notifications: players, downloads, navigation -- and
+            // calls, which are persistent too. The policy decides which ones
+            // still light up; see PersistentPolicy.
+            boolean persistent = (n.flags & Notification.FLAG_FOREGROUND_SERVICE) != 0
+                    || (n.flags & Notification.FLAG_NO_CLEAR) != 0 || !sbn.isClearable();
+            if (persistent)
             {
-                return false;
+                String mode = Prefs.persistentMode(this);
+                boolean call = isCall(n, template);
+                boolean listed = PersistentPolicy.usesAppList(mode)
+                        && Prefs.persistentAppListed(this, pkg);
+                boolean show = PersistentPolicy.allow(mode, call, listed);
+                Dbg.log("observer", "persistent " + pkg + " mode=" + mode
+                        + " call=" + call + " listed=" + listed + " -> " + (show ? "show" : "drop"));
+                if (!show) { return false; }
             }
 
-            // Metadata only. The bundle is opened for three non-text values;
-            // no title, body or message key is ever requested from it.
-            Bundle extras = n.extras;
             if (extras != null)
             {
                 // skip download/progress notifications
@@ -288,10 +317,7 @@ public class notificationobserver extends NotificationListenerService
                 }
                 // skip media players
                 if (extras.getParcelable("android.mediaSession") != null) { return false; }
-                // the style class name, e.g. "android.app.Notification$MediaStyle":
-                // a class name, not content, and it is used inline and never kept
-                if (extras.getString("android.template") != null
-                        && extras.getString("android.template").contains("MediaStyle")) { return false; }
+                if (template != null && template.contains("MediaStyle")) { return false; }
             }
 
             NotificationItem item = new NotificationItem();

@@ -50,7 +50,9 @@ public final class Prefs
     public static final String NIGHT_END = "night_end";
     public static final String RESPECT_DND = "respect_dnd";
     public static final String BATTERY_LIGHT = "battery_light";     // charging / full / low battery
-    public static final String IGNORE_PERSISTENT = "ignore_persistent";
+    public static final String IGNORE_PERSISTENT = "ignore_persistent"; // legacy switch, migrated
+    public static final String PERSISTENT_MODE = "persistent_mode";   // see PersistentPolicy
+    public static final String PERSISTENT_APPS = "persistent_apps";   // always-allow package names
 
     // ---- app filter -----------------------------------------------------
     public static final String FILTER_MODE = "filter_mode";         // all | selected
@@ -233,7 +235,85 @@ public final class Prefs
     public static int nightEnd(Context c) { return get(c).getInt(NIGHT_END, 7 * 60); }
     public static boolean respectDnd(Context c) { return get(c).getBoolean(RESPECT_DND, false); }
     public static boolean batteryLight(Context c) { return get(c).getBoolean(BATTERY_LIGHT, false); }
-    public static boolean ignorePersistent(Context c) { return get(c).getBoolean(IGNORE_PERSISTENT, true); }
+    /**
+     * Persistent-notification policy. Migrates the old on/off switch once:
+     * "ignore" becomes "allow calls and the apps you pick", because a phone
+     * call is persistent too and used to be swallowed by that switch.
+     */
+    public static String persistentMode(Context c)
+    {
+        SharedPreferences p = get(c);
+        String mode = p.getString(PERSISTENT_MODE, null);
+        if (PersistentPolicy.valid(mode)) { return mode; }
+        String migrated = p.getBoolean(IGNORE_PERSISTENT, true)
+                ? PersistentPolicy.CALLS_APPS : PersistentPolicy.ALL;
+        p.edit().putString(PERSISTENT_MODE, migrated).apply();
+        return migrated;
+    }
+
+    public static boolean ignorePersistent(Context c)
+    {
+        return !PersistentPolicy.ALL.equals(persistentMode(c));
+    }
+
+    /**
+     * Copy of the always-allow list. On first use it is seeded with the
+     * phone's default dialer: the AOSP dialer tags only its incoming call as
+     * a call, so its ongoing call needs this list to be seen at all.
+     */
+    public static java.util.Set<String> persistentApps(Context c)
+    {
+        SharedPreferences p = get(c);
+        java.util.Set<String> have = p.getStringSet(PERSISTENT_APPS, null);
+        java.util.Set<String> out = new java.util.HashSet<>();
+        if (have != null)
+        {
+            out.addAll(have);
+            return out;
+        }
+        String dialer = defaultDialer(c);
+        if (dialer != null && !dialer.isEmpty()) { out.add(dialer); }
+        p.edit().putStringSet(PERSISTENT_APPS, new java.util.HashSet<>(out)).apply();
+        return out;
+    }
+
+    public static boolean persistentAppListed(Context c, String pkg)
+    {
+        return pkg != null && persistentApps(c).contains(pkg);
+    }
+
+    public static void setPersistentApp(Context c, String pkg, boolean on)
+    {
+        if (pkg == null || pkg.isEmpty()) { return; }
+        java.util.Set<String> next = persistentApps(c);
+        if (on) { next.add(pkg); } else { next.remove(pkg); }
+        get(c).edit().putStringSet(PERSISTENT_APPS, next).apply();
+    }
+
+    /** Package name of the default dialer, or null. No permission needed. */
+    private static String defaultDialer(Context c)
+    {
+        try
+        {
+            android.telecom.TelecomManager tm =
+                    (android.telecom.TelecomManager) c.getSystemService(Context.TELECOM_SERVICE);
+            if (tm != null)
+            {
+                String pkg = tm.getDefaultDialerPackage();
+                if (pkg != null && !pkg.isEmpty()) { return pkg; }
+            }
+        }
+        catch (Exception ignored) {}
+        try
+        {
+            android.content.Intent dial = new android.content.Intent(android.content.Intent.ACTION_DIAL);
+            android.content.pm.ResolveInfo ri = c.getPackageManager()
+                    .resolveActivity(dial, android.content.pm.PackageManager.MATCH_DEFAULT_ONLY);
+            if (ri != null && ri.activityInfo != null) { return ri.activityInfo.packageName; }
+        }
+        catch (Exception ignored) {}
+        return null;
+    }
 
     /** What the app picker lists: everything, or only the picked ones, or
      *  the ones not picked yet - useful to finish a long list. */

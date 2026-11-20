@@ -44,14 +44,16 @@ Everything it takes from a notification is metadata:
 | `StatusBarNotification.getPackageName()` | which app posted; icon, color, filter |
 | `StatusBarNotification.getKey()` | identity, so a dismissal removes the right icon |
 | `StatusBarNotification.getPostTime()` | ordering, newest first |
-| `StatusBarNotification.isClearable()` | skipping persistent notifications |
+| `StatusBarNotification.isClearable()` | persistent-notification policy |
+| `Notification.category` | the fixed category string an app sets, e.g. `call`; used to let calls through |
+| `Notification.fullScreenIntent` | only whether it is **present** (an incoming call takes over the screen); the intent is never opened, sent or inspected |
 | `Notification.flags` | foreground-service / no-clear / group-summary |
 | `Notification.number` | the counter the app itself publishes (unread count) |
 | `Notification.getSmallIcon()` → `getResId()` | which status-bar symbol to draw. Only `Icon.TYPE_RESOURCE` is accepted; the id is a number |
 | `Notification.color` | the accent the app chose for its notification icon (an ARGB number) |
 | `extras.getInt("android.progress")`, `getInt("android.progressMax")` | skip running downloads |
 | `extras.getParcelable("android.mediaSession")` | skip media players (a token, no text) |
-| `extras.getString("android.template")` | the style **class name**, e.g. `android.app.Notification$MediaStyle`; compared inline, never kept |
+| `extras.getString("android.template")` | the style **class name**, e.g. `android.app.Notification$MediaStyle` or `$CallStyle`; compared inline, never kept |
 
 A notification's *symbol* is drawn from the posting app's own resources, by
 resource id, read-only. An app that supplies a bitmap or URI icon instead of a

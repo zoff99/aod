@@ -105,6 +105,7 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
         bindSwitches();
         bindBrightnessRow();
         bindSpinners();
+        bindPersistentRow();
         bindColorRow();
         bindSliders();
         bindTextInputs();
@@ -275,7 +276,6 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
         bindSwitch(R.id.sw_night, Prefs.NIGHT, false);
         bindSwitch(R.id.sw_dnd, Prefs.RESPECT_DND, false);
         bindSwitch(R.id.sw_battery_light, Prefs.BATTERY_LIGHT, false);
-        bindSwitch(R.id.sw_ignore_persistent, Prefs.IGNORE_PERSISTENT, true);
     }
 
     /**
@@ -488,6 +488,42 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
 
         @Override
         public void onNothingSelected(android.widget.AdapterView<?> parent) {}
+    }
+
+    /**
+     * Persistent notifications: one choice instead of the old on/off switch,
+     * plus the always-allow app list, whose button only makes sense in the
+     * "calls + selected apps" mode.
+     */
+    private void bindPersistentRow()
+    {
+        Spinner sp = findViewById(R.id.sp_persistent_mode);
+        ArrayAdapter<CharSequence> pa = ArrayAdapter.createFromResource(this,
+                R.array.persistent_mode_entries, R.layout.item_spinner);
+        pa.setDropDownViewResource(R.layout.item_spinner_dropdown);
+        sp.setAdapter(pa);
+
+        Button apps = findViewById(R.id.btn_persistent_apps);
+        apps.setOnClickListener(v -> {
+            Intent i = new Intent(this, AppPickerActivity.class);
+            i.putExtra(AppPickerActivity.EXTRA_MODE, AppPickerActivity.MODE_PERSISTENT);
+            startActivity(i);
+        });
+
+        String mode = Prefs.persistentMode(this);
+        sp.setSelection(PersistentPolicy.indexOf(mode));
+        apps.setVisibility(PersistentPolicy.usesAppList(mode) ? View.VISIBLE : View.GONE);
+        sp.setOnItemSelectedListener(new SimpleItemSelected()
+        {
+            @Override
+            public void onItemSelected(int position)
+            {
+                String next = PersistentPolicy.MODES[position];
+                prefs.edit().putString(Prefs.PERSISTENT_MODE, next).apply();
+                apps.setVisibility(PersistentPolicy.usesAppList(next) ? View.VISIBLE : View.GONE);
+                sendLocal(notificationobserver.ACTION_REEVAL);
+            }
+        });
     }
 
     private void bindColorRow()

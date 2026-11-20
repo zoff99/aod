@@ -43,7 +43,12 @@ import java.util.concurrent.Executors;
  */
 public class AppPickerActivity extends AppCompatActivity implements AppListAdapter.Listener
 {
+    /** Launch with this extra to pick the always-allow list instead of the filter. */
+    public static final String EXTRA_MODE = "mode";
+    public static final String MODE_PERSISTENT = "persistent";
+
     private SharedPreferences prefs;
+    private boolean persistent = false;
     private final Set<String> selected = new HashSet<>();
     private final List<AppListAdapter.AppEntry> all = new ArrayList<>();
     private List<AppListAdapter.AppEntry> filtered = new ArrayList<>();
@@ -70,8 +75,15 @@ public class AppPickerActivity extends AppCompatActivity implements AppListAdapt
         setContentView(R.layout.activity_app_picker);
 
         prefs = Prefs.get(this);
+        persistent = MODE_PERSISTENT.equals(getIntent().getStringExtra(EXTRA_MODE));
         // always work on a copy: never mutate the set returned by getStringSet
-        selected.addAll(prefs.getStringSet(Prefs.FILTER_APPS, new HashSet<>()));
+        selected.addAll(persistent ? Prefs.persistentApps(this)
+                : prefs.getStringSet(Prefs.FILTER_APPS, new HashSet<>()));
+        if (persistent)
+        {
+            ((TextView) findViewById(R.id.txt_title)).setText(R.string.picker_persistent_title);
+            ((TextView) findViewById(R.id.txt_hint)).setText(R.string.picker_persistent_hint);
+        }
 
         count = findViewById(R.id.txt_count);
         empty = findViewById(R.id.txt_empty);
@@ -256,7 +268,8 @@ public class AppPickerActivity extends AppCompatActivity implements AppListAdapt
 
     private void persist()
     {
-        prefs.edit().putStringSet(Prefs.FILTER_APPS, new HashSet<>(selected)).apply();
+        prefs.edit().putStringSet(persistent ? Prefs.PERSISTENT_APPS : Prefs.FILTER_APPS,
+                new HashSet<>(selected)).apply();
     }
 
     private void updateCount()
