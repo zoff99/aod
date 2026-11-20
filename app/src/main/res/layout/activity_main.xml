@@ -188,26 +188,18 @@
                     <TextView style="@style/SettingSummary" android:text="@string/sec_look_sum" />
                 </LinearLayout>
                 <LinearLayout style="@style/SettingRow" android:tag="row|ring edge dot icons shape">
-                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-                        android:orientation="horizontal" android:gravity="center_vertical"
-                        android:minHeight="48dp">
-                        <TextView style="@style/InlineLabel" android:text="@string/set_style"
-                            android:labelFor="@+id/sp_style" />
-                        <Spinner android:id="@+id/sp_style" android:layout_width="0dp"
-                            android:layout_height="wrap_content" android:layout_weight="1"
-                            android:backgroundTint="@color/hc_accent" />
-                    </LinearLayout>
+                    <TextView style="@style/SliderLabel" android:text="@string/set_style"
+                        android:labelFor="@+id/sp_style" />
+                    <Spinner android:id="@+id/sp_style" android:layout_width="match_parent"
+                        android:layout_height="wrap_content" android:minHeight="48dp"
+                        android:backgroundTint="@color/hc_accent" />
                 </LinearLayout>
                 <LinearLayout style="@style/SettingRow" android:tag="row|pulse rotate flash steady movement">
-                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-                        android:orientation="horizontal" android:gravity="center_vertical"
-                        android:minHeight="48dp">
-                        <TextView style="@style/InlineLabel" android:text="@string/set_anim"
-                            android:labelFor="@+id/sp_anim" />
-                        <Spinner android:id="@+id/sp_anim" android:layout_width="0dp"
-                            android:layout_height="wrap_content" android:layout_weight="1"
-                            android:backgroundTint="@color/hc_accent" />
-                    </LinearLayout>
+                    <TextView style="@style/SliderLabel" android:text="@string/set_anim"
+                        android:labelFor="@+id/sp_anim" />
+                    <Spinner android:id="@+id/sp_anim" android:layout_width="match_parent"
+                        android:layout_height="wrap_content" android:minHeight="48dp"
+                        android:backgroundTint="@color/hc_accent" />
                 </LinearLayout>
                 <LinearLayout style="@style/SettingRow" android:tag="row|colour color swatch">
                     <TextView style="@style/SliderLabel" android:text="@string/set_color" />
@@ -334,27 +326,19 @@
                     <TextView style="@style/SettingSummary" android:text="@string/sec_icons_sum" />
                 </LinearLayout>
                 <LinearLayout style="@style/SettingRow" android:tag="row|app notification icon">
-                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-                        android:orientation="horizontal" android:gravity="center_vertical"
-                        android:minHeight="48dp">
-                        <TextView style="@style/InlineLabel" android:text="@string/set_icon_source"
-                            android:labelFor="@+id/sp_icon_source" />
-                        <Spinner android:id="@+id/sp_icon_source" android:layout_width="0dp"
-                            android:layout_height="wrap_content" android:layout_weight="1"
-                            android:backgroundTint="@color/hc_accent" />
-                    </LinearLayout>
+                    <TextView style="@style/SliderLabel" android:text="@string/set_icon_source"
+                        android:labelFor="@+id/sp_icon_source" />
+                    <Spinner android:id="@+id/sp_icon_source" android:layout_width="match_parent"
+                        android:layout_height="wrap_content" android:minHeight="48dp"
+                        android:backgroundTint="@color/hc_accent" />
                     <TextView style="@style/SettingSummary" android:text="@string/set_icon_source_sum" />
                 </LinearLayout>
                 <LinearLayout style="@style/SettingRow" android:tag="row|color white black tint">
-                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-                        android:orientation="horizontal" android:gravity="center_vertical"
-                        android:minHeight="48dp">
-                        <TextView style="@style/InlineLabel" android:text="@string/set_icon_tint"
-                            android:labelFor="@+id/sp_icon_tint" />
-                        <Spinner android:id="@+id/sp_icon_tint" android:layout_width="0dp"
-                            android:layout_height="wrap_content" android:layout_weight="1"
-                            android:backgroundTint="@color/hc_accent" />
-                    </LinearLayout>
+                    <TextView style="@style/SliderLabel" android:text="@string/set_icon_tint"
+                        android:labelFor="@+id/sp_icon_tint" />
+                    <Spinner android:id="@+id/sp_icon_tint" android:layout_width="match_parent"
+                        android:layout_height="wrap_content" android:minHeight="48dp"
+                        android:backgroundTint="@color/hc_accent" />
                     <TextView style="@style/SettingSummary" android:text="@string/set_icon_tint_sum" />
                 </LinearLayout>
                 <LinearLayout style="@style/SettingRow" android:tag="row|size big small dp">
@@ -411,15 +395,11 @@
                     <TextView style="@style/SettingSummary" android:text="@string/set_icon_offset_x_sum" />
                 </LinearLayout>
                 <LinearLayout style="@style/SettingRow" android:tag="row|camera top bottom anchor">
-                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-                        android:orientation="horizontal" android:gravity="center_vertical"
-                        android:minHeight="48dp">
-                        <TextView style="@style/InlineLabel" android:text="@string/set_icon_y_anchor"
-                            android:labelFor="@+id/sp_icon_y_anchor" />
-                        <Spinner android:id="@+id/sp_icon_y_anchor" android:layout_width="0dp"
-                            android:layout_height="wrap_content" android:layout_weight="1"
-                            android:backgroundTint="@color/hc_accent" />
-                    </LinearLayout>
+                    <TextView style="@style/SliderLabel" android:text="@string/set_icon_y_anchor"
+                        android:labelFor="@+id/sp_icon_y_anchor" />
+                    <Spinner android:id="@+id/sp_icon_y_anchor" android:layout_width="match_parent"
+                        android:layout_height="wrap_content" android:minHeight="48dp"
+                        android:backgroundTint="@color/hc_accent" />
                     <TextView style="@style/SettingSummary" android:text="@string/set_icon_y_anchor_sum" />
                 </LinearLayout>
                 <LinearLayout style="@style/SettingRow" android:tag="row|up down y">
@@ -508,15 +488,11 @@
                     <TextView style="@style/SettingSummary" android:text="@string/set_icon_count_sum" />
                 </LinearLayout>
                 <LinearLayout style="@style/SettingRow" android:tag="row|unread messages">
-                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-                        android:orientation="horizontal" android:gravity="center_vertical"
-                        android:minHeight="48dp">
-                        <TextView style="@style/InlineLabel" android:text="@string/set_icon_count_source"
-                            android:labelFor="@+id/sp_icon_count_source" />
-                        <Spinner android:id="@+id/sp_icon_count_source" android:layout_width="0dp"
-                            android:layout_height="wrap_content" android:layout_weight="1"
-                            android:backgroundTint="@color/hc_accent" />
-                    </LinearLayout>
+                    <TextView style="@style/SliderLabel" android:text="@string/set_icon_count_source"
+                        android:labelFor="@+id/sp_icon_count_source" />
+                    <Spinner android:id="@+id/sp_icon_count_source" android:layout_width="match_parent"
+                        android:layout_height="wrap_content" android:minHeight="48dp"
+                        android:backgroundTint="@color/hc_accent" />
                     <TextView style="@style/SettingSummary" android:text="@string/set_icon_count_source_sum" />
                 </LinearLayout>
                 <LinearLayout style="@style/SettingRow" android:tag="row|add sum highest">
@@ -586,30 +562,22 @@
                         android:text="@string/set_battery_light" />
                 </LinearLayout>
                 <LinearLayout style="@style/SettingRow" android:tag="row|persistent ongoing foreground service call phone incoming dialer allow">
-                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-                        android:orientation="horizontal" android:gravity="center_vertical"
-                        android:minHeight="48dp">
-                        <TextView style="@style/InlineLabel" android:text="@string/set_persistent"
-                            android:labelFor="@+id/sp_persistent_mode" />
-                        <Spinner android:id="@+id/sp_persistent_mode" android:layout_width="0dp"
-                            android:layout_height="wrap_content" android:layout_weight="1"
-                            android:backgroundTint="@color/hc_accent" />
-                    </LinearLayout>
+                    <TextView style="@style/SliderLabel" android:text="@string/set_persistent"
+                        android:labelFor="@+id/sp_persistent_mode" />
+                    <Spinner android:id="@+id/sp_persistent_mode" android:layout_width="match_parent"
+                        android:layout_height="wrap_content" android:minHeight="48dp"
+                        android:backgroundTint="@color/hc_accent" />
                     <TextView style="@style/SettingSummary" android:text="@string/set_persistent_sum" />
                     <Button android:id="@+id/btn_persistent_apps" style="@style/BtnSecondary"
                         android:layout_width="match_parent" android:layout_marginTop="10dp"
                         android:text="@string/btn_persistent_apps" />
                 </LinearLayout>
                 <LinearLayout style="@style/SettingRow" android:tag="row|apps filter all selected">
-                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-                        android:orientation="horizontal" android:gravity="center_vertical"
-                        android:minHeight="48dp">
-                        <TextView style="@style/InlineLabel" android:text="@string/set_filter"
-                            android:labelFor="@+id/sp_filter" />
-                        <Spinner android:id="@+id/sp_filter" android:layout_width="0dp"
-                            android:layout_height="wrap_content" android:layout_weight="1"
-                            android:backgroundTint="@color/hc_accent" />
-                    </LinearLayout>
+                    <TextView style="@style/SliderLabel" android:text="@string/set_filter"
+                        android:labelFor="@+id/sp_filter" />
+                    <Spinner android:id="@+id/sp_filter" android:layout_width="match_parent"
+                        android:layout_height="wrap_content" android:minHeight="48dp"
+                        android:backgroundTint="@color/hc_accent" />
                 </LinearLayout>
                 <LinearLayout style="@style/SettingRow" android:tag="row|choose apps picker color">
                     <Button android:id="@+id/btn_select_apps" style="@style/BtnPrimary"

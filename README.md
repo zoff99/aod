@@ -152,8 +152,8 @@ which is what makes both the folding and the search possible.
 
 An ongoing phone call is a persistent notification, exactly like a music
 player or a download, so a plain "ignore persistent" switch swallows calls
-too. The setting is therefore a choice with four values: *ignore all*,
-*allow calls*, *allow calls + selected apps* (default), *allow all*.
+too. The setting is therefore a choice with four values: *Ignore all*,
+*Calls only*, *Calls + selected apps* (default), *Everything*.
 
 A notification counts as a call when any of these metadata signals is
 present -- no title, text or caller is ever read:

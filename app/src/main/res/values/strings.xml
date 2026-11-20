@@ -120,12 +120,12 @@
     <string name="set_dnd">Respect Do Not Disturb</string>
     <string name="set_battery_light">Charging / full / low battery light</string>
     <string name="set_persistent">Persistent notifications</string>
-    <string name="set_persistent_sum">Ongoing notifications that cannot be swiped away: players, downloads, navigation -- and phone calls. A call counts when it is tagged as a call, when it takes over the screen (an incoming call does), or when it uses the system call layout. The AOSP dialer tags only its incoming call, so its ongoing call is covered by the app list below, which already contains your dialer. That list is used by the \u201cAllow calls + selected apps\u201d choice. The app filter above still applies: an app excluded there never lights up.</string>
+    <string name="set_persistent_sum">Ongoing notifications that cannot be swiped away: players, downloads, navigation -- and phone calls. A call counts when it is tagged as a call, when it takes over the screen (an incoming call does), or when it uses the system call layout. The AOSP dialer tags only its incoming call, so its ongoing call is covered by the app list below, which already contains your dialer. That list is used by the \u201cCalls + selected apps\u201d choice. The app filter above still applies: an app excluded there never lights up.</string>
     <string-array name="persistent_mode_entries">
-        <item>Ignore all of them</item>
-        <item>Allow calls</item>
-        <item>Allow calls + selected apps</item>
-        <item>Allow all of them</item>
+        <item>Ignore all</item>
+        <item>Calls only</item>
+        <item>Calls + selected apps</item>
+        <item>Everything</item>
     </string-array>
     <string name="btn_persistent_apps">Choose always-allowed apps\u2026</string>
     <string name="set_filter">Apps</string>
@@ -182,7 +182,7 @@
     </string-array>
     <string-array name="icon_count_source_entries">
         <item>Notifications of that app</item>
-        <item>The app\u2019s own counter, if it has one</item>
+        <item>The app\u2019s own counter</item>
     </string-array>
     <string-array name="icon_y_anchor_entries">
         <item>Below the camera</item>
