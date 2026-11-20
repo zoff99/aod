@@ -125,6 +125,8 @@ them to one spot.
   1 h, 1.5 h, 2 h, 3 h -- twelve stops, each one a tick mark, no odd
   second counts; brightness percentage and thickness stay free sliders
 - Settings in nine foldable sections with a small search line on top
+- Settings backup: export and import as readable JSON (SAF folder/file
+  picker, no storage permission)
 - Test button, live debug log, boot persistence
 
 ## The settings screen
@@ -177,6 +179,48 @@ timer), and it is a second selection mode of the app picker.
 Calls look like every other notification: same style, same animation, same
 per-app color, and the light duration ends them like any other burst. The
 app filter still wins: an app you excluded there never lights up.
+
+## Settings backup
+
+*Backup and restore* writes `aod-settings.json` into a folder you pick once,
+and reads it back from any file you pick. Both go through the Storage Access
+Framework (`DocumentExporter` / `DocumentImporter`), so the app needs **no
+storage permission** and keeps access only to what you chose.
+
+The format is pretty-printed JSON, UTF-8, written with `org.json` which is
+part of Android -- nothing to add, nothing to download:
+
+```json
+{
+  "format": "aod-settings",
+  "version": 1,
+  "app": "1.1.0",
+  "exported": "2026-11-20T12:34:56",
+  "settings": {
+    "style": "icons",
+    "timeout_sec": 300,
+    "filter_apps": ["org.example.messenger"],
+    "app_colors": "org.example.messenger=#FF00E5FF"
+  }
+}
+```
+
+Readable in any editor, and JSON escaping means quotes, backslashes, control
+characters and non-ASCII text survive a round trip unchanged.
+
+- One table (`SettingsSchema`) drives both directions: type, allowed choices
+  and the same numeric range the sliders offer. A hand-edited file cannot ask
+  for a 999999-second light or a 4000 dp icon; out-of-range numbers are
+  clamped, unknown choices are skipped.
+- Unknown keys are ignored, so a file from a newer version still imports what
+  this version understands, and a file that is not a settings backup at all
+  is refused before anything is written.
+- Exported: every setting, both app lists, the per-app colors and the camera
+  calibration (which is device specific -- re-detect it on another phone).
+  Not exported: transient state such as which sections are folded, whether
+  the accessibility service was seen on, and the picker's memory of packages
+  that once notified.
+- Import asks first, then refreshes the screen and re-evaluates the light.
 
 ## What the number under an icon counts
 

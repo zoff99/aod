@@ -34,6 +34,19 @@
     <string name="sec_time_sum">How long one light lasts, and the settings that trade brightness and smoothness against battery.</string>
     <string name="sec_when">When to light up</string>
     <string name="sec_when_sum">Which apps may light up, and the times and phone states in which the light stays off.</string>
+    <string name="sec_backup">Backup and restore</string>
+    <string name="sec_backup_sum">Save every setting to a plain text file you can read and edit, and put it back later or on another phone.</string>
+    <string name="btn_export_settings">Export settings\u2026</string>
+    <string name="set_export_sum">Writes aod-settings.json into a folder you pick once. Plain JSON text in UTF-8: readable in any editor, and quotes, backslashes and every other special character survive unchanged. It holds your settings, the two app lists and the per-app colors -- never notification content, because the app never has any. Exporting again replaces that file; long press the button to pick a different folder. The camera calibration was measured on this phone, so on a different phone run Detect camera cutout again.</string>
+    <string name="btn_import_settings">Import settings\u2026</string>
+    <string name="set_import_sum">Reads a settings file you pick and replaces the settings it contains, after asking you. Every value is checked against the same range the sliders offer, unknown keys are ignored, and a file written by a newer version still imports what this version understands. The screen refreshes right away and the light follows the new settings.</string>
+    <string name="export_ok">Settings exported</string>
+    <string name="export_failed">Export failed: %1$s</string>
+    <string name="import_done">Imported %1$d settings, skipped %2$d, ignored %3$d</string>
+    <string name="import_failed">Import failed: %1$s</string>
+    <string name="import_confirm_title">Replace your settings?</string>
+    <string name="import_confirm_text">The file replaces the settings it contains; your current ones are not kept. Export first if you want a way back.</string>
+    <string name="import_too_large">That file is too large to be a settings backup</string>
     <string name="sec_advanced">Advanced and testing</string>
     <string name="sec_advanced_sum">For phones without an always-on panel, plus the test light and the debug log.</string>
 

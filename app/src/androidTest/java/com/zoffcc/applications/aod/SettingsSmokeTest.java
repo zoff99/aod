@@ -3,6 +3,7 @@ package com.zoffcc.applications.aod;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.ServiceInfo;
 import android.view.View;
 import android.widget.EditText;
@@ -15,6 +16,10 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -51,6 +56,8 @@ public class SettingsSmokeTest
                 assertNotNull("app picker button missing", a.findViewById(R.id.btn_select_apps));
                 assertNotNull("persistent policy spinner missing", a.findViewById(R.id.sp_persistent_mode));
                 assertNotNull("always-allow picker button missing", a.findViewById(R.id.btn_persistent_apps));
+                assertNotNull("export button missing", a.findViewById(R.id.btn_export_settings));
+                assertNotNull("import button missing", a.findViewById(R.id.btn_import_settings));
             });
         }
     }
@@ -142,5 +149,63 @@ public class SettingsSmokeTest
         assertEquals(PersistentPolicy.CALLS_APPS, mode);
         assertTrue(PersistentPolicy.allow(mode, true, false));
         assertFalse(PersistentPolicy.allow(mode, false, false));
+    }
+
+    @Test
+    public void settingsBackupRoundTrips()
+    {
+        try (ActivityScenario<MainActivity> s = ActivityScenario.launch(MainActivity.class))
+        {
+            s.onActivity(a -> {
+                SharedPreferences p = Prefs.get(a);
+                int oldTimeout = Prefs.timeoutSec(a);
+                String oldStyle = p.getString(Prefs.STYLE, Prefs.STYLE_ICONS);
+                Set<String> oldApps = new HashSet<>(p.getStringSet(Prefs.FILTER_APPS, new HashSet<>()));
+                try
+                {
+                    p.edit().putInt(Prefs.TIMEOUT_SEC, 900)
+                            .putString(Prefs.STYLE, Prefs.STYLE_EDGE)
+                            .putStringSet(Prefs.FILTER_APPS,
+                                    new HashSet<>(Arrays.asList("org.example.a", "a.b.c"))).commit();
+
+                    String text = SettingsIo.export(a);
+                    assertTrue("the file must name its format", text.contains("aod-settings"));
+                    assertTrue("the file must be readable text", text.contains("\n"));
+                    assertTrue("the app list must be in the file", text.contains("a.b.c"));
+
+                    p.edit().putInt(Prefs.TIMEOUT_SEC, 60)
+                            .putString(Prefs.STYLE, Prefs.STYLE_DOT)
+                            .putStringSet(Prefs.FILTER_APPS, new HashSet<>()).commit();
+
+                    SettingsIo.Result r = SettingsIo.apply(a, text);
+                    assertTrue("import failed: " + r.error, r.ok());
+                    assertEquals(900, Prefs.timeoutSec(a));
+                    assertEquals(Prefs.STYLE_EDGE, p.getString(Prefs.STYLE, ""));
+                    assertTrue(p.getStringSet(Prefs.FILTER_APPS, new HashSet<>()).contains("a.b.c"));
+                }
+                catch (Exception e)
+                {
+                    throw new RuntimeException(e);
+                }
+                finally
+                {
+                    p.edit().putInt(Prefs.TIMEOUT_SEC, oldTimeout)
+                            .putString(Prefs.STYLE, oldStyle)
+                            .putStringSet(Prefs.FILTER_APPS, oldApps).commit();
+                }
+            });
+        }
+    }
+
+    @Test
+    public void importRejectsForeignFiles()
+    {
+        assertFalse("plain JSON is not a settings file",
+                SettingsIo.apply(target(), "{\"hello\":1}").ok());
+        assertFalse("rubbish is not a settings file",
+                SettingsIo.apply(target(), "not json at all").ok());
+        assertFalse("a future version must not be applied blindly",
+                SettingsIo.apply(target(),
+                        "{\"format\":\"aod-settings\",\"version\":99,\"settings\":{}}").ok());
     }
 }

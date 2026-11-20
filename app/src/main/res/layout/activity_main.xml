@@ -630,6 +630,33 @@
                 </LinearLayout>
             </LinearLayout>
 
+            <!-- section: backup -->
+            <LinearLayout android:id="@+id/hdr_backup" style="@style/SectionHeader"
+                android:tag="backup">
+                <ImageView android:layout_width="28dp" android:layout_height="28dp"
+                    android:src="@drawable/ic_chevron" android:importantForAccessibility="no" />
+                <TextView style="@style/SectionTitle" android:text="@string/sec_backup" />
+                <TextView style="@style/SectionCount" />
+            </LinearLayout>
+
+            <LinearLayout android:id="@+id/body_backup" style="@style/SectionBody">
+                <LinearLayout style="@style/SettingRow" android:tag="info">
+                    <TextView style="@style/SettingSummary" android:text="@string/sec_backup_sum" />
+                </LinearLayout>
+                <LinearLayout style="@style/SettingRow" android:tag="row|export backup save file json settings">
+                    <Button android:id="@+id/btn_export_settings" style="@style/BtnPrimary"
+                        android:layout_width="match_parent" android:layout_marginTop="10dp"
+                        android:text="@string/btn_export_settings" />
+                    <TextView style="@style/SettingSummary" android:text="@string/set_export_sum" />
+                </LinearLayout>
+                <LinearLayout style="@style/SettingRow" android:tag="row|import restore load file json backup">
+                    <Button android:id="@+id/btn_import_settings" style="@style/BtnSecondary"
+                        android:layout_width="match_parent" android:layout_marginTop="10dp"
+                        android:text="@string/btn_import_settings" />
+                    <TextView style="@style/SettingSummary" android:text="@string/set_import_sum" />
+                </LinearLayout>
+            </LinearLayout>
+
             <!-- section: advanced -->
             <LinearLayout android:id="@+id/hdr_advanced" style="@style/SectionHeader"
                 android:tag="advanced">

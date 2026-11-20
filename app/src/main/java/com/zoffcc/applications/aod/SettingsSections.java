@@ -37,15 +37,15 @@ final class SettingsSections
 {
     private static final int[] HEADERS = {
             R.id.hdr_basics, R.id.hdr_look, R.id.hdr_time, R.id.hdr_icons, R.id.hdr_icon_pos,
-            R.id.hdr_icon_count, R.id.hdr_when, R.id.hdr_cutout, R.id.hdr_advanced
+            R.id.hdr_icon_count, R.id.hdr_when, R.id.hdr_cutout, R.id.hdr_backup, R.id.hdr_advanced
     };
     private static final int[] BODIES = {
             R.id.body_basics, R.id.body_look, R.id.body_time, R.id.body_icons, R.id.body_icon_pos,
-            R.id.body_icon_count, R.id.body_when, R.id.body_cutout, R.id.body_advanced
+            R.id.body_icon_count, R.id.body_when, R.id.body_cutout, R.id.body_backup, R.id.body_advanced
     };
     /** Only the basics are open on a fresh install; the rest fold away. */
     private static final boolean[] DEFAULT_OPEN = {
-            true, false, false, false, false, false, false, false, false
+            true, false, false, false, false, false, false, false, false, false
     };
     private static final String OPEN_KEY = "sec_open_";
 

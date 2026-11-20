@@ -65,7 +65,13 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
     static CustomListAdapter adapter = null;
 
     private final Handler main_handler = new Handler(Looper.getMainLooper());
+    private static final int REQ_EXPORT_DIR = 4711;
+    private static final int REQ_IMPORT_FILE = 4712;
+    private static final String IMPORT_TMP = "aod-import.json";
+
     private SharedPreferences prefs;
+    private DocumentExporter document_exporter;
+    private DocumentImporter document_importer;
     private TextView status_text;
     private items_receiver itemsReceiver;
     private android.database.ContentObserver brightnessObserver;
@@ -110,6 +116,7 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
         bindSliders();
         bindTextInputs();
         bindButtons();
+        bindBackupButtons();
         // sections and search last: the search index reads the labels and the
         // spinner choices, so every control has to be populated first
         SettingsSections.install(this, prefs);
@@ -738,6 +745,142 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
     private static String minutesToHhMm(int minutes)
     {
         return String.format(Locale.US, "%02d:%02d", minutes / 60, minutes % 60);
+    }
+
+    // ---- settings backup ---------------------------------------------------
+
+    /**
+     * Export and import go through the same Storage Access Framework helpers
+     * the other apps of this project use: the exporter remembers the folder
+     * you picked once, the importer copies the picked file into the cache so
+     * the read happens off the UI thread.
+     */
+    private void bindBackupButtons()
+    {
+        document_exporter = new DocumentExporter(this, "aod_settings_dir", REQ_EXPORT_DIR);
+        document_importer = new DocumentImporter(this, REQ_IMPORT_FILE);
+
+        findViewById(R.id.btn_export_settings).setOnClickListener(v ->
+                document_exporter.ensureDirectory(this::exportSettings,
+                        err -> toast(getString(R.string.export_failed, err))));
+
+        // the folder is remembered; long press picks a different one
+        findViewById(R.id.btn_export_settings).setOnLongClickListener(v -> {
+            document_exporter.changeDirectory(this::exportSettings,
+                    err -> toast(getString(R.string.export_failed, err)));
+            return true;
+        });
+
+        findViewById(R.id.btn_import_settings).setOnClickListener(v ->
+                new AlertDialog.Builder(this)
+                        .setTitle(R.string.import_confirm_title)
+                        .setMessage(R.string.import_confirm_text)
+                        .setPositiveButton(R.string.yes, (d, w) -> startImport())
+                        .setNegativeButton(R.string.no, null)
+                        .show());
+    }
+
+    private void startImport()
+    {
+        document_importer.importFile(getCacheDir().getAbsolutePath(), IMPORT_TMP, null,
+                new DocumentImporter.ImportCallback()
+                {
+                    @Override
+                    public void onSuccess() { applyImportedFile(); }
+
+                    @Override
+                    public void onError(String message)
+                    {
+                        toast(getString(R.string.import_failed, message));
+                    }
+                });
+    }
+
+    /** The picked file is in the cache now: read it, apply it, refresh the UI. */
+    private void applyImportedFile()
+    {
+        java.io.File file = new java.io.File(getCacheDir(), IMPORT_TMP);
+        String text;
+        try
+        {
+            text = SettingsIo.readUtf8(file);
+        }
+        catch (Exception e)
+        {
+            String why = "file too large".equals(e.getMessage())
+                    ? getString(R.string.import_too_large) : String.valueOf(e.getMessage());
+            toast(getString(R.string.import_failed, why));
+            return;
+        }
+        finally
+        {
+            try { file.delete(); } catch (Exception ignored) {}
+        }
+        SettingsIo.Result r = SettingsIo.apply(this, text);
+        if (!r.ok())
+        {
+            toast(getString(R.string.import_failed, r.error));
+            return;
+        }
+        toast(getString(R.string.import_done, r.applied, r.skipped, r.unknown));
+        sendLocal(notificationobserver.ACTION_REEVAL);
+        recreate();
+    }
+
+    /** Runs on a worker thread: SAF file creation and writing are slow. */
+    private void exportSettings()
+    {
+        new Thread(() -> {
+            String text;
+            try
+            {
+                text = SettingsIo.export(this);
+            }
+            catch (Exception e)
+            {
+                postToast(getString(R.string.export_failed, String.valueOf(e)));
+                return;
+            }
+            Uri uri = document_exporter.createFileUri(SettingsIo.FILE_NAME, SettingsIo.MIME);
+            if (uri == null)
+            {
+                postToast(getString(R.string.export_failed, "no file created"));
+                return;
+            }
+            try (java.io.OutputStream out = getContentResolver().openOutputStream(uri, "w"))
+            {
+                out.write(text.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                out.flush();
+                Dbg.log("settings", "exported " + text.length() + " chars");
+                postToast(getString(R.string.export_ok));
+            }
+            catch (Exception e)
+            {
+                postToast(getString(R.string.export_failed, String.valueOf(e)));
+            }
+        }).start();
+    }
+
+    private void toast(String message)
+    {
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+    }
+
+    private void postToast(String message)
+    {
+        main_handler.post(() -> toast(message));
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data)
+    {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (document_exporter != null
+                && document_exporter.handleActivityResult(requestCode, resultCode, data)) { return; }
+        if (document_importer != null)
+        {
+            document_importer.handleActivityResult(requestCode, resultCode, data);
+        }
     }
 
     private void bindButtons()

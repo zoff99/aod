@@ -55,6 +55,13 @@ Everything it takes from a notification is metadata:
 | `extras.getParcelable("android.mediaSession")` | skip media players (a token, no text) |
 | `extras.getString("android.template")` | the style **class name**, e.g. `android.app.Notification$MediaStyle` or `$CallStyle`; compared inline, never kept |
 
+The settings backup contains configuration only: switches, numbers, style
+names, the two app lists (package names) and the per-app colors. There is no
+notification content in it, for the simple reason that the app never has
+any. Export and import use the Storage Access Framework, so no storage
+permission is requested and the app can only touch the folder or file you
+pick.
+
 A notification's *symbol* is drawn from the posting app's own resources, by
 resource id, read-only. An app that supplies a bitmap or URI icon instead of a
 resource is ignored — such an icon could be a photo, so it is never loaded and
