@@ -128,7 +128,7 @@ public final class Prefs
         return c.getApplicationContext().getSharedPreferences(FILE, Context.MODE_PRIVATE);
     }
 
-    public static boolean enabled(Context c) { return get(c).getBoolean(ENABLED, true); }
+    public static boolean enabled(Context c) { return get(c).getBoolean(ENABLED, SettingsSchema.defBool(ENABLED)); }
 
     /** True once the accessibility service has been seen enabled on this
      *  device. Guards the automatic restore: a first install still asks. */
@@ -141,64 +141,64 @@ public final class Prefs
             Dbg.log("restore", "accessibility seen enabled: automatic restore armed");
         }
     }
-    public static boolean aodLight(Context c) { return get(c).getBoolean(AOD_LIGHT, true); }
-    public static boolean screenOnLight(Context c) { return get(c).getBoolean(SCREEN_ON_LIGHT, true); }
-    public static boolean doubleTapWake(Context c) { return get(c).getBoolean(DOUBLE_TAP_WAKE, false); }
-    public static boolean clearOnUnlock(Context c) { return get(c).getBoolean(CLEAR_ON_UNLOCK, false); }
-    public static boolean relightRelock(Context c) { return get(c).getBoolean(RELIGHT_RELOCK, true); }
+    public static boolean aodLight(Context c) { return get(c).getBoolean(AOD_LIGHT, SettingsSchema.defBool(AOD_LIGHT)); }
+    public static boolean screenOnLight(Context c) { return get(c).getBoolean(SCREEN_ON_LIGHT, SettingsSchema.defBool(SCREEN_ON_LIGHT)); }
+    public static boolean doubleTapWake(Context c) { return get(c).getBoolean(DOUBLE_TAP_WAKE, SettingsSchema.defBool(DOUBLE_TAP_WAKE)); }
+    public static boolean clearOnUnlock(Context c) { return get(c).getBoolean(CLEAR_ON_UNLOCK, SettingsSchema.defBool(CLEAR_ON_UNLOCK)); }
+    public static boolean relightRelock(Context c) { return get(c).getBoolean(RELIGHT_RELOCK, SettingsSchema.defBool(RELIGHT_RELOCK)); }
     /** Opt-in only: the fallback canvas is an activity that turns the panel
      *  on, so it must never be used on a phone that has its own AOD. */
-    public static boolean canvasFallback(Context c) { return get(c).getBoolean(CANVAS_FALLBACK, false); }
+    public static boolean canvasFallback(Context c) { return get(c).getBoolean(CANVAS_FALLBACK, SettingsSchema.defBool(CANVAS_FALLBACK)); }
     /** On by default: the whole panel is covered. Switching it off leaves
      *  the bottom third exactly as the phone draws it. */
-    public static boolean blackoutFull(Context c) { return get(c).getBoolean(BLACKOUT_FULL, true); }
+    public static boolean blackoutFull(Context c) { return get(c).getBoolean(BLACKOUT_FULL, SettingsSchema.defBool(BLACKOUT_FULL)); }
 
-    public static String style(Context c) { return get(c).getString(STYLE, STYLE_ICONS); }
-    public static String anim(Context c) { return get(c).getString(ANIM, ANIM_PULSE); }
-    public static boolean eco(Context c) { return get(c).getBoolean(ECO, false); }
-    public static int color(Context c) { return get(c).getInt(COLOR, DEFAULT_COLOR); }
-    public static boolean autoColor(Context c) { return get(c).getBoolean(AUTO_COLOR, true); }
+    public static String style(Context c) { return get(c).getString(STYLE, SettingsSchema.defString(STYLE)); }
+    public static String anim(Context c) { return get(c).getString(ANIM, SettingsSchema.defString(ANIM)); }
+    public static boolean eco(Context c) { return get(c).getBoolean(ECO, SettingsSchema.defBool(ECO)); }
+    public static int color(Context c) { return get(c).getInt(COLOR, SettingsSchema.defInt(COLOR)); }
+    public static boolean autoColor(Context c) { return get(c).getBoolean(AUTO_COLOR, SettingsSchema.defBool(AUTO_COLOR)); }
     /** Own brightness of the always-on field, only used when the phone's
      *  own brightness is not wanted. */
-    public static int brightness(Context c) { return get(c).getInt(BRIGHTNESS, 40); }
+    public static int brightness(Context c) { return get(c).getInt(BRIGHTNESS, SettingsSchema.defInt(BRIGHTNESS)); }
     /** On by default: the always-on field asks for no brightness at all and
      *  is painted on an awake panel, so the phone's own brightness drives
      *  it. Off: the percentage below is requested as an own brightness. */
-    public static boolean followBrightness(Context c) { return get(c).getBoolean(FOLLOW_BRIGHTNESS, true); }
+    public static boolean followBrightness(Context c) { return get(c).getBoolean(FOLLOW_BRIGHTNESS, SettingsSchema.defBool(FOLLOW_BRIGHTNESS)); }
     /** On by default: the dark always-on field is painted while the panel
      *  stays awake, which is what lets the phone's own brightness drive it.
      *  Off: the panel dozes - cheaper, but pinned to the phone's own fixed
      *  always-on brightness unless an own brightness is requested. */
-    public static boolean awakePanel(Context c) { return get(c).getBoolean(AWAKE_PANEL, false); }
-    public static int strokeDp(Context c) { return get(c).getInt(STROKE_DP, 5); }
-    public static int dotX(Context c) { return get(c).getInt(DOT_X, 50); }
+    public static boolean awakePanel(Context c) { return get(c).getBoolean(AWAKE_PANEL, SettingsSchema.defBool(AWAKE_PANEL)); }
+    public static int strokeDp(Context c) { return get(c).getInt(STROKE_DP, SettingsSchema.defInt(STROKE_DP)); }
+    public static int dotX(Context c) { return get(c).getInt(DOT_X, SettingsSchema.defInt(DOT_X)); }
 
     /** Which artwork the icons style draws: the small symbol that app posts
      *  to the status bar (the default), or its launcher icon. */
-    public static String iconSource(Context c) { return get(c).getString(ICON_SOURCE, ICON_SRC_NOTIFICATION); }
+    public static String iconSource(Context c) { return get(c).getString(ICON_SOURCE, SettingsSchema.defString(ICON_SOURCE)); }
     public static boolean iconFromNotification(Context c)
     { return ICON_SRC_NOTIFICATION.equals(iconSource(c)); }
 
-    public static String iconTint(Context c) { return get(c).getString(ICON_TINT, ICON_TINT_COLOR); }
-    public static int iconSizeDp(Context c) { return get(c).getInt(ICON_SIZE_DP, 18); }
-    public static boolean iconPlate(Context c) { return get(c).getBoolean(ICON_PLATE, false); }
-    public static boolean iconShift(Context c) { return get(c).getBoolean(ICON_SHIFT, true); }
+    public static String iconTint(Context c) { return get(c).getString(ICON_TINT, SettingsSchema.defString(ICON_TINT)); }
+    public static int iconSizeDp(Context c) { return get(c).getInt(ICON_SIZE_DP, SettingsSchema.defInt(ICON_SIZE_DP)); }
+    public static boolean iconPlate(Context c) { return get(c).getBoolean(ICON_PLATE, SettingsSchema.defBool(ICON_PLATE)); }
+    public static boolean iconShift(Context c) { return get(c).getBoolean(ICON_SHIFT, SettingsSchema.defBool(ICON_SHIFT)); }
 
-    public static boolean iconCenterH(Context c) { return get(c).getBoolean(ICON_CENTER_H, true); }
-    public static boolean iconLastRowCenter(Context c) { return get(c).getBoolean(ICON_LAST_ROW_CENTER, true); }
-    public static int iconOffsetXDp(Context c) { return get(c).getInt(ICON_OFFSET_X_DP, 0); }
-    public static String iconYAnchor(Context c) { return get(c).getString(ICON_Y_ANCHOR, ICON_Y_CAMERA); }
-    public static int iconOffsetYDp(Context c) { return get(c).getInt(ICON_OFFSET_Y_DP, 92); }
-    public static int iconPerRow(Context c) { return get(c).getInt(ICON_PER_ROW, 0); }
-    public static int iconGapDp(Context c) { return get(c).getInt(ICON_GAP_DP, 12); }
-    public static int iconRowGapDp(Context c) { return get(c).getInt(ICON_ROW_GAP_DP, 12); }
-    public static int iconMax(Context c) { return get(c).getInt(ICON_MAX, 12); }
-    public static boolean iconClip(Context c) { return get(c).getBoolean(ICON_CLIP, true); }
+    public static boolean iconCenterH(Context c) { return get(c).getBoolean(ICON_CENTER_H, SettingsSchema.defBool(ICON_CENTER_H)); }
+    public static boolean iconLastRowCenter(Context c) { return get(c).getBoolean(ICON_LAST_ROW_CENTER, SettingsSchema.defBool(ICON_LAST_ROW_CENTER)); }
+    public static int iconOffsetXDp(Context c) { return get(c).getInt(ICON_OFFSET_X_DP, SettingsSchema.defInt(ICON_OFFSET_X_DP)); }
+    public static String iconYAnchor(Context c) { return get(c).getString(ICON_Y_ANCHOR, SettingsSchema.defString(ICON_Y_ANCHOR)); }
+    public static int iconOffsetYDp(Context c) { return get(c).getInt(ICON_OFFSET_Y_DP, SettingsSchema.defInt(ICON_OFFSET_Y_DP)); }
+    public static int iconPerRow(Context c) { return get(c).getInt(ICON_PER_ROW, SettingsSchema.defInt(ICON_PER_ROW)); }
+    public static int iconGapDp(Context c) { return get(c).getInt(ICON_GAP_DP, SettingsSchema.defInt(ICON_GAP_DP)); }
+    public static int iconRowGapDp(Context c) { return get(c).getInt(ICON_ROW_GAP_DP, SettingsSchema.defInt(ICON_ROW_GAP_DP)); }
+    public static int iconMax(Context c) { return get(c).getInt(ICON_MAX, SettingsSchema.defInt(ICON_MAX)); }
+    public static boolean iconClip(Context c) { return get(c).getBoolean(ICON_CLIP, SettingsSchema.defBool(ICON_CLIP)); }
 
-    public static boolean iconCount(Context c) { return get(c).getBoolean(ICON_COUNT, true); }
-    public static boolean iconCountAlways(Context c) { return get(c).getBoolean(ICON_COUNT_ALWAYS, false); }
-    public static int iconCountSizeDp(Context c) { return get(c).getInt(ICON_COUNT_SIZE_DP, 13); }
-    public static boolean iconCountBadge(Context c) { return get(c).getBoolean(ICON_COUNT_BADGE, false); }
+    public static boolean iconCount(Context c) { return get(c).getBoolean(ICON_COUNT, SettingsSchema.defBool(ICON_COUNT)); }
+    public static boolean iconCountAlways(Context c) { return get(c).getBoolean(ICON_COUNT_ALWAYS, SettingsSchema.defBool(ICON_COUNT_ALWAYS)); }
+    public static int iconCountSizeDp(Context c) { return get(c).getInt(ICON_COUNT_SIZE_DP, SettingsSchema.defInt(ICON_COUNT_SIZE_DP)); }
+    public static boolean iconCountBadge(Context c) { return get(c).getBoolean(ICON_COUNT_BADGE, SettingsSchema.defBool(ICON_COUNT_BADGE)); }
 
     /**
      * What the number under an icon means: the notifications of that app, or
@@ -206,11 +206,11 @@ public final class Prefs
      * often a count of unread messages rather than of notifications.
      */
     public static String iconCountSource(Context c)
-    { return get(c).getString(ICON_COUNT_SOURCE, ICON_COUNT_SRC_APP); }
+    { return get(c).getString(ICON_COUNT_SOURCE, SettingsSchema.defString(ICON_COUNT_SOURCE)); }
     public static boolean iconCountFromApp(Context c)
     { return ICON_COUNT_SRC_APP.equals(iconCountSource(c)); }
     /** Add the counters of several notifications instead of taking the highest. */
-    public static boolean iconCountAdd(Context c) { return get(c).getBoolean(ICON_COUNT_ADD, false); }
+    public static boolean iconCountAdd(Context c) { return get(c).getBoolean(ICON_COUNT_ADD, SettingsSchema.defBool(ICON_COUNT_ADD)); }
 
     /** Position and spacing only: colors, size, plate and the count settings
      *  are deliberately left alone by "reset position". */
@@ -224,17 +224,17 @@ public final class Prefs
                 .apply();
     }
 
-    public static int timeoutSec(Context c) { return get(c).getInt(TIMEOUT_SEC, 300); }
-    public static boolean interval(Context c) { return get(c).getBoolean(INTERVAL, false); }
-    public static int intervalOnSec(Context c) { return get(c).getInt(INTERVAL_ON_SEC, 4); }
-    public static int intervalOffSec(Context c) { return get(c).getInt(INTERVAL_OFF_SEC, 6); }
-    public static int speedMs(Context c) { return get(c).getInt(SPEED_MS, 1600); }
+    public static int timeoutSec(Context c) { return get(c).getInt(TIMEOUT_SEC, SettingsSchema.defInt(TIMEOUT_SEC)); }
+    public static boolean interval(Context c) { return get(c).getBoolean(INTERVAL, SettingsSchema.defBool(INTERVAL)); }
+    public static int intervalOnSec(Context c) { return get(c).getInt(INTERVAL_ON_SEC, SettingsSchema.defInt(INTERVAL_ON_SEC)); }
+    public static int intervalOffSec(Context c) { return get(c).getInt(INTERVAL_OFF_SEC, SettingsSchema.defInt(INTERVAL_OFF_SEC)); }
+    public static int speedMs(Context c) { return get(c).getInt(SPEED_MS, SettingsSchema.defInt(SPEED_MS)); }
 
-    public static boolean night(Context c) { return get(c).getBoolean(NIGHT, false); }
-    public static int nightStart(Context c) { return get(c).getInt(NIGHT_START, 23 * 60); }
-    public static int nightEnd(Context c) { return get(c).getInt(NIGHT_END, 7 * 60); }
-    public static boolean respectDnd(Context c) { return get(c).getBoolean(RESPECT_DND, false); }
-    public static boolean batteryLight(Context c) { return get(c).getBoolean(BATTERY_LIGHT, false); }
+    public static boolean night(Context c) { return get(c).getBoolean(NIGHT, SettingsSchema.defBool(NIGHT)); }
+    public static int nightStart(Context c) { return get(c).getInt(NIGHT_START, SettingsSchema.defInt(NIGHT_START)); }
+    public static int nightEnd(Context c) { return get(c).getInt(NIGHT_END, SettingsSchema.defInt(NIGHT_END)); }
+    public static boolean respectDnd(Context c) { return get(c).getBoolean(RESPECT_DND, SettingsSchema.defBool(RESPECT_DND)); }
+    public static boolean batteryLight(Context c) { return get(c).getBoolean(BATTERY_LIGHT, SettingsSchema.defBool(BATTERY_LIGHT)); }
     /**
      * Persistent-notification policy. Migrates the old on/off switch once:
      * "ignore" becomes "allow calls and the apps you pick", because a phone
@@ -243,7 +243,7 @@ public final class Prefs
     public static String persistentMode(Context c)
     {
         SharedPreferences p = get(c);
-        String mode = p.getString(PERSISTENT_MODE, null);
+        String mode = p.getString(PERSISTENT_MODE, SettingsSchema.defString(PERSISTENT_MODE));
         if (PersistentPolicy.valid(mode)) { return mode; }
         String migrated = p.getBoolean(IGNORE_PERSISTENT, true)
                 ? PersistentPolicy.CALLS_APPS : PersistentPolicy.ALL;
@@ -317,9 +317,9 @@ public final class Prefs
 
     /** What the app picker lists: everything, or only the picked ones, or
      *  the ones not picked yet - useful to finish a long list. */
-    public static String pickerFilter(Context c) { return get(c).getString(PICKER_FILTER, PICKER_ALL); }
+    public static String pickerFilter(Context c) { return get(c).getString(PICKER_FILTER, SettingsSchema.defString(PICKER_FILTER)); }
 
-    public static boolean filterSelected(Context c) { return "selected".equals(get(c).getString(FILTER_MODE, "all")); }
+    public static boolean filterSelected(Context c) { return "selected".equals(get(c).getString(FILTER_MODE, SettingsSchema.defString(FILTER_MODE))); }
 
     /**
      * Remember that a package has posted a notification, so the app picker can
@@ -357,7 +357,7 @@ public final class Prefs
     /** Per-app color override, or {@link Color#TRANSPARENT} when none is stored. */
     public static int appColor(Context c, String pkg)
     {
-        String all = get(c).getString(APP_COLORS, "");
+        String all = get(c).getString(APP_COLORS, SettingsSchema.defString(APP_COLORS));
         for (String entry : all.split(";"))
         {
             int eq = entry.indexOf('=');
@@ -373,7 +373,7 @@ public final class Prefs
     public static void setAppColor(Context c, String pkg, int color)
     {
         StringBuilder sb = new StringBuilder();
-        String all = get(c).getString(APP_COLORS, "");
+        String all = get(c).getString(APP_COLORS, SettingsSchema.defString(APP_COLORS));
         for (String entry : all.split(";"))
         {
             int eq = entry.indexOf('=');

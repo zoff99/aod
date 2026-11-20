@@ -140,4 +140,76 @@ public class SettingsSchemaTest
         assertNull(SettingsSchema.find("no_such_setting"));
         assertNull(SettingsSchema.find(null));
     }
+
+    @Test
+    public void everyFieldCarriesADefaultOfItsOwnType()
+    {
+        for (SettingsSchema.Field f : SettingsSchema.FIELDS)
+        {
+            switch (f.type)
+            {
+                case SettingsSchema.BOOL:
+                    assertTrue("bool default missing for " + f.key, f.def instanceof Boolean);
+                    break;
+                case SettingsSchema.INT:
+                    assertTrue("int default missing for " + f.key, f.def instanceof Integer);
+                    break;
+                case SettingsSchema.STRING:
+                    assertTrue("string default missing for " + f.key, f.def instanceof String);
+                    break;
+                default:
+                    break;   // sets: empty, or a living default resolved at runtime
+            }
+        }
+    }
+
+    @Test
+    public void everyIntDefaultIsInsideItsOwnRange()
+    {
+        for (SettingsSchema.Field f : SettingsSchema.FIELDS)
+        {
+            if (f.type != SettingsSchema.INT) { continue; }
+            int def = (Integer) f.def;
+            assertTrue("default of " + f.key + " is outside its range",
+                    def >= f.min && def <= f.max);
+            assertEquals(def, SettingsSchema.clamp(f, def));
+        }
+    }
+
+    @Test
+    public void everyStringDefaultIsAnAllowedChoice()
+    {
+        for (SettingsSchema.Field f : SettingsSchema.FIELDS)
+        {
+            if (f.type != SettingsSchema.STRING) { continue; }
+            assertTrue("default of " + f.key + " is not an allowed value",
+                    SettingsSchema.accepts(f, (String) f.def));
+        }
+    }
+
+    @Test
+    public void theDefaultsTheAppShipsWith()
+    {
+        // locked on purpose: a change here is a change of behaviour and must
+        // be a deliberate edit, not a side effect
+        assertEquals(300, SettingsSchema.defInt(Prefs.TIMEOUT_SEC));
+        assertEquals(18, SettingsSchema.defInt(Prefs.ICON_SIZE_DP));
+        assertEquals(40, SettingsSchema.defInt(Prefs.BRIGHTNESS));
+        assertEquals(Prefs.DEFAULT_COLOR, SettingsSchema.defInt(Prefs.COLOR));
+        assertEquals(Prefs.STYLE_ICONS, SettingsSchema.defString(Prefs.STYLE));
+        assertEquals(PersistentPolicy.CALLS_APPS, SettingsSchema.defString(Prefs.PERSISTENT_MODE));
+        assertTrue(SettingsSchema.defBool(Prefs.ENABLED));
+        assertFalse(SettingsSchema.defBool(Prefs.AWAKE_PANEL));
+        assertFalse(SettingsSchema.defBool(Prefs.ICON_COUNT_BADGE));
+    }
+
+    @Test
+    public void defaultLookupsOfUnknownKeysAreHarmless()
+    {
+        assertFalse(SettingsSchema.defBool("no_such_key"));
+        assertEquals(0, SettingsSchema.defInt("no_such_key"));
+        assertEquals("", SettingsSchema.defString("no_such_key"));
+        assertEquals(0, SettingsSchema.defInt(Prefs.STYLE));      // wrong type
+        assertEquals("", SettingsSchema.defString(Prefs.ENABLED));
+    }
 }

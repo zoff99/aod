@@ -4,6 +4,11 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+
+import org.json.JSONObject;
+
+import java.util.HashMap;
+import java.util.Map;
 import android.content.pm.ServiceInfo;
 import android.view.View;
 import android.widget.EditText;
@@ -204,8 +209,85 @@ public class SettingsSmokeTest
                 SettingsIo.apply(target(), "{\"hello\":1}").ok());
         assertFalse("rubbish is not a settings file",
                 SettingsIo.apply(target(), "not json at all").ok());
-        assertFalse("a future version must not be applied blindly",
+        assertTrue("a newer file must still import what this version knows",
                 SettingsIo.apply(target(),
                         "{\"format\":\"aod-settings\",\"version\":99,\"settings\":{}}").ok());
+        assertFalse("a file without a version is refused",
+                SettingsIo.apply(target(),
+                        "{\"format\":\"aod-settings\",\"settings\":{}}").ok());
+    }
+
+    @Test
+    public void exportWritesUntouchedSettingsToo()
+    {
+        try (ActivityScenario<MainActivity> s = ActivityScenario.launch(MainActivity.class))
+        {
+            s.onActivity(a -> {
+                SharedPreferences p = Prefs.get(a);
+                Map<String, ?> saved = new HashMap<>(p.getAll());
+                try
+                {
+                    p.edit().clear().commit();
+                    String text = SettingsIo.export(a);
+                    JSONObject settings = new JSONObject(text).getJSONObject("settings");
+                    for (SettingsSchema.Field f : SettingsSchema.FIELDS)
+                    {
+                        assertTrue("untouched setting missing from the backup: " + f.key,
+                                settings.has(f.key));
+                    }
+                    assertEquals(SettingsSchema.defInt(Prefs.TIMEOUT_SEC),
+                            settings.getInt(Prefs.TIMEOUT_SEC));
+                    assertEquals(SettingsSchema.defBool(Prefs.AWAKE_PANEL),
+                            settings.getBoolean(Prefs.AWAKE_PANEL));
+                    assertEquals(SettingsSchema.defString(Prefs.STYLE),
+                            settings.getString(Prefs.STYLE));
+                }
+                catch (Exception e)
+                {
+                    throw new RuntimeException(e);
+                }
+                finally
+                {
+                    restore(p, saved);
+                }
+            });
+        }
+    }
+
+    @Test
+    public void importKeepsValidSettingsAndIgnoresRemovedOnes()
+    {
+        String file = "{\"format\":\"aod-settings\",\"version\":99,\"settings\":{"
+                + "\"timeout_sec\":900,\"a_setting_from_the_future\":true,"
+                + "\"another_removed_one\":\"x\"}}";
+        SharedPreferences p = Prefs.get(target());
+        int old = Prefs.timeoutSec(target());
+        try
+        {
+            SettingsIo.Result r = SettingsIo.apply(target(), file);
+            assertTrue("import failed: " + r.error, r.ok());
+            assertEquals("the known setting must be applied", 1, r.applied);
+            assertEquals("removed settings must be ignored", 2, r.unknown);
+            assertEquals(900, Prefs.timeoutSec(target()));
+        }
+        finally
+        {
+            p.edit().putInt(Prefs.TIMEOUT_SEC, old).commit();
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void restore(SharedPreferences p, Map<String, ?> saved)
+    {
+        SharedPreferences.Editor ed = p.edit().clear();
+        for (Map.Entry<String, ?> e : saved.entrySet())
+        {
+            Object v = e.getValue();
+            if (v instanceof Boolean) { ed.putBoolean(e.getKey(), (Boolean) v); }
+            else if (v instanceof Integer) { ed.putInt(e.getKey(), (Integer) v); }
+            else if (v instanceof String) { ed.putString(e.getKey(), (String) v); }
+            else if (v instanceof Set) { ed.putStringSet(e.getKey(), new HashSet<>((Set<String>) v)); }
+        }
+        ed.commit();
     }
 }

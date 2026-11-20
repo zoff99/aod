@@ -193,7 +193,7 @@ part of Android -- nothing to add, nothing to download:
 ```json
 {
   "format": "aod-settings",
-  "version": 1,
+  "version": 2,
   "app": "1.1.0",
   "exported": "2026-11-20T12:34:56",
   "settings": {
@@ -208,13 +208,20 @@ part of Android -- nothing to add, nothing to download:
 Readable in any editor, and JSON escaping means quotes, backslashes, control
 characters and non-ASCII text survive a round trip unchanged.
 
-- One table (`SettingsSchema`) drives both directions: type, allowed choices
-  and the same numeric range the sliders offer. A hand-edited file cannot ask
-  for a 999999-second light or a 4000 dp icon; out-of-range numbers are
-  clamped, unknown choices are skipped.
-- Unknown keys are ignored, so a file from a newer version still imports what
-  this version understands, and a file that is not a settings backup at all
-  is refused before anything is written.
+- **A complete snapshot, not a diff.** Every setting is written with its
+  *effective* value, including the ones never touched. Defaults live in one
+  table (`SettingsSchema`) that `Prefs`, the settings screen and the backup
+  all read, so if a later version changes a default, importing an old backup
+  still restores exactly what that user had.
+- One table drives both directions: type, allowed choices and the same
+  numeric range the sliders offer. A hand-edited file cannot ask for a
+  999999-second light or a 4000 dp icon; out-of-range numbers are clamped,
+  unknown choices are skipped.
+- **Removed settings are ignored, the rest still imports.** Keys are
+  validated one by one, so a file from a newer version imports everything
+  this version knows and silently counts the rest as ignored. Settings the
+  file does not mention keep their current value. A file that is not a
+  settings backup at all is refused before anything is written.
 - Exported: every setting, both app lists, the per-app colors and the camera
   calibration (which is device specific -- re-detect it on another phone).
   Not exported: transient state such as which sections are folded, whether

@@ -70,12 +70,12 @@ public final class CutoutLocator
         int h = size.y;
         Rect r;
 
-        int left = Prefs.get(c).getInt(Prefs.CUTOUT_LEFT, -1);
-        int top = Prefs.get(c).getInt(Prefs.CUTOUT_TOP, -1);
-        int right = Prefs.get(c).getInt(Prefs.CUTOUT_RIGHT, -1);
-        int bottom = Prefs.get(c).getInt(Prefs.CUTOUT_BOTTOM, -1);
-        int resW = Prefs.get(c).getInt(Prefs.CUTOUT_RES_W, 0);
-        int resH = Prefs.get(c).getInt(Prefs.CUTOUT_RES_H, 0);
+        int left = Prefs.get(c).getInt(Prefs.CUTOUT_LEFT, SettingsSchema.defInt(Prefs.CUTOUT_LEFT));
+        int top = Prefs.get(c).getInt(Prefs.CUTOUT_TOP, SettingsSchema.defInt(Prefs.CUTOUT_TOP));
+        int right = Prefs.get(c).getInt(Prefs.CUTOUT_RIGHT, SettingsSchema.defInt(Prefs.CUTOUT_RIGHT));
+        int bottom = Prefs.get(c).getInt(Prefs.CUTOUT_BOTTOM, SettingsSchema.defInt(Prefs.CUTOUT_BOTTOM));
+        int resW = Prefs.get(c).getInt(Prefs.CUTOUT_RES_W, SettingsSchema.defInt(Prefs.CUTOUT_RES_W));
+        int resH = Prefs.get(c).getInt(Prefs.CUTOUT_RES_H, SettingsSchema.defInt(Prefs.CUTOUT_RES_H));
 
         if (left >= 0 && top >= 0 && right > left && bottom > top && resW > 0 && resH > 0)
         {
@@ -94,9 +94,9 @@ public final class CutoutLocator
         }
 
         // manual fine tuning
-        int offX = Prefs.get(c).getInt(Prefs.CUTOUT_OFF_X, 0);
-        int offY = Prefs.get(c).getInt(Prefs.CUTOUT_OFF_Y, 0);
-        int scalePct = Prefs.get(c).getInt(Prefs.CUTOUT_SCALE, 100);
+        int offX = Prefs.get(c).getInt(Prefs.CUTOUT_OFF_X, SettingsSchema.defInt(Prefs.CUTOUT_OFF_X));
+        int offY = Prefs.get(c).getInt(Prefs.CUTOUT_OFF_Y, SettingsSchema.defInt(Prefs.CUTOUT_OFF_Y));
+        int scalePct = Prefs.get(c).getInt(Prefs.CUTOUT_SCALE, SettingsSchema.defInt(Prefs.CUTOUT_SCALE));
         r.offset(offX, offY);
         if (scalePct != 100 && scalePct > 20 && scalePct < 400)
         {

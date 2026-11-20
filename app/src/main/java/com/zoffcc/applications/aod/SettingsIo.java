@@ -22,16 +22,18 @@ import java.util.TreeSet;
  * quotes, backslashes and control characters while writing everything else as
  * UTF-8, so even awkward values survive a round trip unchanged.
  *
- * Only the keys in {@link SettingsSchema} are written, and only those keys are
- * accepted back, with their type and range checked. Unknown keys are ignored,
- * so a file from a newer version cannot break an older one.
+ * Every key in {@link SettingsSchema} is written with its effective value,
+ * defaults included, so a backup is a complete snapshot rather than a diff
+ * against whatever the defaults happened to be. On the way back only those
+ * keys are accepted, with their type and range checked; keys this version
+ * does not have are ignored, so files from newer versions still import.
  */
 public final class SettingsIo
 {
     private SettingsIo() {}
 
     public static final String FORMAT = "aod-settings";
-    public static final int VERSION = 1;
+    public static final int VERSION = 2;
     public static final String FILE_NAME = "aod-settings.json";
     public static final String MIME = "application/json";
 
@@ -40,22 +42,28 @@ public final class SettingsIo
     {
         SharedPreferences p = Prefs.get(c);
         JSONObject settings = new JSONObject();
+        // Every setting is written, including the ones the user never touched:
+        // their effective value is written, not "absent". Otherwise a later
+        // version with different defaults would silently change them on import.
         for (SettingsSchema.Field f : SettingsSchema.FIELDS)
         {
-            if (!p.contains(f.key)) { continue; }
             switch (f.type)
             {
                 case SettingsSchema.BOOL:
-                    settings.put(f.key, p.getBoolean(f.key, false));
+                    settings.put(f.key, p.getBoolean(f.key, SettingsSchema.defBool(f.key)));
                     break;
                 case SettingsSchema.INT:
-                    settings.put(f.key, p.getInt(f.key, 0));
+                    settings.put(f.key, p.getInt(f.key, SettingsSchema.defInt(f.key)));
                     break;
                 case SettingsSchema.STRING:
-                    settings.put(f.key, p.getString(f.key, ""));
+                    settings.put(f.key, p.getString(f.key, SettingsSchema.defString(f.key)));
                     break;
                 case SettingsSchema.SET:
-                    Set<String> raw = p.getStringSet(f.key, new HashSet<>());
+                    // the always-allow list has a living default (the dialer),
+                    // so ask for its effective value rather than an empty set
+                    Set<String> raw = Prefs.PERSISTENT_APPS.equals(f.key)
+                            ? Prefs.persistentApps(c)
+                            : p.getStringSet(f.key, new HashSet<>());
                     JSONArray arr = new JSONArray();
                     for (String v : new TreeSet<>(raw)) { arr.put(v); }
                     settings.put(f.key, arr);
@@ -129,9 +137,12 @@ public final class SettingsIo
             return r;
         }
         int version = root.optInt("version", 0);
-        if (version < 1 || version > VERSION)
+        // Newer files are welcome: every key is validated on its own, so a
+        // setting this version no longer has is simply ignored. Only a file
+        // that does not claim a version at all is refused.
+        if (version < 1)
         {
-            r.error = "unsupported file version " + version;
+            r.error = "the file has no settings version";
             return r;
         }
         JSONObject settings = root.optJSONObject("settings");

@@ -251,8 +251,9 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
 
     // ---- settings wiring ------------------------------------------------------
 
-    private void bindSwitch(int id, String key, boolean def)
+    private void bindSwitch(int id, String key)
     {
+        boolean def = SettingsSchema.defBool(key);
         SwitchCompat sw = findViewById(id);
         sw.setChecked(prefs.getBoolean(key, def));
         sw.setOnCheckedChangeListener((b, checked) -> prefs.edit().putBoolean(key, checked).apply());
@@ -260,29 +261,29 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
 
     private void bindSwitches()
     {
-        bindSwitch(R.id.sw_enabled, Prefs.ENABLED, true);
-        bindSwitch(R.id.sw_aod_light, Prefs.AOD_LIGHT, true);
-        bindSwitch(R.id.sw_screen_on_light, Prefs.SCREEN_ON_LIGHT, true);
-        bindSwitch(R.id.sw_double_tap, Prefs.DOUBLE_TAP_WAKE, false);
-        bindSwitch(R.id.sw_clear_unlock, Prefs.CLEAR_ON_UNLOCK, false);
-        bindSwitch(R.id.sw_relight_relock, Prefs.RELIGHT_RELOCK, true);
-        bindSwitch(R.id.sw_canvas_fallback, Prefs.CANVAS_FALLBACK, false);
-        bindSwitch(R.id.sw_blackout_full, Prefs.BLACKOUT_FULL, true);
-        bindSwitch(R.id.sw_icon_plate, Prefs.ICON_PLATE, false);
-        bindSwitch(R.id.sw_icon_shift, Prefs.ICON_SHIFT, true);
-        bindSwitch(R.id.sw_icon_center_h, Prefs.ICON_CENTER_H, true);
-        bindSwitch(R.id.sw_icon_last_row, Prefs.ICON_LAST_ROW_CENTER, true);
-        bindSwitch(R.id.sw_icon_clip, Prefs.ICON_CLIP, true);
-        bindSwitch(R.id.sw_icon_count, Prefs.ICON_COUNT, true);
-        bindSwitch(R.id.sw_icon_count_always, Prefs.ICON_COUNT_ALWAYS, false);
-        bindSwitch(R.id.sw_icon_count_badge, Prefs.ICON_COUNT_BADGE, false);
-        bindSwitch(R.id.sw_icon_count_add, Prefs.ICON_COUNT_ADD, false);
-        bindSwitch(R.id.sw_auto_color, Prefs.AUTO_COLOR, true);
-        bindSwitch(R.id.sw_eco, Prefs.ECO, false);
-        bindSwitch(R.id.sw_interval, Prefs.INTERVAL, false);
-        bindSwitch(R.id.sw_night, Prefs.NIGHT, false);
-        bindSwitch(R.id.sw_dnd, Prefs.RESPECT_DND, false);
-        bindSwitch(R.id.sw_battery_light, Prefs.BATTERY_LIGHT, false);
+        bindSwitch(R.id.sw_enabled, Prefs.ENABLED);
+        bindSwitch(R.id.sw_aod_light, Prefs.AOD_LIGHT);
+        bindSwitch(R.id.sw_screen_on_light, Prefs.SCREEN_ON_LIGHT);
+        bindSwitch(R.id.sw_double_tap, Prefs.DOUBLE_TAP_WAKE);
+        bindSwitch(R.id.sw_clear_unlock, Prefs.CLEAR_ON_UNLOCK);
+        bindSwitch(R.id.sw_relight_relock, Prefs.RELIGHT_RELOCK);
+        bindSwitch(R.id.sw_canvas_fallback, Prefs.CANVAS_FALLBACK);
+        bindSwitch(R.id.sw_blackout_full, Prefs.BLACKOUT_FULL);
+        bindSwitch(R.id.sw_icon_plate, Prefs.ICON_PLATE);
+        bindSwitch(R.id.sw_icon_shift, Prefs.ICON_SHIFT);
+        bindSwitch(R.id.sw_icon_center_h, Prefs.ICON_CENTER_H);
+        bindSwitch(R.id.sw_icon_last_row, Prefs.ICON_LAST_ROW_CENTER);
+        bindSwitch(R.id.sw_icon_clip, Prefs.ICON_CLIP);
+        bindSwitch(R.id.sw_icon_count, Prefs.ICON_COUNT);
+        bindSwitch(R.id.sw_icon_count_always, Prefs.ICON_COUNT_ALWAYS);
+        bindSwitch(R.id.sw_icon_count_badge, Prefs.ICON_COUNT_BADGE);
+        bindSwitch(R.id.sw_icon_count_add, Prefs.ICON_COUNT_ADD);
+        bindSwitch(R.id.sw_auto_color, Prefs.AUTO_COLOR);
+        bindSwitch(R.id.sw_eco, Prefs.ECO);
+        bindSwitch(R.id.sw_interval, Prefs.INTERVAL);
+        bindSwitch(R.id.sw_night, Prefs.NIGHT);
+        bindSwitch(R.id.sw_dnd, Prefs.RESPECT_DND);
+        bindSwitch(R.id.sw_battery_light, Prefs.BATTERY_LIGHT);
     }
 
     /**
@@ -292,7 +293,7 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
     private void bindBrightnessRow()
     {
         SeekBar sb = findViewById(R.id.sb_brightness);
-        sb.setProgress(prefs.getInt(Prefs.BRIGHTNESS, 40) - 5);
+        sb.setProgress(prefs.getInt(Prefs.BRIGHTNESS, SettingsSchema.defInt(Prefs.BRIGHTNESS)) - 5);
         sb.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener()
         {
             @Override
@@ -370,7 +371,7 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
         sa.setDropDownViewResource(R.layout.item_spinner_dropdown);
         style.setAdapter(sa);
         String[] styleVals = {Prefs.STYLE_RING, Prefs.STYLE_EDGE, Prefs.STYLE_DOT, Prefs.STYLE_ICONS};
-        style.setSelection(indexOf(styleVals, prefs.getString(Prefs.STYLE, Prefs.STYLE_ICONS)));
+        style.setSelection(indexOf(styleVals, prefs.getString(Prefs.STYLE, SettingsSchema.defString(Prefs.STYLE))));
         style.setOnItemSelectedListener(new SimpleItemSelected()
         {
             @Override
@@ -386,7 +387,7 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
         aa.setDropDownViewResource(R.layout.item_spinner_dropdown);
         anim.setAdapter(aa);
         String[] animVals = {Prefs.ANIM_PULSE, Prefs.ANIM_ROTATE, Prefs.ANIM_FLASH, Prefs.ANIM_STEADY};
-        anim.setSelection(indexOf(animVals, prefs.getString(Prefs.ANIM, Prefs.ANIM_PULSE)));
+        anim.setSelection(indexOf(animVals, prefs.getString(Prefs.ANIM, SettingsSchema.defString(Prefs.ANIM))));
         anim.setOnItemSelectedListener(new SimpleItemSelected()
         {
             @Override
@@ -418,7 +419,7 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
         ta.setDropDownViewResource(R.layout.item_spinner_dropdown);
         tint.setAdapter(ta);
         String[] tintVals = {Prefs.ICON_TINT_COLOR, Prefs.ICON_TINT_WHITE, Prefs.ICON_TINT_BLACK};
-        tint.setSelection(indexOf(tintVals, prefs.getString(Prefs.ICON_TINT, Prefs.ICON_TINT_COLOR)));
+        tint.setSelection(indexOf(tintVals, prefs.getString(Prefs.ICON_TINT, SettingsSchema.defString(Prefs.ICON_TINT))));
         tint.setOnItemSelectedListener(new SimpleItemSelected()
         {
             @Override
@@ -466,7 +467,7 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
         ya.setDropDownViewResource(R.layout.item_spinner_dropdown);
         anchor.setAdapter(ya);
         String[] anchorVals = {Prefs.ICON_Y_CAMERA, Prefs.ICON_Y_TOP, Prefs.ICON_Y_BOTTOM};
-        anchor.setSelection(indexOf(anchorVals, prefs.getString(Prefs.ICON_Y_ANCHOR, Prefs.ICON_Y_CAMERA)));
+        anchor.setSelection(indexOf(anchorVals, prefs.getString(Prefs.ICON_Y_ANCHOR, SettingsSchema.defString(Prefs.ICON_Y_ANCHOR))));
         anchor.setOnItemSelectedListener(new SimpleItemSelected()
         {
             @Override
@@ -538,7 +539,7 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
         LinearLayout row = findViewById(R.id.color_row);
         int size = dp(40);
         int margin = dp(5);
-        int current = prefs.getInt(Prefs.COLOR, ColorDialogs.PRESET_COLORS[0]);
+        int current = prefs.getInt(Prefs.COLOR, SettingsSchema.defInt(Prefs.COLOR));
         for (int i = 0; i < ColorDialogs.PRESET_COLORS.length; i++)
         {
             final int color = ColorDialogs.PRESET_COLORS[i];
@@ -658,43 +659,43 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
     {
         bindTimeoutRow();
         bindSlider(R.id.sb_stroke, R.id.lbl_stroke,
-                prefs.getInt(Prefs.STROKE_DP, 5) - 2, R.string.lbl_stroke,
+                prefs.getInt(Prefs.STROKE_DP, SettingsSchema.defInt(Prefs.STROKE_DP)) - 2, R.string.lbl_stroke,
                 p -> prefs.edit().putInt(Prefs.STROKE_DP, p + 2).apply());
         bindSlider(R.id.sb_icon_size, R.id.lbl_icon_size,
-                prefs.getInt(Prefs.ICON_SIZE_DP, 18) - 18, R.string.lbl_icon_size,
+                prefs.getInt(Prefs.ICON_SIZE_DP, SettingsSchema.defInt(Prefs.ICON_SIZE_DP)) - 18, R.string.lbl_icon_size,
                 p -> prefs.edit().putInt(Prefs.ICON_SIZE_DP, p + 18).apply());
         bindSlider(R.id.sb_icon_offset_x, R.id.lbl_icon_offset_x,
-                prefs.getInt(Prefs.ICON_OFFSET_X_DP, 0) + 200, R.string.lbl_icon_offset_x, -200,
+                prefs.getInt(Prefs.ICON_OFFSET_X_DP, SettingsSchema.defInt(Prefs.ICON_OFFSET_X_DP)) + 200, R.string.lbl_icon_offset_x, -200,
                 p -> prefs.edit().putInt(Prefs.ICON_OFFSET_X_DP, p - 200).apply());
         bindSlider(R.id.sb_icon_offset_y, R.id.lbl_icon_offset_y,
-                prefs.getInt(Prefs.ICON_OFFSET_Y_DP, 92), R.string.lbl_icon_offset_y,
+                prefs.getInt(Prefs.ICON_OFFSET_Y_DP, SettingsSchema.defInt(Prefs.ICON_OFFSET_Y_DP)), R.string.lbl_icon_offset_y,
                 p -> prefs.edit().putInt(Prefs.ICON_OFFSET_Y_DP, p).apply());
         bindSlider(R.id.sb_icon_per_row, R.id.lbl_icon_per_row,
-                prefs.getInt(Prefs.ICON_PER_ROW, 0), R.string.lbl_icon_per_row,
+                prefs.getInt(Prefs.ICON_PER_ROW, SettingsSchema.defInt(Prefs.ICON_PER_ROW)), R.string.lbl_icon_per_row,
                 p -> prefs.edit().putInt(Prefs.ICON_PER_ROW, p).apply());
         bindSlider(R.id.sb_icon_gap, R.id.lbl_icon_gap,
-                prefs.getInt(Prefs.ICON_GAP_DP, 12), R.string.lbl_icon_gap,
+                prefs.getInt(Prefs.ICON_GAP_DP, SettingsSchema.defInt(Prefs.ICON_GAP_DP)), R.string.lbl_icon_gap,
                 p -> prefs.edit().putInt(Prefs.ICON_GAP_DP, p).apply());
         bindSlider(R.id.sb_icon_row_gap, R.id.lbl_icon_row_gap,
-                prefs.getInt(Prefs.ICON_ROW_GAP_DP, 12), R.string.lbl_icon_row_gap,
+                prefs.getInt(Prefs.ICON_ROW_GAP_DP, SettingsSchema.defInt(Prefs.ICON_ROW_GAP_DP)), R.string.lbl_icon_row_gap,
                 p -> prefs.edit().putInt(Prefs.ICON_ROW_GAP_DP, p).apply());
         bindSlider(R.id.sb_icon_max, R.id.lbl_icon_max,
-                prefs.getInt(Prefs.ICON_MAX, 12) - 1, R.string.lbl_icon_max, 1,
+                prefs.getInt(Prefs.ICON_MAX, SettingsSchema.defInt(Prefs.ICON_MAX)) - 1, R.string.lbl_icon_max, 1,
                 p -> prefs.edit().putInt(Prefs.ICON_MAX, p + 1).apply());
         bindSlider(R.id.sb_icon_count_size, R.id.lbl_icon_count_size,
-                prefs.getInt(Prefs.ICON_COUNT_SIZE_DP, 13) - 10, R.string.lbl_icon_count_size, 10,
+                prefs.getInt(Prefs.ICON_COUNT_SIZE_DP, SettingsSchema.defInt(Prefs.ICON_COUNT_SIZE_DP)) - 10, R.string.lbl_icon_count_size, 10,
                 p -> prefs.edit().putInt(Prefs.ICON_COUNT_SIZE_DP, p + 10).apply());
         bindSlider(R.id.sb_speed, R.id.lbl_speed,
-                (prefs.getInt(Prefs.SPEED_MS, 1600) - 300) / 100, R.string.lbl_speed,
+                (prefs.getInt(Prefs.SPEED_MS, SettingsSchema.defInt(Prefs.SPEED_MS)) - 300) / 100, R.string.lbl_speed,
                 p -> prefs.edit().putInt(Prefs.SPEED_MS, 300 + p * 100).apply());
         bindSlider(R.id.sb_cutout_x, R.id.lbl_cutout_x,
-                prefs.getInt(Prefs.CUTOUT_OFF_X, 0) + 100, R.string.lbl_cutout_x,
+                prefs.getInt(Prefs.CUTOUT_OFF_X, SettingsSchema.defInt(Prefs.CUTOUT_OFF_X)) + 100, R.string.lbl_cutout_x,
                 p -> prefs.edit().putInt(Prefs.CUTOUT_OFF_X, p - 100).apply());
         bindSlider(R.id.sb_cutout_y, R.id.lbl_cutout_y,
-                prefs.getInt(Prefs.CUTOUT_OFF_Y, 0) + 100, R.string.lbl_cutout_y,
+                prefs.getInt(Prefs.CUTOUT_OFF_Y, SettingsSchema.defInt(Prefs.CUTOUT_OFF_Y)) + 100, R.string.lbl_cutout_y,
                 p -> prefs.edit().putInt(Prefs.CUTOUT_OFF_Y, p - 100).apply());
         bindSlider(R.id.sb_cutout_scale, R.id.lbl_cutout_scale,
-                prefs.getInt(Prefs.CUTOUT_SCALE, 100) - 50, R.string.lbl_cutout_scale,
+                prefs.getInt(Prefs.CUTOUT_SCALE, SettingsSchema.defInt(Prefs.CUTOUT_SCALE)) - 50, R.string.lbl_cutout_scale,
                 p -> prefs.edit().putInt(Prefs.CUTOUT_SCALE, p + 50).apply());
     }
 
@@ -702,15 +703,15 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
     {
         EditText on = findViewById(R.id.et_interval_on);
         EditText off = findViewById(R.id.et_interval_off);
-        on.setText(String.valueOf(prefs.getInt(Prefs.INTERVAL_ON_SEC, 4)));
-        off.setText(String.valueOf(prefs.getInt(Prefs.INTERVAL_OFF_SEC, 6)));
+        on.setText(String.valueOf(prefs.getInt(Prefs.INTERVAL_ON_SEC, SettingsSchema.defInt(Prefs.INTERVAL_ON_SEC))));
+        off.setText(String.valueOf(prefs.getInt(Prefs.INTERVAL_OFF_SEC, SettingsSchema.defInt(Prefs.INTERVAL_OFF_SEC))));
         on.setOnFocusChangeListener((v, has) -> { if (!has) { putIntFrom(on, Prefs.INTERVAL_ON_SEC, 4, 1, 120); } });
         off.setOnFocusChangeListener((v, has) -> { if (!has) { putIntFrom(off, Prefs.INTERVAL_OFF_SEC, 6, 1, 120); } });
 
         EditText ns = findViewById(R.id.et_night_start);
         EditText ne = findViewById(R.id.et_night_end);
-        ns.setText(minutesToHhMm(prefs.getInt(Prefs.NIGHT_START, 23 * 60)));
-        ne.setText(minutesToHhMm(prefs.getInt(Prefs.NIGHT_END, 7 * 60)));
+        ns.setText(minutesToHhMm(prefs.getInt(Prefs.NIGHT_START, SettingsSchema.defInt(Prefs.NIGHT_START))));
+        ne.setText(minutesToHhMm(prefs.getInt(Prefs.NIGHT_END, SettingsSchema.defInt(Prefs.NIGHT_END))));
         ns.setOnFocusChangeListener((v, has) -> { if (!has) { putMinutesFrom(ns, Prefs.NIGHT_START, 23 * 60); } });
         ne.setOnFocusChangeListener((v, has) -> { if (!has) { putMinutesFrom(ne, Prefs.NIGHT_END, 7 * 60); } });
     }
@@ -910,7 +911,7 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
             try
             {
                 CutoutLocator.reportInsets(this, getWindow().getDecorView().getRootWindowInsets());
-                boolean has = prefs.getInt(Prefs.CUTOUT_LEFT, -1) >= 0;
+                boolean has = prefs.getInt(Prefs.CUTOUT_LEFT, SettingsSchema.defInt(Prefs.CUTOUT_LEFT)) >= 0;
                 Toast.makeText(this, has ? R.string.cutout_detected : R.string.cutout_none,
                         Toast.LENGTH_SHORT).show();
             }
