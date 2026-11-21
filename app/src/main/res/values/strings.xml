@@ -83,7 +83,8 @@
     <string name="set_icon_tint">Icon color</string>
     <string name="set_icon_tint_sum">Original colors keeps an app icon as it is, and fills a notification symbol with that app\u2019s own color. White turns each icon into a light monochrome glyph, which is the calmest look on a black screen. Black is the inverted form and is always drawn on a light plate so it stays visible.</string>
     <string name="lbl_icon_size">Icon size: %1$d dp</string>
-    <string name="set_icon_size_sum">How large each app icon is drawn, from 18 dp (small and unobtrusive) to 96 dp (easy to see from across the room).</string>
+    <string name="set_icon_size_sum">How large each app icon is drawn, from 5 dp (tiny and unobtrusive) to 96 dp (easy to see from across the room). The slider snaps to a fixed set of sensible sizes; 18 dp is the default.</string>
+    <string name="size_dp">%1$d dp</string>
     <string name="set_icon_plate">Background plate behind icons</string>
     <string name="set_icon_plate_sum">Draws a rounded plate behind every icon, which helps icons with transparent or busy artwork stand out. Black icons always get a light plate, whatever this switch says.</string>
     <string name="set_icon_shift">Move icons slowly (burn-in protection)</string>

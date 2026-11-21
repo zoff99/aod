@@ -88,6 +88,7 @@ public class SettingsSchemaTest
         assertEquals(100, SettingsSchema.clamp(SettingsSchema.find(Prefs.BRIGHTNESS), 500));
         assertEquals(5, SettingsSchema.clamp(SettingsSchema.find(Prefs.BRIGHTNESS), 0));
         assertEquals(96, SettingsSchema.clamp(SettingsSchema.find(Prefs.ICON_SIZE_DP), 4000));
+        assertEquals(5, SettingsSchema.clamp(SettingsSchema.find(Prefs.ICON_SIZE_DP), -3));
         assertEquals(1439, SettingsSchema.clamp(SettingsSchema.find(Prefs.NIGHT_START), 9999));
     }
 

@@ -64,7 +64,7 @@ public final class Prefs
     // ---- app icons on the always-on screen -------------------------------
     public static final String ICON_SOURCE = "icon_source";         // app | notification artwork
     public static final String ICON_TINT = "icon_tint";             // color | white | black
-    public static final String ICON_SIZE_DP = "icon_size_dp";       // 18..96 dp
+    public static final String ICON_SIZE_DP = "icon_size_dp";       // 5..96 dp, stepped
     public static final String ICON_PLATE = "icon_plate";           // rounded plate behind each icon
     public static final String ICON_SHIFT = "icon_shift";           // slow drift against burn-in
 

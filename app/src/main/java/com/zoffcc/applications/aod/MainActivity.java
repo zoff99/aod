@@ -659,17 +659,61 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
         });
     }
 
+    /**
+     * Icon size: a stepped slider like the light duration. The seek bar
+     * position is the index into IconSize.STEPS_DP, so every position is a
+     * sensible size and the thumb always lands on a tick mark. The default
+     * (18 dp) is one of the steps, not the minimum.
+     */
+    private void bindIconSizeRow()
+    {
+        SeekBar sb = findViewById(R.id.sb_icon_size);
+        TextView lbl = findViewById(R.id.lbl_icon_size);
+        sb.setMax(IconSize.count() - 1);
+
+        int stored = Prefs.iconSizeDp(this);
+        int index = IconSize.nearestIndex(stored);
+        if (IconSize.dp(index) != stored)
+        {
+            // an off-grid value from the former free slider or an import:
+            // settle on the nearest step
+            prefs.edit().putInt(Prefs.ICON_SIZE_DP, IconSize.dp(index)).apply();
+        }
+        sb.setProgress(index);
+        lbl.setText(getString(R.string.lbl_icon_size, IconSize.dp(index)));
+        ((TextView) findViewById(R.id.lbl_icon_size_min))
+                .setText(getString(R.string.size_dp, IconSize.dp(0)));
+        ((TextView) findViewById(R.id.lbl_icon_size_max))
+                .setText(getString(R.string.size_dp, IconSize.dp(IconSize.count() - 1)));
+
+        sb.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener()
+        {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser)
+            {
+                lbl.setText(getString(R.string.lbl_icon_size, IconSize.dp(progress)));
+                if (fromUser)
+                {
+                    prefs.edit().putInt(Prefs.ICON_SIZE_DP, IconSize.dp(progress)).apply();
+                }
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {}
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {}
+        });
+    }
+
     private void bindSliders()
     {
         bindTimeoutRow();
+        bindIconSizeRow();
         bindSlider(R.id.sb_stroke, R.id.lbl_stroke,
                 prefs.getInt(Prefs.STROKE_DP, SettingsSchema.defInt(Prefs.STROKE_DP)) - 2, R.string.lbl_stroke,
                 p -> p + 2,
                 p -> prefs.edit().putInt(Prefs.STROKE_DP, p + 2).apply());
-        bindSlider(R.id.sb_icon_size, R.id.lbl_icon_size,
-                prefs.getInt(Prefs.ICON_SIZE_DP, SettingsSchema.defInt(Prefs.ICON_SIZE_DP)) - 18, R.string.lbl_icon_size,
-                p -> p + 18,
-                p -> prefs.edit().putInt(Prefs.ICON_SIZE_DP, p + 18).apply());
         bindSlider(R.id.sb_icon_offset_x, R.id.lbl_icon_offset_x,
                 prefs.getInt(Prefs.ICON_OFFSET_X_DP, SettingsSchema.defInt(Prefs.ICON_OFFSET_X_DP)) + 200, R.string.lbl_icon_offset_x,
                 p -> p - 200,

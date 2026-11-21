@@ -49,7 +49,9 @@ public final class IconLayout
         float d = dm.density;
         IconLayout l = new IconLayout();
 
-        l.sizePx = Math.max(24, Math.round(Prefs.iconSizeDp(c) * d));
+        // safety floor of 2 dp only, for a corrupted store; the selectable
+        // minimum is 5 dp and must really be drawn that small
+        l.sizePx = Math.max(Math.round(2 * d), Math.round(Prefs.iconSizeDp(c) * d));
         l.plate = Prefs.iconPlate(c);
         l.lightPlate = Prefs.ICON_TINT_BLACK.equals(Prefs.iconTint(c));
 

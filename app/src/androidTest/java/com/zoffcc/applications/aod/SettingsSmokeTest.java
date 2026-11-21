@@ -132,6 +132,26 @@ public class SettingsSmokeTest
     }
 
     @Test
+    public void iconSizeIsOneOfTheSteps()
+    {
+        try (ActivityScenario<MainActivity> s = ActivityScenario.launch(MainActivity.class))
+        {
+            s.onActivity(a -> {
+                SeekBar sb = a.findViewById(R.id.sb_icon_size);
+                assertEquals("the slider must have one position per step",
+                        IconSize.count() - 1, sb.getMax());
+                int stored = Prefs.iconSizeDp(a);
+                boolean isStep = false;
+                for (int step : IconSize.STEPS_DP) { if (step == stored) { isStep = true; } }
+                assertTrue("stored icon size " + stored + " is not a step", isStep);
+                TextView lbl = a.findViewById(R.id.lbl_icon_size);
+                assertTrue("icon size must be labelled in dp: " + lbl.getText(),
+                        lbl.getText().toString().contains("dp"));
+            });
+        }
+    }
+
+    @Test
     public void freshInstallLabelsShowTheRealDefaults()
     {
         // regression: the icon size label once showed the raw seek bar

@@ -346,9 +346,16 @@
                         android:labelFor="@+id/sb_icon_size" />
                     <SeekBar android:id="@+id/sb_icon_size" android:layout_width="match_parent"
                         android:layout_height="wrap_content" android:minHeight="48dp"
-                        android:max="78"
+                        android:max="15"
                         android:progressTint="@color/hc_accent" android:thumbTint="@color/hc_accent"
-                        android:secondaryProgressTint="@color/hc_border" />
+                        android:secondaryProgressTint="@color/hc_border" android:tickMark="@drawable/seek_tick" />
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+                        <TextView android:id="@+id/lbl_icon_size_min" style="@style/SliderEnd" />
+                        <View android:layout_width="0dp" android:layout_height="1dp"
+                            android:layout_weight="1" />
+                        <TextView android:id="@+id/lbl_icon_size_max" style="@style/SliderEnd" />
+                    </LinearLayout>
                     <TextView style="@style/SettingSummary" android:text="@string/set_icon_size_sum" />
                 </LinearLayout>
                 <LinearLayout style="@style/SettingRow" android:tag="row|background plate rounded">
