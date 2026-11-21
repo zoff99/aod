@@ -192,9 +192,9 @@ public class SettingsSchemaTest
     {
         // locked on purpose: a change here is a change of behaviour and must
         // be a deliberate edit, not a side effect
-        assertEquals(300, SettingsSchema.defInt(Prefs.TIMEOUT_SEC));
+        assertEquals(3600, SettingsSchema.defInt(Prefs.TIMEOUT_SEC));
         assertEquals(18, SettingsSchema.defInt(Prefs.ICON_SIZE_DP));
-        assertEquals(40, SettingsSchema.defInt(Prefs.BRIGHTNESS));
+        assertEquals(30, SettingsSchema.defInt(Prefs.BRIGHTNESS));
         assertEquals(Prefs.DEFAULT_COLOR, SettingsSchema.defInt(Prefs.COLOR));
         assertEquals(Prefs.STYLE_ICONS, SettingsSchema.defString(Prefs.STYLE));
         assertEquals(PersistentPolicy.CALLS_APPS, SettingsSchema.defString(Prefs.PERSISTENT_MODE));

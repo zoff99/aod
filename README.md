@@ -198,7 +198,7 @@ part of Android -- nothing to add, nothing to download:
   "exported": "2026-11-20T12:34:56",
   "settings": {
     "style": "icons",
-    "timeout_sec": 300,
+    "timeout_sec": 3600,
     "filter_apps": ["org.example.messenger"],
     "app_colors": "org.example.messenger=#FF00E5FF"
   }

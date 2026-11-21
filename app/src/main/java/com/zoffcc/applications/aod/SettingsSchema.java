@@ -66,11 +66,11 @@ public final class SettingsSchema
                     Prefs.ANIM_PULSE, Prefs.ANIM_ROTATE, Prefs.ANIM_FLASH, Prefs.ANIM_STEADY),
             b(Prefs.ECO, false), b(Prefs.AUTO_COLOR, true),
             i(Prefs.COLOR, Integer.MIN_VALUE, Integer.MAX_VALUE, Prefs.DEFAULT_COLOR),
-            i(Prefs.BRIGHTNESS, 5, 100, 40),
+            i(Prefs.BRIGHTNESS, 5, 100, 30),
             b(Prefs.FOLLOW_BRIGHTNESS, true), b(Prefs.AWAKE_PANEL, false),
             i(Prefs.STROKE_DP, 2, 16, 5), i(Prefs.DOT_X, 0, 100, 50),
             // timing
-            i(Prefs.TIMEOUT_SEC, 60, 10800, 300),
+            i(Prefs.TIMEOUT_SEC, 60, 10800, 3600),
             b(Prefs.INTERVAL, false), i(Prefs.INTERVAL_ON_SEC, 1, 120, 4),
             i(Prefs.INTERVAL_OFF_SEC, 1, 120, 6),
             i(Prefs.SPEED_MS, 300, 4000, 1600),

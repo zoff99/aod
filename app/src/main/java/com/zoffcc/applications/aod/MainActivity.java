@@ -577,29 +577,33 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
 
     private interface SliderWriter { void write(int progress); }
 
+    /**
+     * Maps the raw seek bar position to the number the label shows. The
+     * position often starts at 0 while the stored value starts higher
+     * (icon size at 18 dp, the animation cycle at 300 ms), so the label
+     * must apply the same shift -- and for the cycle also the scale --
+     * as the writer, or a fresh install reads "0 dp".
+     */
+    private interface SliderLabel { int shown(int progress); }
+
     private void bindSlider(int id, int labelId, int initial, int formatRes, SliderWriter writer)
     {
-        bindSlider(id, labelId, initial, formatRes, 0, writer);
+        bindSlider(id, labelId, initial, formatRes, p -> p, writer);
     }
 
-    /**
-     * @param displayOffset added to the raw seek bar progress for the label,
-     *                      so a slider that stores -200..200 also shows
-     *                      -200..200 instead of 0..400
-     */
     private void bindSlider(int id, int labelId, int initial, int formatRes,
-                            int displayOffset, SliderWriter writer)
+                            SliderLabel label, SliderWriter writer)
     {
         SeekBar sb = findViewById(id);
         TextView lbl = findViewById(labelId);
         sb.setProgress(initial);
-        lbl.setText(getString(formatRes, initial + displayOffset));
+        lbl.setText(getString(formatRes, label.shown(initial)));
         sb.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener()
         {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser)
             {
-                lbl.setText(getString(formatRes, progress + displayOffset));
+                lbl.setText(getString(formatRes, label.shown(progress)));
                 if (fromUser) { writer.write(progress); }
             }
 
@@ -660,12 +664,15 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
         bindTimeoutRow();
         bindSlider(R.id.sb_stroke, R.id.lbl_stroke,
                 prefs.getInt(Prefs.STROKE_DP, SettingsSchema.defInt(Prefs.STROKE_DP)) - 2, R.string.lbl_stroke,
+                p -> p + 2,
                 p -> prefs.edit().putInt(Prefs.STROKE_DP, p + 2).apply());
         bindSlider(R.id.sb_icon_size, R.id.lbl_icon_size,
                 prefs.getInt(Prefs.ICON_SIZE_DP, SettingsSchema.defInt(Prefs.ICON_SIZE_DP)) - 18, R.string.lbl_icon_size,
+                p -> p + 18,
                 p -> prefs.edit().putInt(Prefs.ICON_SIZE_DP, p + 18).apply());
         bindSlider(R.id.sb_icon_offset_x, R.id.lbl_icon_offset_x,
-                prefs.getInt(Prefs.ICON_OFFSET_X_DP, SettingsSchema.defInt(Prefs.ICON_OFFSET_X_DP)) + 200, R.string.lbl_icon_offset_x, -200,
+                prefs.getInt(Prefs.ICON_OFFSET_X_DP, SettingsSchema.defInt(Prefs.ICON_OFFSET_X_DP)) + 200, R.string.lbl_icon_offset_x,
+                p -> p - 200,
                 p -> prefs.edit().putInt(Prefs.ICON_OFFSET_X_DP, p - 200).apply());
         bindSlider(R.id.sb_icon_offset_y, R.id.lbl_icon_offset_y,
                 prefs.getInt(Prefs.ICON_OFFSET_Y_DP, SettingsSchema.defInt(Prefs.ICON_OFFSET_Y_DP)), R.string.lbl_icon_offset_y,
@@ -680,22 +687,28 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
                 prefs.getInt(Prefs.ICON_ROW_GAP_DP, SettingsSchema.defInt(Prefs.ICON_ROW_GAP_DP)), R.string.lbl_icon_row_gap,
                 p -> prefs.edit().putInt(Prefs.ICON_ROW_GAP_DP, p).apply());
         bindSlider(R.id.sb_icon_max, R.id.lbl_icon_max,
-                prefs.getInt(Prefs.ICON_MAX, SettingsSchema.defInt(Prefs.ICON_MAX)) - 1, R.string.lbl_icon_max, 1,
+                prefs.getInt(Prefs.ICON_MAX, SettingsSchema.defInt(Prefs.ICON_MAX)) - 1, R.string.lbl_icon_max,
+                p -> p + 1,
                 p -> prefs.edit().putInt(Prefs.ICON_MAX, p + 1).apply());
         bindSlider(R.id.sb_icon_count_size, R.id.lbl_icon_count_size,
-                prefs.getInt(Prefs.ICON_COUNT_SIZE_DP, SettingsSchema.defInt(Prefs.ICON_COUNT_SIZE_DP)) - 10, R.string.lbl_icon_count_size, 10,
+                prefs.getInt(Prefs.ICON_COUNT_SIZE_DP, SettingsSchema.defInt(Prefs.ICON_COUNT_SIZE_DP)) - 10, R.string.lbl_icon_count_size,
+                p -> p + 10,
                 p -> prefs.edit().putInt(Prefs.ICON_COUNT_SIZE_DP, p + 10).apply());
         bindSlider(R.id.sb_speed, R.id.lbl_speed,
                 (prefs.getInt(Prefs.SPEED_MS, SettingsSchema.defInt(Prefs.SPEED_MS)) - 300) / 100, R.string.lbl_speed,
+                p -> 300 + p * 100,
                 p -> prefs.edit().putInt(Prefs.SPEED_MS, 300 + p * 100).apply());
         bindSlider(R.id.sb_cutout_x, R.id.lbl_cutout_x,
                 prefs.getInt(Prefs.CUTOUT_OFF_X, SettingsSchema.defInt(Prefs.CUTOUT_OFF_X)) + 100, R.string.lbl_cutout_x,
+                p -> p - 100,
                 p -> prefs.edit().putInt(Prefs.CUTOUT_OFF_X, p - 100).apply());
         bindSlider(R.id.sb_cutout_y, R.id.lbl_cutout_y,
                 prefs.getInt(Prefs.CUTOUT_OFF_Y, SettingsSchema.defInt(Prefs.CUTOUT_OFF_Y)) + 100, R.string.lbl_cutout_y,
+                p -> p - 100,
                 p -> prefs.edit().putInt(Prefs.CUTOUT_OFF_Y, p - 100).apply());
         bindSlider(R.id.sb_cutout_scale, R.id.lbl_cutout_scale,
                 prefs.getInt(Prefs.CUTOUT_SCALE, SettingsSchema.defInt(Prefs.CUTOUT_SCALE)) - 50, R.string.lbl_cutout_scale,
+                p -> p + 50,
                 p -> prefs.edit().putInt(Prefs.CUTOUT_SCALE, p + 50).apply());
     }
 

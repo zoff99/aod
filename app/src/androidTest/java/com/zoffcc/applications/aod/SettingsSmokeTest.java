@@ -132,6 +132,44 @@ public class SettingsSmokeTest
     }
 
     @Test
+    public void freshInstallLabelsShowTheRealDefaults()
+    {
+        // regression: the icon size label once showed the raw seek bar
+        // position ("0 dp") instead of the stored default ("18 dp")
+        SharedPreferences p = Prefs.get(target());
+        Map<String, ?> saved = new HashMap<>(p.getAll());
+        try
+        {
+            p.edit().clear().commit();
+            try (ActivityScenario<MainActivity> s = ActivityScenario.launch(MainActivity.class))
+            {
+                s.onActivity(a -> {
+                    assertEquals("icon size label must show the default, not the slider position",
+                            a.getString(R.string.lbl_icon_size, SettingsSchema.defInt(Prefs.ICON_SIZE_DP)),
+                            ((TextView) a.findViewById(R.id.lbl_icon_size)).getText().toString());
+                    assertEquals(a.getString(R.string.lbl_stroke, SettingsSchema.defInt(Prefs.STROKE_DP)),
+                            ((TextView) a.findViewById(R.id.lbl_stroke)).getText().toString());
+                    assertEquals(a.getString(R.string.lbl_speed, SettingsSchema.defInt(Prefs.SPEED_MS)),
+                            ((TextView) a.findViewById(R.id.lbl_speed)).getText().toString());
+                    assertEquals(a.getString(R.string.lbl_cutout_scale, SettingsSchema.defInt(Prefs.CUTOUT_SCALE)),
+                            ((TextView) a.findViewById(R.id.lbl_cutout_scale)).getText().toString());
+                    assertEquals(a.getString(R.string.lbl_cutout_x, SettingsSchema.defInt(Prefs.CUTOUT_OFF_X)),
+                            ((TextView) a.findViewById(R.id.lbl_cutout_x)).getText().toString());
+                    assertEquals(a.getString(R.string.lbl_brightness, SettingsSchema.defInt(Prefs.BRIGHTNESS)),
+                            ((TextView) a.findViewById(R.id.lbl_brightness)).getText().toString());
+                    int index = LightDuration.nearestIndex(SettingsSchema.defInt(Prefs.TIMEOUT_SEC));
+                    assertEquals(a.getString(R.string.lbl_timeout, LightDuration.label(a, index)),
+                            ((TextView) a.findViewById(R.id.lbl_timeout)).getText().toString());
+                });
+            }
+        }
+        finally
+        {
+            restore(p, saved);
+        }
+    }
+
+    @Test
     public void alwaysAllowPickerOpensWithItsOwnTitle()
     {
         Intent i = new Intent(target(), AppPickerActivity.class);
