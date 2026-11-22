@@ -39,10 +39,10 @@ public class IconSizeTest
     @Test
     public void theDefaultIsASelectableStep()
     {
-        // 18 dp is the shipped default; a default that cannot be selected
+        // 40 dp is the shipped default; a default that cannot be selected
         // again after moving the slider would be a trap
         int def = SettingsSchema.defInt(Prefs.ICON_SIZE_DP);
-        assertEquals(18, def);
+        assertEquals(40, def);
         assertEquals(def, IconSize.dp(IconSize.nearestIndex(def)));
     }
 

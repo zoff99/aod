@@ -195,7 +195,7 @@ public class SettingsSchemaTest
         // locked on purpose: a change here is a change of behaviour and must
         // be a deliberate edit, not a side effect
         assertEquals(3600, SettingsSchema.defInt(Prefs.TIMEOUT_SEC));
-        assertEquals(18, SettingsSchema.defInt(Prefs.ICON_SIZE_DP));
+        assertEquals(40, SettingsSchema.defInt(Prefs.ICON_SIZE_DP));
         assertEquals(30, SettingsSchema.defInt(Prefs.BRIGHTNESS));
         assertEquals(Prefs.DEFAULT_COLOR, SettingsSchema.defInt(Prefs.COLOR));
         assertEquals(Prefs.STYLE_ICONS, SettingsSchema.defString(Prefs.STYLE));
@@ -204,8 +204,8 @@ public class SettingsSchemaTest
         assertFalse(SettingsSchema.defBool(Prefs.AWAKE_PANEL));
         assertFalse(SettingsSchema.defBool(Prefs.ICON_COUNT_BADGE));
         assertEquals(Prefs.CLOCK_NONE, SettingsSchema.defString(Prefs.CLOCK_MODE));
-        assertEquals(28, SettingsSchema.defInt(Prefs.CLOCK_TIME_SIZE_DP));
-        assertEquals(16, SettingsSchema.defInt(Prefs.CLOCK_DATE_SIZE_DP));
+        assertEquals(50, SettingsSchema.defInt(Prefs.CLOCK_TIME_SIZE_DP));
+        assertEquals(20, SettingsSchema.defInt(Prefs.CLOCK_DATE_SIZE_DP));
     }
 
     @Test

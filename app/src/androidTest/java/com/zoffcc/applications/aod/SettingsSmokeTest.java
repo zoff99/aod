@@ -156,7 +156,7 @@ public class SettingsSmokeTest
     public void freshInstallLabelsShowTheRealDefaults()
     {
         // regression: the icon size label once showed the raw seek bar
-        // position ("0 dp") instead of the stored default ("18 dp")
+        // position ("0 dp") instead of the stored default ("40 dp")
         SharedPreferences p = Prefs.get(target());
         Map<String, ?> saved = new HashMap<>(p.getAll());
         try

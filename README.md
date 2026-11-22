@@ -81,7 +81,7 @@ them to one spot.
 
 - Styles: camera ring, screen edge glow, status-bar LED dot, or app icons
 - App icons: one icon per app with a notification, in centered rows below
-  the camera; original colors, white or black; size 24-96 dp; optional
+  the camera; original colors, white or black; size 5-96 dp (default 40 dp); optional
   background plate; slow drift against burn-in. Completely still -- no
   pulsing, flashing or blinking, and no per-frame redraws
 - Icon artwork: the small symbol an app posts to the status bar (default),
@@ -276,7 +276,7 @@ the burn-in drift moves it together with the icons.
 
 Each line is configured separately:
 
-- **Size**: 8-72 dp (time defaults to 28 dp, date to 16 dp).
+- **Size**: 8-72 dp (time defaults to 50 dp, date to 20 dp).
 - **Font**: normal, light, medium, condensed, serif, monospace -- all built
   into Android, nothing downloaded.
 - **Horizontal position**: left, center (default) or right, with the same
