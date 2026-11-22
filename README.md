@@ -123,7 +123,7 @@ bursts the pixels differ. Switch *Move icons* off to pin them to one spot.
   the app icon, or one global color
 - Double tap to wake (on the fallback canvas)
 - Charging / battery-full / low-battery light
-- Night quiet hours, Do-Not-Disturb respect
+- Night quiet hours, Do-Not-Disturb respect (on by default)
 - App filter (all apps or a selected set). The picker lists every launchable
   app -- the manifest declares `<queries>` for `ACTION_MAIN`, which Android 11+
   requires to see them at all, without `QUERY_ALL_PACKAGES` -- plus every
