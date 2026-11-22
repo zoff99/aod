@@ -20,7 +20,7 @@ import android.util.Log;
  */
 public final class Dbg
 {
-    public static final boolean DEBUG_LOGGING = true;
+    public static final boolean DEBUG_LOGGING = false;
 
     /** logcat tag of the verbose, switchable troubleshooting stream. */
     public static final String TAG = "AODDBG";
