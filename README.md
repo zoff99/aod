@@ -20,13 +20,13 @@ No root, no Xposed, no hardware LED required.
 
 Pure Java, no Kotlin, no tracking, **no internet permission at all**.
 
-<a href="https://f-droid.org/app/com.zoffcc.applications.toloshare"><img src="https://raw.githubusercontent.com/zoff99/ToLoShare/master/images/f-droid.png" width="200"></a>
+<a href="https://f-droid.org/app/com.zoffcc.applications.aod"><img src="https://raw.githubusercontent.com/zoff99/aod/master/images/f-droid.png" width="200"></a>
+<!-- &nbsp;<img src="https://github.com/zoff99/aod/releases/download/nightly/aod_nightly_lockscreen.png" width="200">&nbsp;<img src="https://github.com/zoff99/aod/releases/download/nightly/aod_nightly_aod.png" width="200"> -->
+
 
 ## Latest Automated Screenshots
 
 <img src="https://github.com/zoff99/aod/releases/download/nightly/aod_nightly_settings.png" width="200">&nbsp;<img src="https://github.com/zoff99/aod/releases/download/nightly/aod_nightly_picker.png" width="200">
-
-<!-- &nbsp;<img src="https://github.com/zoff99/aod/releases/download/nightly/aod_nightly_lockscreen.png" width="200">&nbsp;<img src="https://github.com/zoff99/aod/releases/download/nightly/aod_nightly_aod.png" width="200"> -->
 
 ## How it works (no root)
 
