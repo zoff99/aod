@@ -531,6 +531,101 @@
                 </LinearLayout>
             </LinearLayout>
 
+            <!-- section: clock -->
+            <LinearLayout android:id="@+id/hdr_clock" style="@style/SectionHeader"
+                android:tag="clock">
+                <ImageView android:layout_width="28dp" android:layout_height="28dp"
+                    android:src="@drawable/ic_chevron" android:importantForAccessibility="no" />
+                <TextView style="@style/SectionTitle" android:text="@string/sec_clock" />
+                <TextView style="@style/SectionCount" />
+            </LinearLayout>
+
+            <LinearLayout android:id="@+id/body_clock" style="@style/SectionBody">
+                <LinearLayout style="@style/SettingRow" android:tag="info">
+                    <TextView style="@style/SettingSummary" android:text="@string/sec_clock_sum" />
+                </LinearLayout>
+                <LinearLayout style="@style/SettingRow" android:tag="row|time date clock watch hour">
+                    <TextView style="@style/SliderLabel" android:text="@string/set_clock_mode"
+                        android:labelFor="@+id/sp_clock_mode" />
+                    <Spinner android:id="@+id/sp_clock_mode" android:layout_width="match_parent"
+                        android:layout_height="wrap_content" android:minHeight="48dp"
+                        android:backgroundTint="@color/hc_accent" />
+                    <TextView style="@style/SettingSummary" android:text="@string/set_clock_mode_sum" />
+                </LinearLayout>
+                <LinearLayout style="@style/SettingRow" android:tag="row|time size big small dp">
+                    <TextView android:id="@+id/lbl_clock_time_size" style="@style/SliderLabel"
+                        android:labelFor="@+id/sb_clock_time_size" />
+                    <SeekBar android:id="@+id/sb_clock_time_size" android:layout_width="match_parent"
+                        android:layout_height="wrap_content" android:minHeight="48dp"
+                        android:max="64"
+                        android:progressTint="@color/hc_accent" android:thumbTint="@color/hc_accent"
+                        android:secondaryProgressTint="@color/hc_border" />
+                    <TextView style="@style/SettingSummary" android:text="@string/set_clock_time_size_sum" />
+                </LinearLayout>
+                <LinearLayout style="@style/SettingRow" android:tag="row|time font typeface serif monospace">
+                    <TextView style="@style/SliderLabel" android:text="@string/set_clock_time_font"
+                        android:labelFor="@+id/sp_clock_time_font" />
+                    <Spinner android:id="@+id/sp_clock_time_font" android:layout_width="match_parent"
+                        android:layout_height="wrap_content" android:minHeight="48dp"
+                        android:backgroundTint="@color/hc_accent" />
+                    <TextView style="@style/SettingSummary" android:text="@string/set_clock_time_font_sum" />
+                </LinearLayout>
+                <LinearLayout style="@style/SettingRow" android:tag="row|time position left center right">
+                    <TextView style="@style/SliderLabel" android:text="@string/set_clock_time_align"
+                        android:labelFor="@+id/sp_clock_time_align" />
+                    <Spinner android:id="@+id/sp_clock_time_align" android:layout_width="match_parent"
+                        android:layout_height="wrap_content" android:minHeight="48dp"
+                        android:backgroundTint="@color/hc_accent" />
+                    <TextView style="@style/SettingSummary" android:text="@string/set_clock_time_align_sum" />
+                </LinearLayout>
+                <LinearLayout style="@style/SettingRow" android:tag="row|time height distance above icons">
+                    <TextView android:id="@+id/lbl_clock_time_offset" style="@style/SliderLabel"
+                        android:labelFor="@+id/sb_clock_time_offset" />
+                    <SeekBar android:id="@+id/sb_clock_time_offset" android:layout_width="match_parent"
+                        android:layout_height="wrap_content" android:minHeight="48dp"
+                        android:max="400"
+                        android:progressTint="@color/hc_accent" android:thumbTint="@color/hc_accent"
+                        android:secondaryProgressTint="@color/hc_border" />
+                    <TextView style="@style/SettingSummary" android:text="@string/set_clock_time_offset_sum" />
+                </LinearLayout>
+                <LinearLayout style="@style/SettingRow" android:tag="row|date size big small dp">
+                    <TextView android:id="@+id/lbl_clock_date_size" style="@style/SliderLabel"
+                        android:labelFor="@+id/sb_clock_date_size" />
+                    <SeekBar android:id="@+id/sb_clock_date_size" android:layout_width="match_parent"
+                        android:layout_height="wrap_content" android:minHeight="48dp"
+                        android:max="64"
+                        android:progressTint="@color/hc_accent" android:thumbTint="@color/hc_accent"
+                        android:secondaryProgressTint="@color/hc_border" />
+                    <TextView style="@style/SettingSummary" android:text="@string/set_clock_date_size_sum" />
+                </LinearLayout>
+                <LinearLayout style="@style/SettingRow" android:tag="row|date font typeface serif monospace">
+                    <TextView style="@style/SliderLabel" android:text="@string/set_clock_date_font"
+                        android:labelFor="@+id/sp_clock_date_font" />
+                    <Spinner android:id="@+id/sp_clock_date_font" android:layout_width="match_parent"
+                        android:layout_height="wrap_content" android:minHeight="48dp"
+                        android:backgroundTint="@color/hc_accent" />
+                    <TextView style="@style/SettingSummary" android:text="@string/set_clock_date_font_sum" />
+                </LinearLayout>
+                <LinearLayout style="@style/SettingRow" android:tag="row|date position left center right">
+                    <TextView style="@style/SliderLabel" android:text="@string/set_clock_date_align"
+                        android:labelFor="@+id/sp_clock_date_align" />
+                    <Spinner android:id="@+id/sp_clock_date_align" android:layout_width="match_parent"
+                        android:layout_height="wrap_content" android:minHeight="48dp"
+                        android:backgroundTint="@color/hc_accent" />
+                    <TextView style="@style/SettingSummary" android:text="@string/set_clock_date_align_sum" />
+                </LinearLayout>
+                <LinearLayout style="@style/SettingRow" android:tag="row|date height distance above icons">
+                    <TextView android:id="@+id/lbl_clock_date_offset" style="@style/SliderLabel"
+                        android:labelFor="@+id/sb_clock_date_offset" />
+                    <SeekBar android:id="@+id/sb_clock_date_offset" android:layout_width="match_parent"
+                        android:layout_height="wrap_content" android:minHeight="48dp"
+                        android:max="400"
+                        android:progressTint="@color/hc_accent" android:thumbTint="@color/hc_accent"
+                        android:secondaryProgressTint="@color/hc_border" />
+                    <TextView style="@style/SettingSummary" android:text="@string/set_clock_date_offset_sum" />
+                </LinearLayout>
+            </LinearLayout>
+
             <!-- section: when -->
             <LinearLayout android:id="@+id/hdr_when" style="@style/SectionHeader"
                 android:tag="when">

@@ -88,6 +88,21 @@ public final class Prefs
     public static final String ICON_COUNT_SOURCE = "icon_count_source";   // notifications | app
     public static final String ICON_COUNT_ADD = "icon_count_add";         // add up several counters
 
+    // ---- clock above the icons --------------------------------------------
+    public static final String CLOCK_MODE = "clock_mode";           // none | time | time_date | date
+    public static final String CLOCK_NONE = "none";
+    public static final String CLOCK_TIME = "time";
+    public static final String CLOCK_TIME_DATE = "time_date";
+    public static final String CLOCK_DATE = "date";
+    public static final String CLOCK_TIME_SIZE_DP = "clock_time_size_dp";     // 8..72 dp text
+    public static final String CLOCK_TIME_FONT = "clock_time_font";           // normal | light | ...
+    public static final String CLOCK_TIME_ALIGN = "clock_time_align";         // left | center | right
+    public static final String CLOCK_TIME_OFFSET_DP = "clock_time_offset_dp"; // 0..400 dp above the icons
+    public static final String CLOCK_DATE_SIZE_DP = "clock_date_size_dp";
+    public static final String CLOCK_DATE_FONT = "clock_date_font";
+    public static final String CLOCK_DATE_ALIGN = "clock_date_align";
+    public static final String CLOCK_DATE_OFFSET_DP = "clock_date_offset_dp";
+
     // ---- cutout calibration ----------------------------------------------
     public static final String CUTOUT_LEFT = "cutout_left";
     public static final String CUTOUT_TOP = "cutout_top";
@@ -211,6 +226,16 @@ public final class Prefs
     { return ICON_COUNT_SRC_APP.equals(iconCountSource(c)); }
     /** Add the counters of several notifications instead of taking the highest. */
     public static boolean iconCountAdd(Context c) { return get(c).getBoolean(ICON_COUNT_ADD, SettingsSchema.defBool(ICON_COUNT_ADD)); }
+
+    public static String clockMode(Context c) { return get(c).getString(CLOCK_MODE, SettingsSchema.defString(CLOCK_MODE)); }
+    public static int clockTimeSizeDp(Context c) { return get(c).getInt(CLOCK_TIME_SIZE_DP, SettingsSchema.defInt(CLOCK_TIME_SIZE_DP)); }
+    public static String clockTimeFont(Context c) { return get(c).getString(CLOCK_TIME_FONT, SettingsSchema.defString(CLOCK_TIME_FONT)); }
+    public static String clockTimeAlign(Context c) { return get(c).getString(CLOCK_TIME_ALIGN, SettingsSchema.defString(CLOCK_TIME_ALIGN)); }
+    public static int clockTimeOffsetDp(Context c) { return get(c).getInt(CLOCK_TIME_OFFSET_DP, SettingsSchema.defInt(CLOCK_TIME_OFFSET_DP)); }
+    public static int clockDateSizeDp(Context c) { return get(c).getInt(CLOCK_DATE_SIZE_DP, SettingsSchema.defInt(CLOCK_DATE_SIZE_DP)); }
+    public static String clockDateFont(Context c) { return get(c).getString(CLOCK_DATE_FONT, SettingsSchema.defString(CLOCK_DATE_FONT)); }
+    public static String clockDateAlign(Context c) { return get(c).getString(CLOCK_DATE_ALIGN, SettingsSchema.defString(CLOCK_DATE_ALIGN)); }
+    public static int clockDateOffsetDp(Context c) { return get(c).getInt(CLOCK_DATE_OFFSET_DP, SettingsSchema.defInt(CLOCK_DATE_OFFSET_DP)); }
 
     /** Position and spacing only: colors, size, plate and the count settings
      *  are deliberately left alone by "reset position". */

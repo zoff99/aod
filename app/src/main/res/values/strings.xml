@@ -128,6 +128,27 @@
     <string name="set_icon_count_badge">Rounded badge behind the number</string>
     <string name="set_icon_count_badge_sum">Draws the number on a small dark rounded badge instead of straight onto the black screen. Slightly easier to read next to bright icons; it also makes the block a little taller.</string>
 
+    <string name="sec_clock">Clock above the icons</string>
+    <string name="sec_clock_sum">Shows the current time and/or date above the icons, in the App icons style. Like the icons, the clock is only visible while a notification is showing; with no notification the screen stays completely black. The time follows the 12/24-hour setting of the phone, the date is written in the language of the phone (weekday, day, month). Each line has its own size, font and position. The clock drifts with the icons against burn-in and costs one redraw per minute.</string>
+    <string name="set_clock_mode">Show time and/or date</string>
+    <string name="set_clock_mode_sum">What is drawn above the icons: nothing (the screen stays exactly as it is), the time, the time with the date below it, or only the date. Default: nothing.</string>
+    <string name="lbl_clock_time_size">Time size: %1$d dp</string>
+    <string name="set_clock_time_size_sum">How large the time is drawn, from 8 to 72 dp.</string>
+    <string name="set_clock_time_font">Time font</string>
+    <string name="set_clock_time_font_sum">The typeface of the time. All offered fonts are built into the phone; nothing is downloaded.</string>
+    <string name="set_clock_time_align">Time horizontal position</string>
+    <string name="set_clock_time_align_sum">Where the time sits across the screen: left, centered or right. Its height above the icons is the next setting.</string>
+    <string name="lbl_clock_time_offset">Time above icons: %1$d dp</string>
+    <string name="set_clock_time_offset_sum">Distance between the bottom of the time and the top of the icon block, from 0 to 400 dp. If the icons sit near the top edge, the time is pushed down so it stays on screen.</string>
+    <string name="lbl_clock_date_size">Date size: %1$d dp</string>
+    <string name="set_clock_date_size_sum">How large the date is drawn, from 8 to 72 dp.</string>
+    <string name="set_clock_date_font">Date font</string>
+    <string name="set_clock_date_font_sum">The typeface of the date. All offered fonts are built into the phone; nothing is downloaded.</string>
+    <string name="set_clock_date_align">Date horizontal position</string>
+    <string name="set_clock_date_align_sum">Where the date sits across the screen: left, centered or right. Its height above the icons is the next setting.</string>
+    <string name="lbl_clock_date_offset">Date above icons: %1$d dp</string>
+    <string name="set_clock_date_offset_sum">Distance between the bottom of the date and the top of the icon block, from 0 to 400 dp. With time and date both on, give the time the larger distance so the date sits between the time and the icons.</string>
+
     <string name="set_night">Night quiet hours</string>
     <string name="set_night_start">From</string>
     <string name="set_night_end">To</string>
@@ -202,6 +223,25 @@
         <item>Below the camera</item>
         <item>Top of the screen</item>
         <item>Bottom of the screen</item>
+    </string-array>
+    <string-array name="clock_mode_entries">
+        <item>Nothing (stay black)</item>
+        <item>Time</item>
+        <item>Time + date</item>
+        <item>Date</item>
+    </string-array>
+    <string-array name="clock_font_entries">
+        <item>Normal</item>
+        <item>Light</item>
+        <item>Medium</item>
+        <item>Condensed</item>
+        <item>Serif</item>
+        <item>Monospace</item>
+    </string-array>
+    <string-array name="clock_align_entries">
+        <item>Left</item>
+        <item>Center</item>
+        <item>Right</item>
     </string-array>
     <string-array name="anim_entries">
         <item>Pulse</item>

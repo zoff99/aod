@@ -63,6 +63,7 @@ public class SettingsSmokeTest
                 assertNotNull("always-allow picker button missing", a.findViewById(R.id.btn_persistent_apps));
                 assertNotNull("export button missing", a.findViewById(R.id.btn_export_settings));
                 assertNotNull("import button missing", a.findViewById(R.id.btn_import_settings));
+                assertNotNull("clock mode spinner missing", a.findViewById(R.id.sp_clock_mode));
             });
         }
     }
@@ -167,6 +168,8 @@ public class SettingsSmokeTest
                     assertEquals("icon size label must show the default, not the slider position",
                             a.getString(R.string.lbl_icon_size, SettingsSchema.defInt(Prefs.ICON_SIZE_DP)),
                             ((TextView) a.findViewById(R.id.lbl_icon_size)).getText().toString());
+                    assertEquals(a.getString(R.string.lbl_clock_time_size, SettingsSchema.defInt(Prefs.CLOCK_TIME_SIZE_DP)),
+                            ((TextView) a.findViewById(R.id.lbl_clock_time_size)).getText().toString());
                     assertEquals(a.getString(R.string.lbl_stroke, SettingsSchema.defInt(Prefs.STROKE_DP)),
                             ((TextView) a.findViewById(R.id.lbl_stroke)).getText().toString());
                     assertEquals(a.getString(R.string.lbl_speed, SettingsSchema.defInt(Prefs.SPEED_MS)),

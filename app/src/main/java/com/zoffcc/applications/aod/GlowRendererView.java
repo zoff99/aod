@@ -66,7 +66,8 @@ public class GlowRendererView extends View
     private final android.graphics.Matrix sweepMatrix = new android.graphics.Matrix();
 
     // No notification text is drawn here, or anywhere else in the app: the
-    // renderer only ever sees app icons and numbers. See PRIVACY.md.
+    // renderer only ever sees app icons, numbers and -- when the user asks
+    // for it -- the current time and date. See PRIVACY.md.
 
     // App icons: ready-made bitmaps, laid out once, blitted without any
     // animation. This is the "no LED, no blinking" style.
@@ -91,6 +92,19 @@ public class GlowRendererView extends View
     private final RectF iconRect = new RectF();
     private final RectF badgeRect = new RectF();
 
+    // Clock above the icons: pre-formatted strings, drawn only while icons
+    // are visible, refreshed once per minute. An idle black panel gets no
+    // timer and no redraws at all.
+    private ClockLayout clockCfg = new ClockLayout();
+    private String timeText = null;
+    private String dateText = null;
+    private final Paint timePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint datePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private float timeAscent = 0f;
+    private float timeDescent = 0f;
+    private float dateAscent = 0f;
+    private float dateDescent = 0f;
+
     public GlowRendererView(Context context)
     {
         super(context);
@@ -105,6 +119,8 @@ public class GlowRendererView extends View
         Paint.FontMetrics fm = countPaint.getFontMetrics();
         countAscent = -fm.ascent;
         countDescent = fm.descent;
+        timePaint.setColor(0xFFF2F2F2);
+        datePaint.setColor(0xFFF2F2F2);
     }
 
     // ---- configuration ----------------------------------------------------
@@ -151,6 +167,7 @@ public class GlowRendererView extends View
         running = true;
         startElapsed = SystemClock.elapsedRealtime();
         lastFrame = 0L;
+        refreshClock();
         postInvalidateOnAnimation();
     }
 
@@ -158,6 +175,7 @@ public class GlowRendererView extends View
     {
         running = false;
         removeCallbacks(frameTick);
+        refreshClock();
         invalidate();
     }
 
@@ -210,6 +228,7 @@ public class GlowRendererView extends View
         countAscent = -fm.ascent;
         countDescent = fm.descent;
         layoutIcons();
+        refreshClock();
         invalidate();
     }
 
@@ -220,7 +239,97 @@ public class GlowRendererView extends View
         iconCounts = null;
         iconCount = 0;
         iconsBottom = 0f;
+        refreshClock();
         invalidate();
+    }
+
+    /**
+     * Clock configuration (mode, sizes, fonts, alignment, distances). The
+     * texts are refreshed and the minute tick re-armed only while icons are
+     * actually visible; otherwise this changes nothing on screen.
+     */
+    public void setClock(ClockLayout cfg)
+    {
+        this.clockCfg = cfg == null ? new ClockLayout() : cfg;
+        timePaint.setTypeface(ClockLayout.typeface(clockCfg.timeFont));
+        timePaint.setTextSize(Math.max(8f, clockCfg.timeSizePx));
+        datePaint.setTypeface(ClockLayout.typeface(clockCfg.dateFont));
+        datePaint.setTextSize(Math.max(8f, clockCfg.dateSizePx));
+        Paint.FontMetrics fm = timePaint.getFontMetrics();
+        timeAscent = -fm.ascent;
+        timeDescent = fm.descent;
+        fm = datePaint.getFontMetrics();
+        dateAscent = -fm.ascent;
+        dateDescent = fm.descent;
+        refreshClock();
+    }
+
+    /**
+     * Keep the clock current: format once now, then once per minute, but
+     * only while something is on screen. Called on every state change that
+     * could start or stop the clock (show, hide, start, stop, settings).
+     */
+    public void refreshClock()
+    {
+        removeCallbacks(clockTick);
+        if (!running || icons == null || (!clockCfg.showTime && !clockCfg.showDate)) { return; }
+        formatClockTexts();
+        invalidate();
+        long now = System.currentTimeMillis();
+        postDelayed(clockTick, 60000L - (now % 60000L) + 50L);
+    }
+
+    /** One reusable tick, like the frame loop: no new Runnable per minute. */
+    private final Runnable clockTick = new Runnable()
+    {
+        @Override
+        public void run()
+        {
+            refreshClock();
+        }
+    };
+
+    /** Runs on the minute tick, never inside onDraw: formatting allocates.
+     *  The time follows the phone's 12/24-hour setting; the date is the
+     *  locale's weekday-day-month order, without a year. */
+    private void formatClockTexts()
+    {
+        android.content.Context c = getContext();
+        java.util.Date now = new java.util.Date();
+        if (clockCfg.showTime)
+        {
+            timeText = android.text.format.DateFormat.getTimeFormat(c).format(now);
+        }
+        if (clockCfg.showDate)
+        {
+            String pattern = android.text.format.DateFormat.getBestDateTimePattern(
+                    java.util.Locale.getDefault(), "EEE d MMM");
+            dateText = new java.text.SimpleDateFormat(pattern, java.util.Locale.getDefault()).format(now);
+        }
+    }
+
+    /** Time and date above the icon block, drifting with it against burn-in. */
+    private void drawClock(Canvas canvas)
+    {
+        if (iconCount <= 0) { return; }
+        float density = getResources().getDisplayMetrics().density;
+        float margin = 16f * density;
+        if (clockCfg.showTime && timeText != null)
+        {
+            float tw = timePaint.measureText(timeText);
+            float x = ClockMath.alignX(screenW, margin, tw, clockCfg.timeAlign) + shiftX;
+            float top = ClockMath.topY(iconTop + shiftY, clockCfg.timeOffsetPx,
+                    timeAscent + timeDescent, margin);
+            canvas.drawText(timeText, x, top + timeAscent, timePaint);
+        }
+        if (clockCfg.showDate && dateText != null)
+        {
+            float tw = datePaint.measureText(dateText);
+            float x = ClockMath.alignX(screenW, margin, tw, clockCfg.dateAlign) + shiftX;
+            float top = ClockMath.topY(iconTop + shiftY, clockCfg.dateOffsetPx,
+                    dateAscent + dateDescent, margin);
+            canvas.drawText(dateText, x, top + dateAscent, datePaint);
+        }
     }
 
     /**
@@ -373,13 +482,14 @@ public class GlowRendererView extends View
             // and widgets; on OLED these pixels are effectively off, so a
             // static blackout costs almost nothing.
             canvas.drawRect(0f, 0f, screenW, screenH * blackoutFraction, blackPaint);
-            if (running && icons != null) { drawIcons(canvas); }
+            if (running && icons != null) { drawIcons(canvas); drawClock(canvas); }
         }
         else if (running && icons != null && iconCfg.overUi)
         {
             // "Test light" while the app is on screen: show the icons as they
             // would look, without painting a black field over the UI
             drawIcons(canvas);
+            drawClock(canvas);
         }
         if (!running) { return; }
         // App icons are a still image: no pulsing, no flashing, no frame loop.

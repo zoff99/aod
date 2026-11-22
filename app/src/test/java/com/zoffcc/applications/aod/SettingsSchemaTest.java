@@ -29,7 +29,8 @@ public class SettingsSchemaTest
             "ICON_SRC_APP", "ICON_SRC_NOTIFICATION",
             "ICON_TINT_COLOR", "ICON_TINT_WHITE", "ICON_TINT_BLACK",
             "ICON_Y_CAMERA", "ICON_Y_TOP", "ICON_Y_BOTTOM",
-            "ICON_COUNT_SRC_NOTIFICATIONS", "ICON_COUNT_SRC_APP");
+            "ICON_COUNT_SRC_NOTIFICATIONS", "ICON_COUNT_SRC_APP",
+            "CLOCK_NONE", "CLOCK_TIME", "CLOCK_TIME_DATE", "CLOCK_DATE");
 
     @Test
     public void everyPreferenceKeyIsExportedOrExplicitlySkipped() throws Exception
@@ -202,6 +203,9 @@ public class SettingsSchemaTest
         assertTrue(SettingsSchema.defBool(Prefs.ENABLED));
         assertFalse(SettingsSchema.defBool(Prefs.AWAKE_PANEL));
         assertFalse(SettingsSchema.defBool(Prefs.ICON_COUNT_BADGE));
+        assertEquals(Prefs.CLOCK_NONE, SettingsSchema.defString(Prefs.CLOCK_MODE));
+        assertEquals(28, SettingsSchema.defInt(Prefs.CLOCK_TIME_SIZE_DP));
+        assertEquals(16, SettingsSchema.defInt(Prefs.CLOCK_DATE_SIZE_DP));
     }
 
     @Test

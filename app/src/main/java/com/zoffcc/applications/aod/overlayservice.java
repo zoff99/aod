@@ -267,6 +267,9 @@ public class overlayservice extends AccessibilityService
         screen.addAction(Intent.ACTION_SCREEN_OFF);
         screen.addAction(Intent.ACTION_SCREEN_ON);
         screen.addAction(Intent.ACTION_USER_PRESENT);
+        screen.addAction(Intent.ACTION_TIME_CHANGED);
+        screen.addAction(Intent.ACTION_TIMEZONE_CHANGED);
+        screen.addAction(Intent.ACTION_LOCALE_CHANGED);
         ContextCompat.registerReceiver(this, screenReceiver, screen, ContextCompat.RECEIVER_NOT_EXPORTED);
         Dbg.log("overlay", "screen receiver registered (OFF/ON/USER_PRESENT)");
 
@@ -391,6 +394,15 @@ public class overlayservice extends AccessibilityService
             {
                 Dbg.log("overlay", "recv USER_PRESENT (unlock) " + state());
                 handleUnlock("USER_PRESENT");
+            }
+            else if (Intent.ACTION_TIME_CHANGED.equals(a)
+                    || Intent.ACTION_TIMEZONE_CHANGED.equals(a)
+                    || Intent.ACTION_LOCALE_CHANGED.equals(a))
+            {
+                // the clock must not wait up to a minute for the next tick
+                // after the user sets the time, travels, or changes language
+                Dbg.log("overlay", "recv " + a + " -> clock refresh");
+                if (view != null) { view.refreshClock(); }
             }
         }
     };
@@ -1425,6 +1437,7 @@ public class overlayservice extends AccessibilityService
     private void syncIcons()
     {
         if (view == null) { return; }
+        view.setClock(ClockLayout.from(this));
         if (!Prefs.STYLE_ICONS.equals(Prefs.style(this)) || (!testMode && items.isEmpty()))
         {
             view.clearIcons();
@@ -1694,6 +1707,12 @@ public class overlayservice extends AccessibilityService
             applyAppearance();
             refreshGeometry();
             if (lightActive) { armShift(); }
+        }
+        if (key != null && key.startsWith("clock_"))
+        {
+            // the clock is part of the still icon image: hand the renderer
+            // the new configuration directly, no full rebuild needed
+            if (view != null) { view.setClock(ClockLayout.from(this)); }
         }
         if (Prefs.CANVAS_FALLBACK.equals(key) || Prefs.AWAKE_PANEL.equals(key))
         {

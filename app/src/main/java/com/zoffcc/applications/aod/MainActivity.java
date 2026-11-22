@@ -476,6 +476,35 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
                 prefs.edit().putString(Prefs.ICON_Y_ANCHOR, anchorVals[position]).apply();
             }
         });
+
+        bindChoiceSpinner(R.id.sp_clock_mode, R.array.clock_mode_entries,
+                new String[]{Prefs.CLOCK_NONE, Prefs.CLOCK_TIME, Prefs.CLOCK_TIME_DATE, Prefs.CLOCK_DATE},
+                Prefs.CLOCK_MODE);
+        String[] fontVals = {"normal", "light", "medium", "condensed", "serif", "monospace"};
+        String[] alignVals = {"left", "center", "right"};
+        bindChoiceSpinner(R.id.sp_clock_time_font, R.array.clock_font_entries, fontVals, Prefs.CLOCK_TIME_FONT);
+        bindChoiceSpinner(R.id.sp_clock_time_align, R.array.clock_align_entries, alignVals, Prefs.CLOCK_TIME_ALIGN);
+        bindChoiceSpinner(R.id.sp_clock_date_font, R.array.clock_font_entries, fontVals, Prefs.CLOCK_DATE_FONT);
+        bindChoiceSpinner(R.id.sp_clock_date_align, R.array.clock_align_entries, alignVals, Prefs.CLOCK_DATE_ALIGN);
+    }
+
+    /** One dropdown bound to one string setting, with the schema default. */
+    private void bindChoiceSpinner(int id, int entriesRes, String[] vals, String key)
+    {
+        Spinner sp = findViewById(id);
+        ArrayAdapter<CharSequence> a = ArrayAdapter.createFromResource(this,
+                entriesRes, R.layout.item_spinner);
+        a.setDropDownViewResource(R.layout.item_spinner_dropdown);
+        sp.setAdapter(a);
+        sp.setSelection(indexOf(vals, prefs.getString(key, SettingsSchema.defString(key))));
+        sp.setOnItemSelectedListener(new SimpleItemSelected()
+        {
+            @Override
+            public void onItemSelected(int position)
+            {
+                prefs.edit().putString(key, vals[position]).apply();
+            }
+        });
     }
 
     private static int indexOf(String[] arr, String v)
@@ -754,6 +783,20 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
                 prefs.getInt(Prefs.CUTOUT_SCALE, SettingsSchema.defInt(Prefs.CUTOUT_SCALE)) - 50, R.string.lbl_cutout_scale,
                 p -> p + 50,
                 p -> prefs.edit().putInt(Prefs.CUTOUT_SCALE, p + 50).apply());
+        bindSlider(R.id.sb_clock_time_size, R.id.lbl_clock_time_size,
+                prefs.getInt(Prefs.CLOCK_TIME_SIZE_DP, SettingsSchema.defInt(Prefs.CLOCK_TIME_SIZE_DP)) - 8, R.string.lbl_clock_time_size,
+                p -> p + 8,
+                p -> prefs.edit().putInt(Prefs.CLOCK_TIME_SIZE_DP, p + 8).apply());
+        bindSlider(R.id.sb_clock_time_offset, R.id.lbl_clock_time_offset,
+                prefs.getInt(Prefs.CLOCK_TIME_OFFSET_DP, SettingsSchema.defInt(Prefs.CLOCK_TIME_OFFSET_DP)), R.string.lbl_clock_time_offset,
+                p -> prefs.edit().putInt(Prefs.CLOCK_TIME_OFFSET_DP, p).apply());
+        bindSlider(R.id.sb_clock_date_size, R.id.lbl_clock_date_size,
+                prefs.getInt(Prefs.CLOCK_DATE_SIZE_DP, SettingsSchema.defInt(Prefs.CLOCK_DATE_SIZE_DP)) - 8, R.string.lbl_clock_date_size,
+                p -> p + 8,
+                p -> prefs.edit().putInt(Prefs.CLOCK_DATE_SIZE_DP, p + 8).apply());
+        bindSlider(R.id.sb_clock_date_offset, R.id.lbl_clock_date_offset,
+                prefs.getInt(Prefs.CLOCK_DATE_OFFSET_DP, SettingsSchema.defInt(Prefs.CLOCK_DATE_OFFSET_DP)), R.string.lbl_clock_date_offset,
+                p -> prefs.edit().putInt(Prefs.CLOCK_DATE_OFFSET_DP, p).apply());
     }
 
     private void bindTextInputs()

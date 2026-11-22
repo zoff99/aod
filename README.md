@@ -103,6 +103,10 @@ them to one spot.
   room for it so rows never overlap the number. Two sources: the number of
   notifications of that app, or the app's own counter (`Notification.number`,
   usually unread messages) when it publishes one
+- Clock above the icons: optional time and/or date (default: nothing), each
+  with its own size (8–72 dp), font (six built-in faces), horizontal position
+  and height above the icon block. Only visible while a notification is
+  showing; one redraw per minute, and it drifts with the icons
 - Animations (light styles): pulse, rotate, flash, steady; adjustable speed
 - ECO mode (reduced frame rate) and interval mode (on/off cycling)
 - Per-app colors (long-press an app icon in the strip), auto color from
@@ -133,7 +137,7 @@ them to one spot.
 
 The screen is a short list of named sections instead of one long column:
 **Basics**, **Light and color**, **Duration and battery**, **App icons**,
-**Icon position and layout**, **Notification counts**,
+**Icon position and layout**, **Notification counts**, **Clock above the icons**,
 **When to light up**, **Camera ring calibration**, **Advanced and testing**.
 Tap a header to fold or unfold it; the chevron and the number of settings in
 that section show its state. Only *Basics* is open on a fresh install, and
@@ -257,6 +261,35 @@ adb logcat -s AODDBG | grep -E "icons:|summary counter"
 
 `notif/own=[1/5]` means one notification carrying the counter 5; `summary=`
 shows the counters taken from group summaries.
+
+## Clock above the icons
+
+In the *App icons* style the current time and/or date can be drawn above the
+icon block. The setting offers four modes: **nothing** (default — the screen
+stays exactly as it is), **time**, **time + date**, **date**.
+
+The clock follows the same rule as the icons: it is only drawn while a
+notification is visible. No notification means a completely black screen,
+clock included. It is part of the same still image — no blinking, no frame
+loop; the only cost is one redraw per minute to keep the time current, and
+the burn-in drift moves it together with the icons.
+
+Each line is configured separately:
+
+- **Size**: 8–72 dp (time defaults to 28 dp, date to 16 dp).
+- **Font**: normal, light, medium, condensed, serif, monospace — all built
+  into Android, nothing downloaded.
+- **Horizontal position**: left, center (default) or right, with the same
+  edge margin the icon rows keep.
+- **Height above the icons**: 0–400 dp between the bottom of the line and the
+  top of the icon block (time defaults to 44 dp, date to 16 dp, so with both
+  on the date sits between the time and the icons). The clock follows the
+  icon anchor and offset; if the icons sit near the top edge, a line is
+  pushed down to the panel margin instead of being clipped away.
+
+The time uses the phone's 12/24-hour setting; the date is the locale's
+weekday-day-month order without a year. Setting the time, changing the time
+zone or the language refreshes the clock immediately.
 
 ## Setup
 
