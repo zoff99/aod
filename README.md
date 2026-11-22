@@ -12,7 +12,7 @@
 
 A notification light / LED for phones that do not have one. When a
 notification arrives, a colored light glows **around the front camera
-cutout**, along the **screen edges**, or as a small **LED dot** — on the
+cutout**, along the **screen edges**, or as a small **LED dot** -- on the
 lock screen and while the display is in its always-on / doze state.
 Alternatively it shows the **app icons** of the apps that have a
 notification and no light at all.
@@ -33,8 +33,8 @@ The app combines three standard Android mechanisms:
 1. **NotificationListenerService** (`notificationobserver`)
    Reads posted notifications (title, text, package), filters out noise
    (foreground/persistent notifications, progress bars, media sessions,
-   group summaries), resolves a light color per app (manual override →
-   dominant color of the app icon → default), and injects synthetic
+   group summaries), resolves a light color per app (manual override ->
+   dominant color of the app icon -> default), and injects synthetic
    *charging / full / low-battery* events. Do-Not-Disturb is respected.
 
 2. **AccessibilityService used only as an overlay privilege** (`overlayservice`)
@@ -43,7 +43,7 @@ The app combines three standard Android mechanisms:
    keyguard, and on many devices stay visible while the panel shows its
    always-on display. The service disables its own accessibility event
    stream at runtime (it subscribes to a non-existent package), so **no
-   screen content is ever read** — accessibility is used purely for the
+   screen content is ever read** -- accessibility is used purely for the
    window type.
 
 3. **A black always-on field, drawn by the same overlay**
@@ -53,7 +53,7 @@ The app combines three standard Android mechanisms:
    static, near-zero-cost black field: no animation, no wake
    locks, and **nothing at all is drawn when there is no notification**.
    The light and the app icons are painted
-   into that field, so nothing ever has to wake the panel — pressing the
+   into that field, so nothing ever has to wake the panel -- pressing the
    power button turns the display off and it stays off. Covering only the
    top two thirds, leaving the bottom third as the phone draws it, is an
    opt-out setting.
@@ -81,30 +81,30 @@ them to one spot.
 
 - Styles: camera ring, screen edge glow, status-bar LED dot, or app icons
 - App icons: one icon per app with a notification, in centered rows below
-  the camera; original colors, white or black; size 24–96 dp; optional
-  background plate; slow drift against burn-in. Completely still — no
+  the camera; original colors, white or black; size 24-96 dp; optional
+  background plate; slow drift against burn-in. Completely still -- no
   pulsing, flashing or blinking, and no per-frame redraws
 - Icon artwork: the small symbol an app posts to the status bar (default),
   or its launcher icon (`Notification.getSmallIcon()`, loaded by resource id from that
   app's resources). Status-bar symbols are flat alpha masks, so with
-  "original colors" they are filled with `Notification.color` — the accent
-  the app chose for its own notifications — falling back to the dominant
+  "original colors" they are filled with `Notification.color` -- the accent
+  the app chose for its own notifications -- falling back to the dominant
   color of its launcher icon, then the global color. Very dark colors are
   lifted so they stay visible on black; a symbol that already has real
   colors keeps them; an app without a symbol falls back to its app icon
 - Icon position: center the rows or start them at the left edge, horizontal
-  offset ±200 dp, vertical start below the camera / from the top / from the
-  bottom with a 0–600 dp offset, icons per row (0 = fill the width, or 1–8),
-  gap between icons and between rows, at most 1–24 icons, center or align a
+  offset +/-200 dp, vertical start below the camera / from the top / from the
+  bottom with a 0-600 dp offset, icons per row (0 = fill the width, or 1-8),
+  gap between icons and between rows, at most 1-24 icons, center or align a
   shorter last row, optional clipping to the blacked-out area, and a
   "reset position" button. Offsets are limited so the block stays on the panel
 - Notification counts: optional number under each icon (from two upwards, or
-  always), text size 10–28 dp, optional rounded badge; the row height reserves
+  always), text size 10-28 dp, optional rounded badge; the row height reserves
   room for it so rows never overlap the number. Two sources: the number of
   notifications of that app, or the app's own counter (`Notification.number`,
   usually unread messages) when it publishes one
 - Clock above the icons: optional time and/or date (default: nothing), each
-  with its own size (8–72 dp), font (six built-in faces), horizontal position
+  with its own size (8-72 dp), font (six built-in faces), horizontal position
   and height above the icon block. Only visible while a notification is
   showing; one redraw per minute, and it drifts with the icons
 - Animations (light styles): pulse, rotate, flash, steady; adjustable speed
@@ -115,8 +115,8 @@ them to one spot.
 - Charging / battery-full / low-battery light
 - Night quiet hours, Do-Not-Disturb respect
 - App filter (all apps or a selected set). The picker lists every launchable
-  app — the manifest declares `<queries>` for `ACTION_MAIN`, which Android 11+
-  requires to see them at all, without `QUERY_ALL_PACKAGES` — plus every
+  app -- the manifest declares `<queries>` for `ACTION_MAIN`, which Android 11+
+  requires to see them at all, without `QUERY_ALL_PACKAGES` -- plus every
   package that has posted a notification, so apps without a launcher icon can
   be filtered too. The list can be narrowed to all / selected / not
   selected apps, and a hint reminds you that a long press sets that app's
@@ -246,10 +246,10 @@ Rules used here:
 - **App's own counter** mode (default): the highest counter among that app's
   notifications, or their sum if *add up* is switched on, combined with the
   counter of its group summary (often the only place the app-wide total is
-  published — summaries are read for the number, never drawn as an icon).
+  published -- summaries are read for the number, never drawn as an icon).
 - The result is never lower than the number of notifications, so an app that
   always writes `1` cannot hide that three notifications are waiting.
-- `0` or no counter at all → fall back to the notification count.
+- `0` or no counter at all -> fall back to the notification count.
 
 The field is voluntary and its meaning is up to the app: some write per-chat
 unread, some the app-wide total on every notification (hence *highest* by
@@ -265,23 +265,23 @@ shows the counters taken from group summaries.
 ## Clock above the icons
 
 In the *App icons* style the current time and/or date can be drawn above the
-icon block. The setting offers four modes: **nothing** (default — the screen
+icon block. The setting offers four modes: **nothing** (default -- the screen
 stays exactly as it is), **time**, **time + date**, **date**.
 
 The clock follows the same rule as the icons: it is only drawn while a
 notification is visible. No notification means a completely black screen,
-clock included. It is part of the same still image — no blinking, no frame
+clock included. It is part of the same still image -- no blinking, no frame
 loop; the only cost is one redraw per minute to keep the time current, and
 the burn-in drift moves it together with the icons.
 
 Each line is configured separately:
 
-- **Size**: 8–72 dp (time defaults to 28 dp, date to 16 dp).
-- **Font**: normal, light, medium, condensed, serif, monospace — all built
+- **Size**: 8-72 dp (time defaults to 28 dp, date to 16 dp).
+- **Font**: normal, light, medium, condensed, serif, monospace -- all built
   into Android, nothing downloaded.
 - **Horizontal position**: left, center (default) or right, with the same
   edge margin the icon rows keep.
-- **Height above the icons**: 0–400 dp between the bottom of the line and the
+- **Height above the icons**: 0-400 dp between the bottom of the line and the
   top of the icon block (time defaults to 44 dp, date to 16 dp, so with both
   on the date sits between the time and the icons). The clock follows the
   icon anchor and offset; if the icons sit near the top edge, a line is
@@ -305,7 +305,7 @@ zone or the language refreshes the clock immediately.
 ### Accessibility after an app update
 
 Replacing the package makes the system re-evaluate its accessibility
-bindings, and on many builds the service ends up switched off — an app is not
+bindings, and on many builds the service ends up switched off -- an app is not
 allowed to grant itself accessibility. With the ADB grant above (which
 survives updates; only an uninstall clears it) the app puts the service back
 by itself: after an update (`MY_PACKAGE_REPLACED`), on boot, and when the
@@ -321,8 +321,8 @@ alone, and it only ever acts when
 `adb logcat -s AODDBG` shows `restore: accessibility re-enabled after update`.
 
 On Android 13+ a sideloaded app may also have its accessibility toggle blocked
-by *restricted settings*: allow it once under *App info → ⋮ → Allow restricted
-settings*, or sideload with `adb install -r -i com.android.vending …`.
+by *restricted settings*: allow it once under *App info -> ... -> Allow restricted
+settings*, or sideload with `adb install -r -i com.android.vending ...`.
 
 Test without a second device:
 
@@ -355,7 +355,7 @@ adb logcat -s AODDBG AOD-Overlay AOD-Notifications AOD-Main AOD-Boot
 
 `Dbg.DEBUG_LOGGING = false` silences the `AODDBG` stream completely; the
 component tags are built from `Dbg.TAG_PREFIX` so they cannot drift apart.
-Neither stream ever contains notification titles or message text — the app
+Neither stream ever contains notification titles or message text -- the app
 never reads them (see [PRIVACY.md](PRIVACY.md)).
 
 Wake locks appear in `dumpsys power` as `aod:notifications`, `aod:light`,
@@ -365,7 +365,7 @@ Wake locks appear in `dumpsys power` as `aod:notifications`, `aod:light`,
 
 - JDK 17, Android SDK 34, Gradle 8.9 (wrapper included)
 - `./gradlew assembleDebug` (shrinking is on in both variants: unused
-  library code is dropped, no obfuscation — see `app/proguard-rules.pro`)
+  library code is dropped, no obfuscation -- see `app/proguard-rules.pro`)
 - the **test** APK has its own rules (`app/test-proguard-rules.pro`): R8 runs
   but shrinks, optimises and renames nothing. AGP minifies the androidTest
   variant because the tested build type is minified, yet it does not inherit
@@ -373,16 +373,16 @@ Wake locks appear in `dumpsys power` as `aod:notifications`, `aod:light`,
   inside AndroidX Test (`javax.lang.model.element.Modifier`,
   `kotlin.jvm.internal.SourceDebugExtension`). A test harness also must not be
   shrunk: JUnit and Espresso find their classes reflectively
-- `python3 tools/check_apk_privacy.py <apk>` — verifies the finished APK
-- `tools/find_non_ascii_chars_in_source.sh` — source encoding guard, runs
+- `python3 tools/check_apk_privacy.py <apk>` -- verifies the finished APK
+- `tools/find_non_ascii_chars_in_source.sh` -- source encoding guard, runs
   before every compile (see below)
-- `./gradlew :app:testDebugUnitTest` — host tests for the icon grid, the
+- `./gradlew :app:testDebugUnitTest` -- host tests for the icon grid, the
   counter rules (`IconMath`) and the duration steps (`LightDuration`), no
   device needed
-- `./gradlew :app:connectedDebugAndroidTest` — device smoke test: the settings
+- `./gradlew :app:connectedDebugAndroidTest` -- device smoke test: the settings
   screen builds, sections fold, search finds a setting, the duration slider is
   stepped, and both services are declared
-- `.github/workflows/info_test.yml` — CI: source encoding check, privacy
+- `.github/workflows/info_test.yml` -- CI: source encoding check, privacy
   guard, unit tests, APK build and scan, then device tests and screenshots on
   an emulator (`tools/ci_emulator_shots.sh`, which also switches on the canvas
   fallback so the dark screen is capturable on an emulator that has no
@@ -390,7 +390,7 @@ Wake locks appear in `dumpsys power` as `aod:notifications`, `aod:light`,
   and the four screenshots are published to the `nightly` release under the
   same names every time (`aod_nightly_settings.png`, `_picker`, `_aod`,
   `_lockscreen`), replacing the previous set
-- `.github/dependabot.yml` — weekly dependency and GitHub Actions updates
+- `.github/dependabot.yml` -- weekly dependency and GitHub Actions updates
 - minSdk 28 (Android 9), targetSdk 34
 - Dependencies: appcompat, recyclerview (UI only). Everything else is
   platform API.
@@ -408,7 +408,7 @@ The rules:
 
 | files | rule |
 |---|---|
-| source (`*.java`, `*.xml`, `*.gradle`, `*.sh`, `*.py`, `*.pro`, `*.properties`, ...) | **pure ASCII** — string resources use `\uXXXX` escapes, comments use `--` |
+| source (`*.java`, `*.xml`, `*.gradle`, `*.sh`, `*.py`, `*.pro`, `*.properties`, ...) | **pure ASCII** -- string resources use `\uXXXX` escapes, comments use `--` |
 | documentation and store text (`*.md`, `*.txt`, `*.svg`) | a fixed list of visible typographic characters (dashes, quotes, ellipsis, bullet, arrow, box drawing, ...) |
 | every file | hidden characters are **never** allowed: bidi overrides and isolates, zero-width characters, BOM, soft hyphen, tag characters, variation selectors, private-use areas, C1 controls |
 
@@ -440,7 +440,7 @@ after `git add` cannot smuggle anything past it.
 Three rules in Android's `DisplayPowerController` decide everything here:
 
 1. A window that sets `LayoutParams.screenBrightness` wins over every other
-   source — **and asking switches auto brightness off entirely**
+   source -- **and asking switches auto brightness off entirely**
    (`autoBrightnessEnabled` requires that no brightness has been decided
    yet). With adaptive brightness on, the slider works *through* the
    auto-brightness controller, so any request of ours disconnects the panel
@@ -453,7 +453,7 @@ Three rules in Android's `DisplayPowerController` decide everything here:
 
 Reading `Settings.System` does not help: with adaptive brightness on,
 Android writes its *own sensor-computed* value into that setting
-(`REASON_AUTOMATIC` → `updateScreenBrightnessSetting`), and while the slider
+(`REASON_AUTOMATIC` -> `updateScreenBrightnessSetting`), and while the slider
 is being dragged it uses a temporary value that is never published at all
 (`REASON_TEMPORARY`). There is no public API for the live brightness.
 
@@ -486,7 +486,7 @@ That gives three states:
 |---|---|---|---|---|
 | on | on | awake | the phone's own, slider live | highest |
 | on | off | awake | own percentage, usually honoured | middle |
-| off | — | dozing | own percentage, ROM may clamp or ignore it | lowest |
+| off | -- | dozing | own percentage, ROM may clamp or ignore it | lowest |
 
 In the first state the always-on screen is literally driven by the same
 brightness as the lock screen, and the status-bar slider moves it live.
@@ -494,8 +494,8 @@ Following is impossible on a dozing panel, which is why that switch is
 disabled when the panel is allowed to doze.
 
 What the awake panel costs: a dozing panel refreshes itself and lets the SoC
-sleep, an awake one keeps the display pipeline running — roughly 100–400 mW
-extra on OLED (very roughly 0.5–2 % of battery per hour of light-up time),
+sleep, an awake one keeps the display pipeline running -- roughly 100-400 mW
+extra on OLED (very roughly 0.5-2 % of battery per hour of light-up time),
 considerably more on LCD, where the backlight lights the whole panel. It is
 bounded, not all-night: the flag is held only while a light is showing, the
 burst timeout ends it, no notification means nothing is woken at all, and a
@@ -505,14 +505,14 @@ That time also shows up as screen-on time in Android's battery stats.
 
 Some ROMs run their own always-on display outside the framework path and pin
 its backlight themselves. On those, neither a window brightness request nor
-the system slider changes the dark screen — measured on one such device:
+the system slider changes the dark screen -- measured on one such device:
 requesting 100 % and 5 % looked identical. There is no app-side fix for that;
 the brightness lives in the ROM's own settings (Lock screen / Always-on
 display). The settings screen says so instead of pretending otherwise.
 
 The debug log prints `dark`, `panel` (`awake (window flag)` / `awake canvas` /
 `dozing`), `mode`, `awake`, `follow`, `pct` and `requested` for every change,
-plus `awake panel: HOLDING display awake` / `released` / `off after …ms -> pause …s`.
+plus `awake panel: HOLDING display awake` / `released` / `off after ...ms -> pause ...s`.
 
 ## Battery and CPU
 
@@ -525,7 +525,7 @@ timing is built around that:
   for the whole burst. A `Handler` timer is armed as well as a free backstop:
   it costs nothing while the CPU sleeps and ends the burst earlier if the
   phone happens to be awake anyway. Whichever fires first wins.
-- **The CPU wake lock is only held while something needs it** — an animating
+- **The CPU wake lock is only held while something needs it** -- an animating
   style (ring/edge/dot with pulse, flash or rotate), interval mode, or a
   dozing panel with no alarms available. An awake panel already keeps the
   phone awake, so no lock is taken there at all. It is acquired and released
@@ -534,7 +534,7 @@ timing is built around that:
   takes 1.5 s at the start and under a second for each later change (new
   notification, burn-in move, geometry or colour change, taking the light
   down). Only an animating style holds it for its whole run. Previously it
-  was held for the entire burst — minutes of awake CPU to show a picture
+  was held for the entire burst -- minutes of awake CPU to show a picture
   that never moves.
 - **A still image gets no GPU layer.** `LAYER_TYPE_HARDWARE` is only set for
   the styles that animate; the icons style draws straight into the window
@@ -555,11 +555,11 @@ timing is built around that:
 Exact alarms need `SCHEDULE_EXACT_ALARM` from Android 12 on. Where it is not
 granted ("Alarms & reminders" in the app's system settings), the app logs
 `exactAlarms=false` and falls back to the Handler timers plus the wake lock
-they need — correct, just not as cheap on a dozing panel. Nothing prompts for
+they need -- correct, just not as cheap on a dozing panel. Nothing prompts for
 it; the permission is optional.
 
 Every decision is in the log: `timers: path=static|animated via=alarm|handler
-exactAlarms=…` and `cpu lock HELD|released animated=… dark=… alarms=…`.
+exactAlarms=...` and `cpu lock HELD|released animated=... dark=... alarms=...`.
 
 ## Compatibility notes
 
@@ -568,7 +568,7 @@ exactAlarms=…` and `cpu lock HELD|released animated=… dark=… alarms=…`.
 - The light geometry is portrait-only.
 - Keeping any light active costs battery; use ECO / interval mode and
   short timeouts. The dark canvas keeps the panel technically "on" at low
-  brightness — on OLED this is cheap, on LCD it is not.
+  brightness -- on OLED this is cheap, on LCD it is not.
 - Matching the system brightness needs the panel kept awake while the light
   is up, which costs more battery than a dozing always-on screen. Switch
   **Keep the panel awake for the dark screen** off to let the panel doze
@@ -586,7 +586,7 @@ being clipped by it. A monochrome layer is included for themed icons, plus
 legacy bitmap mipmaps for Android 7 and older.
 
 Vector masters, the palette, size rules and the asset renderer live in
-[`docs/`](docs/brand.md) — `icon.svg`, `icon-square.svg` (store listing),
+[`docs/`](docs/brand.md) -- `icon.svg`, `icon-square.svg` (store listing),
 `icon-monochrome.svg` and `render_assets.py`. Store text and images are in
 `fastlane/metadata/android/en-US/`.
 
@@ -599,7 +599,7 @@ No `INTERNET` permission, no analytics, no accounts, no tracking libraries.
 `EXTRA_INFO_TEXT`, `EXTRA_SUMMARY_TEXT`, `EXTRA_TEXT_LINES`, `EXTRA_MESSAGES`,
 `tickerText` or any other message payload. Those values are never fetched,
 never parsed, never put in a variable or field, never parcelled, never
-written to disk and never logged — so they cannot leak later by accident.
+written to disk and never logged -- so they cannot leak later by accident.
 
 What is read is metadata only: the posting package, the system key, the post
 time, the clearable/foreground/group flags, `Notification.number` (the
@@ -618,6 +618,6 @@ The APK does not even contain the code: both build types shrink unused
 classes away, which removes AndroidX's own notification helpers
 (`NotificationCompat` and friends). `tools/check_apk_privacy.py` reads the
 string table of every dex in a finished APK and fails if any content key or
-content-reading API is present — it reports zero for the shipped build.
+content-reading API is present -- it reports zero for the shipped build.
 
 Full details: [PRIVACY.md](PRIVACY.md).

@@ -12,7 +12,11 @@
 #     and comments use -- instead of a typographic dash. Anything else is a
 #     change worth looking at twice.
 #
-#   * DOCUMENTATION and store metadata may use a short, fixed list of
+#   * README.md is part of that ASCII-only surface, NOT store copy: it is
+#     checked exactly like a source file. A dash in "8-72 dp" must be a
+#     plain hyphen, not an en dash.
+#
+#   * Other DOCUMENTATION and store metadata may use a short, fixed list of
 #     typographic characters (dashes, quotes, ellipsis, bullet, arrow, the
 #     box-drawing characters used in docs/brand.md, ...). Nothing else.
 #
@@ -81,6 +85,16 @@ is_text_name() {
     return 1
 }
 
+# The README is checked as pure ASCII, like source: it is project docs that
+# live next to the code, not store copy. Only the other text files get the
+# typography allowlist.
+is_ascii_doc() {
+    case ${1,,} in
+        readme.md) return 0 ;;
+    esac
+    return 1
+}
+
 # ---- collect the file list -------------------------------------------------
 list_files() {
     if (( ${#paths[@]} )); then
@@ -140,7 +154,7 @@ while IFS= read -r f; do
         git show ":$f" > "$target" 2>/dev/null || continue
     fi
 
-    if is_text_name "$f"; then
+    if is_text_name "$f" && ! is_ascii_doc "$f"; then
         n_txt=$((n_txt + 1))
         out=$("$CHECK" ${opts[@]+"${opts[@]}"} -a "$TEXT_ALLOW" -- "$target" 2>&1)
     else
@@ -161,7 +175,7 @@ while IFS= read -r f; do
 done <<< "$files"
 
 echo "----------------------------------------------------------------"
-printf 'checked %d source file(s) (ASCII only) and %d text file(s) (typography allowed), %d binary skipped\n' \
+printf 'checked %d file(s) ASCII only (source + README) and %d text file(s) (typography allowed), %d binary skipped\n' \
     "$n_src" "$n_txt" "$n_skip"
 
 if (( bad_files )); then
