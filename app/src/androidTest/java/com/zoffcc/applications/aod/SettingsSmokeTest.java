@@ -112,6 +112,30 @@ public class SettingsSmokeTest
     }
 
     @Test
+    public void globalVerticalOffsetLivesInBasics()
+    {
+        try (ActivityScenario<MainActivity> s = ActivityScenario.launch(MainActivity.class))
+        {
+            s.onActivity(a -> {
+                View slider = a.findViewById(R.id.sb_icon_offset_y);
+                assertNotNull("vertical offset slider missing", slider);
+                View basics = a.findViewById(R.id.body_basics);
+                View iconPos = a.findViewById(R.id.body_icon_pos);
+                boolean inBasics = false;
+                boolean inIconPos = false;
+                for (View v = slider; v != null;
+                        v = (v.getParent() instanceof View) ? (View) v.getParent() : null)
+                {
+                    if (v == basics) { inBasics = true; }
+                    if (v == iconPos) { inIconPos = true; }
+                }
+                assertTrue("the all-items vertical offset must live in Basics", inBasics);
+                assertFalse("it must no longer sit in Icon position", inIconPos);
+            });
+        }
+    }
+
+    @Test
     public void lightDurationIsOneOfTheSteps()
     {
         try (ActivityScenario<MainActivity> s = ActivityScenario.launch(MainActivity.class))

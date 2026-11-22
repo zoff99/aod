@@ -88,4 +88,32 @@ public class ClockMathTest
         // icons at 80, offset 100, text 60 -> would be -80; clamped to margin
         assertEquals(48f, ClockMath.topY(80f, 100f, 60f, 48f), 0.01f);
     }
+
+    @Test
+    public void clockOffAddsNoHeightAboveTheIcons()
+    {
+        // with the clock off the icons keep their old position exactly
+        assertEquals(0f, ClockMath.aboveIconsH(false, 100f, 60f, false, 50f, 30f), 0.01f);
+    }
+
+    @Test
+    public void theTallestClockLineSetsTheGroupHeight()
+    {
+        // time only: 100 above the icons + 60 tall = 160
+        assertEquals(160f, ClockMath.aboveIconsH(true, 100f, 60f, false, 0f, 0f), 0.01f);
+        // date only: 50 + 30 = 80
+        assertEquals(80f, ClockMath.aboveIconsH(false, 0f, 0f, true, 50f, 30f), 0.01f);
+        // both: the higher line (time, 160) wins over the date (80)
+        assertEquals(160f, ClockMath.aboveIconsH(true, 100f, 60f, true, 50f, 30f), 0.01f);
+    }
+
+    @Test
+    public void theOffsetMarksTheTopOfTheWholeGroup()
+    {
+        // clock reaches 160 above the icons; icons lowered to offset(300)+160
+        float above = ClockMath.aboveIconsH(true, 100f, 60f, false, 0f, 0f);
+        float iconTop = 300f + above;
+        // the top clock line lands back at the offset, not above it
+        assertEquals(300f, ClockMath.topY(iconTop, 100f, 60f, 48f), 0.01f);
+    }
 }

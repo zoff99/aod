@@ -8,6 +8,12 @@ package com.zoffcc.applications.aod;
  * top of the icon block, so it follows the icons wherever their anchor and
  * offset put them. If that would push a line off the top of the panel, it
  * is clamped to the margin instead of disappearing.
+ *
+ * The shared vertical offset marks the top of the whole AOD group, not just
+ * the icons: aboveIconsH() is how far the topmost clock line reaches above
+ * the icons, and the renderer lowers the icon block by that amount so the
+ * clock starts at the offset and the icons hang below it. With the clock
+ * off the height is zero and the icons sit at the offset exactly as before.
  */
 public final class ClockMath
 {
@@ -54,5 +60,21 @@ public final class ClockMath
     public static float topY(float iconTop, float offsetPx, float textH, float minTop)
     {
         return Math.max(minTop, iconTop - offsetPx - textH);
+    }
+
+    /**
+     * How far the topmost visible clock line reaches above the icon block:
+     * the larger of (distance above the icons + text height) over the lines
+     * that are shown. Zero when the clock is off, so the icons keep their
+     * old position. The renderer adds this to the icon top for the top and
+     * camera anchors, making the vertical offset the top of the whole group.
+     */
+    public static float aboveIconsH(boolean showTime, float timeOffsetPx, float timeTextH,
+                                    boolean showDate, float dateOffsetPx, float dateTextH)
+    {
+        float h = 0f;
+        if (showTime) { h = Math.max(h, timeOffsetPx + timeTextH); }
+        if (showDate) { h = Math.max(h, dateOffsetPx + dateTextH); }
+        return h;
     }
 }

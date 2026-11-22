@@ -172,6 +172,16 @@
                         android:text="@string/set_relight_relock" />
                     <TextView style="@style/SettingSummary" android:text="@string/set_relight_relock_sum" />
                 </LinearLayout>
+                <LinearLayout style="@style/SettingRow" android:tag="row|up down y clock all items vertical offset">
+                    <TextView android:id="@+id/lbl_icon_offset_y" style="@style/SliderLabel"
+                        android:labelFor="@+id/sb_icon_offset_y" />
+                    <SeekBar android:id="@+id/sb_icon_offset_y" android:layout_width="match_parent"
+                        android:layout_height="wrap_content" android:minHeight="48dp"
+                        android:max="600"
+                        android:progressTint="@color/hc_accent" android:thumbTint="@color/hc_accent"
+                        android:secondaryProgressTint="@color/hc_border" />
+                    <TextView style="@style/SettingSummary" android:text="@string/set_icon_offset_y_sum" />
+                </LinearLayout>
             </LinearLayout>
 
             <!-- section: look -->
@@ -408,16 +418,6 @@
                         android:layout_height="wrap_content" android:minHeight="48dp"
                         android:backgroundTint="@color/hc_accent" />
                     <TextView style="@style/SettingSummary" android:text="@string/set_icon_y_anchor_sum" />
-                </LinearLayout>
-                <LinearLayout style="@style/SettingRow" android:tag="row|up down y">
-                    <TextView android:id="@+id/lbl_icon_offset_y" style="@style/SliderLabel"
-                        android:labelFor="@+id/sb_icon_offset_y" />
-                    <SeekBar android:id="@+id/sb_icon_offset_y" android:layout_width="match_parent"
-                        android:layout_height="wrap_content" android:minHeight="48dp"
-                        android:max="600"
-                        android:progressTint="@color/hc_accent" android:thumbTint="@color/hc_accent"
-                        android:secondaryProgressTint="@color/hc_border" />
-                    <TextView style="@style/SettingSummary" android:text="@string/set_icon_offset_y_sum" />
                 </LinearLayout>
                 <LinearLayout style="@style/SettingRow" android:tag="row|columns row width">
                     <TextView android:id="@+id/lbl_icon_per_row" style="@style/SliderLabel"

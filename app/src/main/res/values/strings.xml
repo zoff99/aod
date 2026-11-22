@@ -97,9 +97,9 @@
     <string name="lbl_icon_offset_x">Horizontal offset: %1$d dp</string>
     <string name="set_icon_offset_x_sum">Moves the whole block left (negative) or right (positive). With centering on, 0 means exactly in the middle; with centering off, 0 means at the left edge.</string>
     <string name="set_icon_y_anchor">Vertical start</string>
-    <string name="set_icon_y_anchor_sum">What the vertical offset is measured from. \u201cBelow the camera\u201d keeps the icons clear of the camera and the status bar. \u201cTop of the screen\u201d measures from the very top, so 0 puts the icons at the top edge. \u201cBottom of the screen\u201d measures upwards from the bottom edge to the bottom of the last row.</string>
-    <string name="lbl_icon_offset_y">Vertical offset: %1$d dp</string>
-    <string name="set_icon_offset_y_sum">Distance from the anchor chosen above. Larger values move the icons down, except with the bottom anchor, where they move the icons up.</string>
+    <string name="set_icon_y_anchor_sum">What the vertical offset is measured from. \u201cBelow the camera\u201d keeps the AOD items clear of the camera and the status bar. \u201cTop of the screen\u201d measures from the very top, so 0 puts the top item at the top edge. \u201cBottom of the screen\u201d measures upwards from the bottom edge to the bottom of the last icon row.</string>
+    <string name="lbl_icon_offset_y">Vertical offset for all AOD items: %1$d dp</string>
+    <string name="set_icon_offset_y_sum">How far down the whole AOD group sits, measured from the \u201cVertical start\u201d anchor in the Icon position section. It moves the icons and the clock together. With the clock on, the top clock line starts at this distance and the icons sit below it; with the clock off, the icons start here. Larger values move everything down, except with the bottom anchor, where they move everything up.</string>
     <string name="lbl_icon_per_row">Icons per row: %1$d (0 = fill the width)</string>
     <string name="set_icon_per_row_sum">0 fits as many icons into one row as the screen width allows. A fixed number gives a predictable shape: 1 is a vertical list, 2 or 3 is a narrow block. More icons wrap into the next row.</string>
     <string name="lbl_icon_gap">Space between icons: %1$d dp</string>

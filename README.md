@@ -94,10 +94,14 @@ them to one spot.
   colors keeps them; an app without a symbol falls back to its app icon
 - Icon position: center the rows or start them at the left edge, horizontal
   offset +/-200 dp, vertical start below the camera / from the top / from the
-  bottom with a 0-600 dp offset, icons per row (0 = fill the width, or 1-8),
+  bottom, icons per row (0 = fill the width, or 1-8),
   gap between icons and between rows, at most 1-24 icons, center or align a
   shorter last row, optional clipping to the blacked-out area, and a
   "reset position" button. Offsets are limited so the block stays on the panel
+- Vertical offset for all AOD items (in Basics): one 0-600 dp offset moves the
+  whole group -- icons and clock together -- relative to the "Vertical start"
+  anchor above. With the clock on, the top clock line starts at this distance
+  and the icons sit below it; with the clock off, the icons start there
 - Notification counts: optional number under each icon (from two upwards, or
   always), text size 10-28 dp, optional rounded badge; the row height reserves
   room for it so rows never overlap the number. Two sources: the number of
@@ -283,9 +287,11 @@ Each line is configured separately:
   edge margin the icon rows keep.
 - **Height above the icons**: 0-400 dp between the bottom of the line and the
   top of the icon block (time defaults to 44 dp, date to 16 dp, so with both
-  on the date sits between the time and the icons). The clock follows the
-  icon anchor and offset; if the icons sit near the top edge, a line is
-  pushed down to the panel margin instead of being clipped away.
+  on the date sits between the time and the icons). The whole group is placed
+  by the shared "Vertical offset for all AOD items" in Basics: the top clock
+  line starts at that offset and the icons hang below it. If a line would sit
+  near the top edge, it is pushed down to the panel margin instead of being
+  clipped away.
 
 The time uses the phone's 12/24-hour setting; the date is the locale's
 weekday-day-month order without a year. Setting the time, changing the time

@@ -261,6 +261,8 @@ public class GlowRendererView extends View
         fm = datePaint.getFontMetrics();
         dateAscent = -fm.ascent;
         dateDescent = fm.descent;
+        // the clock height changes where the icon block sits, so re-layout
+        layoutIcons();
         refreshClock();
     }
 
@@ -359,14 +361,19 @@ public class GlowRendererView extends View
         int rows = IconMath.rows(icons.size(), cols);
 
         float blockH = rows * cellH + (rows - 1) * iconRowGap;
-        float top = iconTopFor(blockH, density);
+        // the shared vertical offset marks the top of the whole group: when
+        // the clock is on, lower the icons so the top clock line lands there
+        float clockAboveH = ClockMath.aboveIconsH(
+                clockCfg.showTime, clockCfg.timeOffsetPx, timeAscent + timeDescent,
+                clockCfg.showDate, clockCfg.dateOffsetPx, dateAscent + dateDescent);
+        float top = iconTopFor(blockH, density, clockAboveH);
         float limit = (iconCfg.clipToBlackout ? screenH * blackoutFraction : screenH) - margin;
         int fit = IconMath.rowsThatFit(top, limit, cellH, iconRowGap);
         if (rows > fit)
         {
             rows = fit;
             blockH = rows * cellH + (rows - 1) * iconRowGap;
-            top = iconTopFor(blockH, density);
+            top = iconTopFor(blockH, density, clockAboveH);
         }
 
         iconCols = cols;
@@ -376,13 +383,15 @@ public class GlowRendererView extends View
         iconsBottom = top + blockH;
     }
 
-    /** Vertical start of the whole block, from the configured anchor. */
-    private float iconTopFor(float blockH, float density)
+    /** Vertical start of the icon block. For the top and camera anchors the
+     *  clock height is added, so the offset marks the top of the whole group
+     *  (clock first, icons below); the bottom anchor measures to the last row. */
+    private float iconTopFor(float blockH, float density, float clockAboveH)
     {
         float top;
         if (Prefs.ICON_Y_TOP.equals(iconCfg.yAnchor))
         {
-            top = iconCfg.offsetYPx;
+            top = iconCfg.offsetYPx + clockAboveH;
         }
         else if (Prefs.ICON_Y_BOTTOM.equals(iconCfg.yAnchor))
         {
@@ -390,7 +399,7 @@ public class GlowRendererView extends View
         }
         else
         {
-            top = Math.max(camera.bottom + 22f * density, screenH * 0.10f) + iconCfg.offsetYPx;
+            top = Math.max(camera.bottom + 22f * density, screenH * 0.10f) + iconCfg.offsetYPx + clockAboveH;
         }
         // never let the block leave the panel, whatever offset was dialled in
         return Math.max(0f, Math.min(top, Math.max(0f, screenH - blockH)));
