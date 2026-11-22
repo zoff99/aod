@@ -104,10 +104,13 @@ else
     echo "WARNING: could not write the preferences, shot 03 may be black" >&2
 fi
 
-say "grant the notification listener and the accessibility service"
+say "grant the notification listener, the accessibility service and the battery exemption"
 adb shell cmd notification allow_listener "$PKG/$PKG.notificationobserver" || true
 adb shell settings put secure enabled_accessibility_services "$PKG/$PKG.overlayservice" || true
 adb shell settings put secure accessibility_enabled 1 || true
+# The app asks for the battery exemption on start too, and that dialog would
+# sit on top of the settings screenshot. Doze whitelist = exempt.
+adb shell dumpsys deviceidle whitelist "+$PKG" || true
 sleep 6
 
 say "01 settings screen"
