@@ -75,11 +75,10 @@ public class overlayservice extends AccessibilityService
     private static final int DRAW_WAKE_LOCK_LEVEL = 0x00000080;
 
     private static final long LOCK_GUARD_MS = 1200L;
-    /** How often the light moves while one burst lasts that long: ten
-     *  minutes. The position also changes at the start of every burst,
-     *  which is what actually protects the panel, because bursts are
-     *  usually far shorter than this interval. */
-    private static final long SHIFT_INTERVAL_MS = 600000L;
+    // The burn-in move interval is user-chosen (1/2/10/20 min, default 10);
+    // see shiftIntervalMs(). The position also changes at the start of every
+    // burst, which is what actually protects the panel, because bursts are
+    // usually far shorter than this interval.
 
     /** Alarm actions for the end of a burst and the burn-in move. An alarm
      *  wakes the phone once at the right moment; a Handler message would
@@ -132,7 +131,7 @@ public class overlayservice extends AccessibilityService
     private String lastBurstKey = "";
     private CountDownTimer timeoutTimer;
     private int shiftIndex = 0;
-    private static final float[][] SHIFTS = {{0, 0}, {7, 4}, {-6, 7}, {5, -5}, {-7, -4}};
+    private static final float[][] SHIFTS = {{0, 0}, {2, 1}, {-1, 2}, {-2, -1}, {1, -2}};
 
     // ---- lifecycle -----------------------------------------------------------
 
@@ -1090,11 +1089,18 @@ public class overlayservice extends AccessibilityService
     private void armNextShift()
     {
         h.removeCallbacks(shiftRunnable);
-        if (timersViaAlarm && setAlarm(ACTION_ALARM_DRIFT, REQ_ALARM_DRIFT, SHIFT_INTERVAL_MS))
+        long interval = shiftIntervalMs();
+        if (timersViaAlarm && setAlarm(ACTION_ALARM_DRIFT, REQ_ALARM_DRIFT, interval))
         {
             return;
         }
-        h.postDelayed(shiftRunnable, SHIFT_INTERVAL_MS);
+        h.postDelayed(shiftRunnable, interval);
+    }
+
+    /** The burn-in move interval chosen in settings (1/2/10/20 min). */
+    private long shiftIntervalMs()
+    {
+        return Prefs.iconShiftMin(this) * 60000L;
     }
 
     // ---- clock refresh ----------------------------------------------------
@@ -1144,14 +1150,14 @@ public class overlayservice extends AccessibilityService
     {
         shiftIndex = (shiftIndex + 1) % SHIFTS.length;
         float d = getResources().getDisplayMetrics().density;
-        // icons cover far more pixels than a thin ring, so they move a
-        // little further to keep any single pixel from staying lit
-        float scale = Prefs.STYLE_ICONS.equals(Prefs.style(this)) ? 2.6f : 1f;
-        float dx = SHIFTS[shiftIndex][0] * d * scale;
-        float dy = SHIFTS[shiftIndex][1] * d * scale;
+        // a subtle, sub-millimeter hop: just enough to hand the load to the
+        // neighboring pixels (that is what prevents burn-in), small enough
+        // to be barely noticeable. The same small step for every style.
+        float dx = SHIFTS[shiftIndex][0] * d;
+        float dy = SHIFTS[shiftIndex][1] * d;
         if (view != null) { briefDraw(800L); view.setShift(dx, dy); }
         Dbg.log("overlay", "burn-in shift slot=" + shiftIndex + " dx=" + (int) dx
-                + " dy=" + (int) dy + " (next in " + (SHIFT_INTERVAL_MS / 60000L) + " min)");
+                + " dy=" + (int) dy + " (next in " + Prefs.iconShiftMin(this) + " min)");
     }
 
     /**

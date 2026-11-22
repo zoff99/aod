@@ -94,6 +94,7 @@ public final class SettingsSchema
             s(Prefs.ICON_TINT, Prefs.ICON_TINT_COLOR,
                     Prefs.ICON_TINT_COLOR, Prefs.ICON_TINT_WHITE, Prefs.ICON_TINT_BLACK),
             i(Prefs.ICON_SIZE_DP, 5, 96, 40), b(Prefs.ICON_PLATE, false), b(Prefs.ICON_SHIFT, true),
+            i(Prefs.ICON_SHIFT_MIN, 1, 20, 10),
             // icon layout
             b(Prefs.ICON_CENTER_H, true), b(Prefs.ICON_LAST_ROW_CENTER, true),
             i(Prefs.ICON_OFFSET_X_DP, -200, 200, 0),

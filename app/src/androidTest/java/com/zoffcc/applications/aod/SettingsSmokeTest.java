@@ -177,6 +177,26 @@ public class SettingsSmokeTest
     }
 
     @Test
+    public void shiftMinIsOneOfTheSteps()
+    {
+        try (ActivityScenario<MainActivity> s = ActivityScenario.launch(MainActivity.class))
+        {
+            s.onActivity(a -> {
+                SeekBar sb = a.findViewById(R.id.sb_shift_min);
+                assertEquals("the slider must have one position per step",
+                        ShiftMinutes.count() - 1, sb.getMax());
+                int stored = Prefs.iconShiftMin(a);
+                boolean isStep = false;
+                for (int step : ShiftMinutes.STEPS_MIN) { if (step == stored) { isStep = true; } }
+                assertTrue("stored move interval " + stored + " is not a step", isStep);
+                TextView lbl = a.findViewById(R.id.lbl_shift_min);
+                assertTrue("interval must be labelled in minutes: " + lbl.getText(),
+                        lbl.getText().toString().contains("min"));
+            });
+        }
+    }
+
+    @Test
     public void freshInstallLabelsShowTheRealDefaults()
     {
         // regression: the icon size label once showed the raw seek bar
@@ -194,6 +214,8 @@ public class SettingsSmokeTest
                             ((TextView) a.findViewById(R.id.lbl_icon_size)).getText().toString());
                     assertEquals(a.getString(R.string.lbl_clock_time_size, SettingsSchema.defInt(Prefs.CLOCK_TIME_SIZE_DP)),
                             ((TextView) a.findViewById(R.id.lbl_clock_time_size)).getText().toString());
+                    assertEquals(a.getString(R.string.lbl_shift_min, SettingsSchema.defInt(Prefs.ICON_SHIFT_MIN)),
+                            ((TextView) a.findViewById(R.id.lbl_shift_min)).getText().toString());
                     assertEquals(a.getString(R.string.lbl_stroke, SettingsSchema.defInt(Prefs.STROKE_DP)),
                             ((TextView) a.findViewById(R.id.lbl_stroke)).getText().toString());
                     assertEquals(a.getString(R.string.lbl_speed, SettingsSchema.defInt(Prefs.SPEED_MS)),

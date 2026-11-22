@@ -67,6 +67,7 @@ public final class Prefs
     public static final String ICON_SIZE_DP = "icon_size_dp";       // 5..96 dp, stepped
     public static final String ICON_PLATE = "icon_plate";           // rounded plate behind each icon
     public static final String ICON_SHIFT = "icon_shift";           // slow drift against burn-in
+    public static final String ICON_SHIFT_MIN = "icon_shift_min";   // 1|2|10|20 min, stepped
 
     // ---- app icon position / layout ---------------------------------------
     public static final String ICON_CENTER_H = "icon_center_h";     // center the rows horizontally
@@ -198,6 +199,7 @@ public final class Prefs
     public static int iconSizeDp(Context c) { return get(c).getInt(ICON_SIZE_DP, SettingsSchema.defInt(ICON_SIZE_DP)); }
     public static boolean iconPlate(Context c) { return get(c).getBoolean(ICON_PLATE, SettingsSchema.defBool(ICON_PLATE)); }
     public static boolean iconShift(Context c) { return get(c).getBoolean(ICON_SHIFT, SettingsSchema.defBool(ICON_SHIFT)); }
+    public static int iconShiftMin(Context c) { return get(c).getInt(ICON_SHIFT_MIN, SettingsSchema.defInt(ICON_SHIFT_MIN)); }
 
     public static boolean iconCenterH(Context c) { return get(c).getBoolean(ICON_CENTER_H, SettingsSchema.defBool(ICON_CENTER_H)); }
     public static boolean iconLastRowCenter(Context c) { return get(c).getBoolean(ICON_LAST_ROW_CENTER, SettingsSchema.defBool(ICON_LAST_ROW_CENTER)); }

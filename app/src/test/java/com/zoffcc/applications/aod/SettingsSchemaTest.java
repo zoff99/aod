@@ -206,6 +206,7 @@ public class SettingsSchemaTest
         assertEquals(Prefs.CLOCK_NONE, SettingsSchema.defString(Prefs.CLOCK_MODE));
         assertEquals(50, SettingsSchema.defInt(Prefs.CLOCK_TIME_SIZE_DP));
         assertEquals(20, SettingsSchema.defInt(Prefs.CLOCK_DATE_SIZE_DP));
+        assertEquals(10, SettingsSchema.defInt(Prefs.ICON_SHIFT_MIN));
     }
 
     @Test

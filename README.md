@@ -71,18 +71,23 @@ released when the burst ends.
 
 **Burn-in protection:** the light and the app icons are placed a
 few pixels differently **at the start of every burst**, and move again every
-**10 minutes** if a single burst lasts that long (`SHIFT_INTERVAL_MS`).
-Within one burst nothing slides around at all, so what you see stays calm;
-across repeated bursts the pixels differ. Icons move further than a thin
-ring because they cover many more pixels. Switch *Move icons* off to pin
-them to one spot.
+**10 minutes** if a single burst lasts that long. That interval is a setting
+with four snap points -- **1, 2, 10 or 20 minutes**, 10 by default; shorter
+spreads the wear over more pixels but costs a few more wake-ups. The hop
+itself is deliberately tiny: 2-3 dp, well under a millimetre (roughly 6-9
+pixels on a typical phone), the same for every style. Burn-in is prevented by
+handing the load to the neighbouring pixels, not by travelling far, so a
+sub-millimetre step is enough and stays almost invisible. Within one burst
+nothing slides around at all, so what you see stays calm; across repeated
+bursts the pixels differ. Switch *Move icons* off to pin them to one spot.
 
 ## Features
 
 - Styles: camera ring, screen edge glow, status-bar LED dot, or app icons
 - App icons: one icon per app with a notification, in centered rows below
   the camera; original colors, white or black; size 5-96 dp (default 40 dp); optional
-  background plate; slow drift against burn-in. Completely still -- no
+  background plate; a subtle burn-in move every 1/2/10/20 minutes (default 10).
+  Completely still -- no
   pulsing, flashing or blinking, and no per-frame redraws
 - Icon artwork: the small symbol an app posts to the status bar (default),
   or its launcher icon (`Notification.getSmallIcon()`, loaded by resource id from that
@@ -534,7 +539,8 @@ A still light should cost nothing between the few frames it draws, so the
 timing is built around that:
 
 - **Still image (the default icons style, interval off):** the end of the
-  light and the 10-minute burn-in move are `AlarmManager` alarms
+  light and the burn-in move (10 minutes by default, 1/2/10/20 selectable) are
+  `AlarmManager` alarms
   (`setExactAndAllowWhileIdle`). One wakeup each, instead of a wake lock held
   for the whole burst. A `Handler` timer is armed as well as a free backstop:
   it costs nothing while the CPU sleeps and ends the burst earlier if the

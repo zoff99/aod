@@ -781,10 +781,51 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
         });
     }
 
+    private void bindShiftMinRow()
+    {
+        SeekBar sb = findViewById(R.id.sb_shift_min);
+        TextView lbl = findViewById(R.id.lbl_shift_min);
+        sb.setMax(ShiftMinutes.count() - 1);
+
+        int stored = Prefs.iconShiftMin(this);
+        int index = ShiftMinutes.nearestIndex(stored);
+        if (ShiftMinutes.min(index) != stored)
+        {
+            // an off-grid value from an import: settle on the nearest step
+            prefs.edit().putInt(Prefs.ICON_SHIFT_MIN, ShiftMinutes.min(index)).apply();
+        }
+        sb.setProgress(index);
+        lbl.setText(getString(R.string.lbl_shift_min, ShiftMinutes.min(index)));
+        ((TextView) findViewById(R.id.lbl_shift_min_lo))
+                .setText(getString(R.string.dur_min, ShiftMinutes.min(0)));
+        ((TextView) findViewById(R.id.lbl_shift_min_hi))
+                .setText(getString(R.string.dur_min, ShiftMinutes.min(ShiftMinutes.count() - 1)));
+
+        sb.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener()
+        {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser)
+            {
+                lbl.setText(getString(R.string.lbl_shift_min, ShiftMinutes.min(progress)));
+                if (fromUser)
+                {
+                    prefs.edit().putInt(Prefs.ICON_SHIFT_MIN, ShiftMinutes.min(progress)).apply();
+                }
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {}
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {}
+        });
+    }
+
     private void bindSliders()
     {
         bindTimeoutRow();
         bindIconSizeRow();
+        bindShiftMinRow();
         bindSlider(R.id.sb_stroke, R.id.lbl_stroke,
                 prefs.getInt(Prefs.STROKE_DP, SettingsSchema.defInt(Prefs.STROKE_DP)) - 2, R.string.lbl_stroke,
                 p -> p + 2,
