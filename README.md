@@ -70,8 +70,8 @@ probed once and used only where the OEM permits it. All wake locks are
 released when the burst ends.
 
 **Burn-in protection:** the light and the app icons are placed a
-few pixels differently **at the start of every burst**, and move again after
-**ten minutes** if a single burst lasts that long (`SHIFT_INTERVAL_MS`).
+few pixels differently **at the start of every burst**, and move again every
+**10 minutes** if a single burst lasts that long (`SHIFT_INTERVAL_MS`).
 Within one burst nothing slides around at all, so what you see stays calm;
 across repeated bursts the pixels differ. Icons move further than a thin
 ring because they cover many more pixels. Switch *Move icons* off to pin
@@ -534,7 +534,7 @@ A still light should cost nothing between the few frames it draws, so the
 timing is built around that:
 
 - **Still image (the default icons style, interval off):** the end of the
-  light and the ten-minute burn-in move are `AlarmManager` alarms
+  light and the 10-minute burn-in move are `AlarmManager` alarms
   (`setExactAndAllowWhileIdle`). One wakeup each, instead of a wake lock held
   for the whole burst. A `Handler` timer is armed as well as a free backstop:
   it costs nothing while the CPU sleeps and ends the burst earlier if the
