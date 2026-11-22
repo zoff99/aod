@@ -77,4 +77,31 @@ public final class ClockMath
         if (showDate) { h = Math.max(h, dateOffsetPx + dateTextH); }
         return h;
     }
+
+    /**
+     * Delay until the clock next needs a redraw, in milliseconds, or -1 when
+     * neither line is shown (no periodic wake at all). With the time shown
+     * this is the next minute boundary; with only the date shown it is the
+     * next local midnight, so a date-only clock wakes once a day instead of
+     * every minute. Pure java, so the rule is host tested.
+     */
+    public static long nextRefreshMs(String mode, long nowMillis)
+    {
+        if (showTime(mode))
+        {
+            return 60000L - (nowMillis % 60000L) + 50L;
+        }
+        if (showDate(mode))
+        {
+            java.util.Calendar cal = java.util.Calendar.getInstance();
+            cal.setTimeInMillis(nowMillis);
+            cal.add(java.util.Calendar.DAY_OF_MONTH, 1);
+            cal.set(java.util.Calendar.HOUR_OF_DAY, 0);
+            cal.set(java.util.Calendar.MINUTE, 0);
+            cal.set(java.util.Calendar.SECOND, 0);
+            cal.set(java.util.Calendar.MILLISECOND, 0);
+            return Math.max(1000L, cal.getTimeInMillis() - nowMillis);
+        }
+        return -1L;
+    }
 }

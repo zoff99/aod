@@ -116,4 +116,35 @@ public class ClockMathTest
         // the top clock line lands back at the offset, not above it
         assertEquals(300f, ClockMath.topY(iconTop, 100f, 60f, 48f), 0.01f);
     }
+
+    @Test
+    public void clockOffSchedulesNoWake()
+    {
+        assertEquals(-1L, ClockMath.nextRefreshMs(Prefs.CLOCK_NONE, 1700000000000L));
+    }
+
+    @Test
+    public void timeShownWakesAtTheNextMinute()
+    {
+        long now = 1700000000000L;
+        long delay = ClockMath.nextRefreshMs(Prefs.CLOCK_TIME, now);
+        assertTrue(delay > 0L && delay <= 60050L);
+        // lands 50 ms past a minute boundary, whatever instant we start from
+        assertEquals(50L, (now + delay) % 60000L);
+        // time+date also ticks every minute
+        assertEquals(delay, ClockMath.nextRefreshMs(Prefs.CLOCK_TIME_DATE, now));
+    }
+
+    @Test
+    public void dateOnlyWakesAtTheNextMidnight()
+    {
+        long now = 1700000000000L;
+        long delay = ClockMath.nextRefreshMs(Prefs.CLOCK_DATE, now);
+        assertTrue("date-only must wake once a day, not every minute", delay > 60000L);
+        java.util.Calendar cal = java.util.Calendar.getInstance();
+        cal.setTimeInMillis(now + delay);
+        assertEquals(0, cal.get(java.util.Calendar.HOUR_OF_DAY));
+        assertEquals(0, cal.get(java.util.Calendar.MINUTE));
+        assertEquals(0, cal.get(java.util.Calendar.SECOND));
+    }
 }

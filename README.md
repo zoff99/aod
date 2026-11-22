@@ -110,7 +110,8 @@ them to one spot.
 - Clock above the icons: optional time and/or date (default: nothing), each
   with its own size (8-72 dp), font (six built-in faces), horizontal position
   and height above the icon block. Only visible while a notification is
-  showing; one redraw per minute, and it drifts with the icons
+  showing; the time redraws once a minute, a date-only clock once at midnight,
+  and it drifts with the icons
 - Animations (light styles): pulse, rotate, flash, steady; adjustable speed
 - ECO mode (reduced frame rate) and interval mode (on/off cycling)
 - Per-app colors (long-press an app icon in the strip), auto color from
@@ -275,8 +276,10 @@ stays exactly as it is), **time**, **time + date**, **date**.
 The clock follows the same rule as the icons: it is only drawn while a
 notification is visible. No notification means a completely black screen,
 clock included. It is part of the same still image -- no blinking, no frame
-loop; the only cost is one redraw per minute to keep the time current, and
-the burn-in drift moves it together with the icons.
+loop. The time is redrawn once a minute; a date-only clock is redrawn once at
+midnight; with the clock off nothing is scheduled at all. Each redraw is a
+short alarm wake-up that pushes one frame to the dozing panel, and the
+burn-in drift moves the clock together with the icons.
 
 Each line is configured separately:
 
@@ -295,16 +298,21 @@ Each line is configured separately:
 
 The time uses the phone's 12/24-hour setting; the date is the locale's
 weekday-day-month order without a year. Setting the time, changing the time
-zone or the language refreshes the clock immediately.
+zone or the language refreshes the clock immediately -- but only when a clock
+line is actually shown; with the clock off these events do nothing.
 
 ## Setup
 
-1. Install, open the app.
-2. Grant **notification access** (button in the app).
-3. Enable the **accessibility service** (button in the app). It is used
-   only to draw the overlay; it reads nothing.
-4. Allow **ignoring battery optimizations** so timers survive doze.
-5. Optional one-tap setup via ADB:
+1. Install, open the app. On startup it asks for whatever is still missing,
+   one dialog at a time: **notification access**, then the **accessibility
+   service**, then **ignoring battery optimizations**. Each opens the right
+   system screen; the next is offered when you come back. Buttons in the app
+   open the same screens later. The accessibility service is used only to
+   draw the overlay; it reads nothing.
+2. Notifications that were already present before the app was installed or
+   updated are read on startup (with your app filters applied) and shown on
+   the AOD right away -- you do not have to wait for a new one to arrive.
+3. Optional one-tap setup via ADB:
    `adb shell pm grant com.zoffcc.applications.aod android.permission.WRITE_SECURE_SETTINGS`
    then use the "Auto-enable accessibility" button that appears.
 

@@ -86,8 +86,10 @@ public class overlayservice extends AccessibilityService
      *  need the CPU held awake for the whole burst just to fire on time. */
     private static final String ACTION_ALARM_END = "com.zoffcc.applications.aod.ALARM_END";
     private static final String ACTION_ALARM_DRIFT = "com.zoffcc.applications.aod.ALARM_DRIFT";
+    private static final String ACTION_ALARM_CLOCK = "com.zoffcc.applications.aod.ALARM_CLOCK";
     private static final int REQ_ALARM_END = 4101;
     private static final int REQ_ALARM_DRIFT = 4102;
+    private static final int REQ_ALARM_CLOCK = 4103;
 
     private final Handler h = new Handler(Looper.getMainLooper());
     private WindowManager wm;
@@ -194,6 +196,10 @@ public class overlayservice extends AccessibilityService
             Log.i(TAG, "bootstrap done, screenOn=" + screenOn + " drawCapable=" + drawCapable);
             Dbg.log("overlay", "bootstrap done drawCapable=" + drawCapable + " " + state());
             syncOverlay();
+            // The observer may have published before this receiver existed
+            // (fresh install / update). Ask it to re-read the active
+            // notifications and publish again so none are missed.
+            sendLocal(notificationobserver.ACTION_REEVAL);
         }
         catch (Exception e)
         {
@@ -283,6 +289,7 @@ public class overlayservice extends AccessibilityService
         cmd.addAction(notificationobserver.ACTION_WAKE);
         cmd.addAction(ACTION_ALARM_END);
         cmd.addAction(ACTION_ALARM_DRIFT);
+        cmd.addAction(ACTION_ALARM_CLOCK);
         ContextCompat.registerReceiver(this, commandReceiver, cmd, ContextCompat.RECEIVER_NOT_EXPORTED);
     }
 
@@ -399,10 +406,12 @@ public class overlayservice extends AccessibilityService
                     || Intent.ACTION_TIMEZONE_CHANGED.equals(a)
                     || Intent.ACTION_LOCALE_CHANGED.equals(a))
             {
-                // the clock must not wait up to a minute for the next tick
-                // after the user sets the time, travels, or changes language
+                // Refresh only when a clock line is actually shown: the
+                // renderer no-ops when it is off, and armNextClock schedules
+                // nothing. Re-arm so the next tick follows the new time.
                 Dbg.log("overlay", "recv " + a + " -> clock refresh");
                 if (view != null) { view.refreshClock(); }
+                armNextClock();
             }
         }
     };
@@ -479,6 +488,11 @@ public class overlayservice extends AccessibilityService
                     Dbg.log("overlay", "alarm: burn-in move");
                     briefCpu(2000L);
                     driftStep();
+                    break;
+                case ACTION_ALARM_CLOCK:
+                    Dbg.log("overlay", "alarm: clock refresh");
+                    briefCpu(2000L);
+                    clockStep();
                     break;
                 case notificationobserver.ACTION_WAKE:
                     Dbg.log("overlay", "WAKE: acquire wakeBridge 2s");
@@ -922,6 +936,7 @@ public class overlayservice extends AccessibilityService
         }
         armEndTimer(durationMs);
         armShift();
+        armNextClock();
         syncCpuLock();
         syncOverlay();
         Dbg.log("overlay", "burst STARTED dur=" + durationMs + " canvas=" + allowCanvas
@@ -1031,6 +1046,7 @@ public class overlayservice extends AccessibilityService
         cancelAlarms();
         if (timeoutTimer != null) { timeoutTimer.cancel(); timeoutTimer = null; }
         h.removeCallbacks(shiftRunnable);
+        h.removeCallbacks(clockRunnable);
         h.removeCallbacks(keyguardWatch);
         h.removeCallbacks(relockWatch);
     }
@@ -1079,6 +1095,42 @@ public class overlayservice extends AccessibilityService
             return;
         }
         h.postDelayed(shiftRunnable, SHIFT_INTERVAL_MS);
+    }
+
+    // ---- clock refresh ----------------------------------------------------
+    // The clock is part of the still icon image, so updating it means waking
+    // the CPU and pushing one frame, exactly like the burn-in move. The time
+    // ticks every minute; a date-only clock wakes once at midnight; with the
+    // clock off (or a non-icon style) nothing is scheduled at all.
+
+    private final Runnable clockRunnable = new Runnable()
+    {
+        @Override
+        public void run() { clockStep(); }
+    };
+
+    private void clockStep()
+    {
+        if (!lightActive || view == null) { return; }
+        briefDraw(800L);
+        view.refreshClock();
+        armNextClock();
+    }
+
+    private void armNextClock()
+    {
+        h.removeCallbacks(clockRunnable);
+        cancelAlarm(ACTION_ALARM_CLOCK, REQ_ALARM_CLOCK);
+        if (!lightActive || view == null) { return; }
+        if (!Prefs.STYLE_ICONS.equals(Prefs.style(this))) { return; }
+        long delay = ClockMath.nextRefreshMs(Prefs.clockMode(this), System.currentTimeMillis());
+        if (delay <= 0L) { return; }   // clock off: no periodic wake
+        Dbg.log("overlay", "clock: next refresh in " + (delay / 1000L) + "s");
+        if (timersViaAlarm && setAlarm(ACTION_ALARM_CLOCK, REQ_ALARM_CLOCK, delay))
+        {
+            return;
+        }
+        h.postDelayed(clockRunnable, delay);
     }
 
     /** True when the icons style is switched to "pinned to one spot". */
@@ -1263,6 +1315,7 @@ public class overlayservice extends AccessibilityService
     {
         cancelAlarm(ACTION_ALARM_END, REQ_ALARM_END);
         cancelAlarm(ACTION_ALARM_DRIFT, REQ_ALARM_DRIFT);
+        cancelAlarm(ACTION_ALARM_CLOCK, REQ_ALARM_CLOCK);
     }
 
     /** An alarm guarantees the CPU only while the receiver runs; drawing a
@@ -1713,6 +1766,7 @@ public class overlayservice extends AccessibilityService
             // the clock is part of the still icon image: hand the renderer
             // the new configuration directly, no full rebuild needed
             if (view != null) { view.setClock(ClockLayout.from(this)); }
+            if (lightActive) { armNextClock(); }
         }
         if (Prefs.CANVAS_FALLBACK.equals(key) || Prefs.AWAKE_PANEL.equals(key))
         {

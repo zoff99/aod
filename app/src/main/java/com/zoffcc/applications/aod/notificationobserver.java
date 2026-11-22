@@ -117,17 +117,7 @@ public class notificationobserver extends NotificationListenerService
         androidx.core.content.ContextCompat.registerReceiver(this, commandReceiver, cf,
                 androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED);
 
-        items.clear();
-        synchronized (summaries) { summaries.clear(); }
-        try
-        {
-            StatusBarNotification[] active = getActiveNotifications();
-            if (active != null)
-            {
-                for (StatusBarNotification sbn : active) { consider(sbn); }
-            }
-        }
-        catch (Exception e) { Log.w(TAG, "load active: " + e); }
+        reloadActive();
         publish();
         scheduleNightBoundary();
     }
@@ -475,6 +465,27 @@ public class notificationobserver extends NotificationListenerService
         catch (Exception e) { return false; }
     }
 
+    /** Re-read every notification the system currently holds and re-apply
+     *  the app filters and persistent policy; the caller publishes afterwards.
+     *  Used on connect and on REEVAL so a fresh install or update picks up the
+     *  notifications that were already there before the listener existed. */
+    private void reloadActive()
+    {
+        synchronized (items) { items.clear(); }
+        synchronized (summaries) { summaries.clear(); }
+        if (!connected) { return; }
+        try
+        {
+            StatusBarNotification[] active = getActiveNotifications();
+            if (active != null)
+            {
+                for (StatusBarNotification sbn : active) { consider(sbn); }
+            }
+            Dbg.log("observer", "reloadActive: " + (active == null ? 0 : active.length) + " active");
+        }
+        catch (Exception e) { Log.w(TAG, "reload active: " + e); }
+    }
+
     private void publish()
     {
         ArrayList<NotificationItem> list = new ArrayList<>();
@@ -561,6 +572,7 @@ public class notificationobserver extends NotificationListenerService
                 syncBatteryReceiver();
                 iconColorCache.clear();
                 batteryState = "";
+                reloadActive();
                 handler.removeCallbacks(publishRunnable);
                 handler.post(publishRunnable);
                 scheduleNightBoundary();

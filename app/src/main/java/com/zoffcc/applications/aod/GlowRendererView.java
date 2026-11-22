@@ -267,29 +267,18 @@ public class GlowRendererView extends View
     }
 
     /**
-     * Keep the clock current: format once now, then once per minute, but
-     * only while something is on screen. Called on every state change that
-     * could start or stop the clock (show, hide, start, stop, settings).
+     * Format the current time/date and redraw, but only while something is
+     * on screen. The owner (the overlay service) decides WHEN this runs --
+     * every minute for the time, once at midnight for a date-only clock --
+     * through its alarm path, so the CPU is actually awake to push the frame
+     * to a dozing panel. This method never schedules anything itself.
      */
     public void refreshClock()
     {
-        removeCallbacks(clockTick);
         if (!running || icons == null || (!clockCfg.showTime && !clockCfg.showDate)) { return; }
         formatClockTexts();
         invalidate();
-        long now = System.currentTimeMillis();
-        postDelayed(clockTick, 60000L - (now % 60000L) + 50L);
     }
-
-    /** One reusable tick, like the frame loop: no new Runnable per minute. */
-    private final Runnable clockTick = new Runnable()
-    {
-        @Override
-        public void run()
-        {
-            refreshClock();
-        }
-    };
 
     /** Runs on the minute tick, never inside onDraw: formatting allocates.
      *  The time follows the phone's 12/24-hour setting; the date is the

@@ -5,6 +5,10 @@
     <string name="overlay_service_description">Draws the notification light above the lock screen. No screen content is read, and notification titles and message text are never read.</string>
     <string name="notification_listener_service">Notification access</string>
     <string name="notification_listener_service_explanation">To see your notifications as a light, the app needs notification access. It only learns which app posted, when, and the counter that app publishes \u2014 it never reads titles or message text. Enable it now?</string>
+    <string name="accessibility_service">Accessibility</string>
+    <string name="accessibility_service_explanation">The light is drawn as an accessibility overlay, so the app needs its accessibility service turned on. That is also what lets it draw on the lock screen and the always-on screen. It does not read or control what is on your screen. Enable it now?</string>
+    <string name="battery_exemption">Battery optimization</string>
+    <string name="battery_exemption_explanation">To keep the light working reliably while the phone sleeps, exempt the app from battery optimization. Without it Android may stop the app in the background and the light stops appearing. Exempt it now?</string>
 
     <string name="btn_notif_access">Notifications</string>
     <string name="btn_accessibility">Accessibility</string>

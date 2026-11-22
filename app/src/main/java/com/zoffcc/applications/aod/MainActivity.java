@@ -128,16 +128,10 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
         append_dbg("start " + BuildConfig.GitHash + "\n");
         refreshItems(notificationobserver.latest);
 
-        if (!isNotificationServiceEnabled())
-        {
-            new AlertDialog.Builder(this)
-                    .setTitle(R.string.notification_listener_service)
-                    .setMessage(R.string.notification_listener_service_explanation)
-                    .setPositiveButton(R.string.yes,
-                            (d, w) -> startActivity(new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)))
-                    .setNegativeButton(R.string.no, null)
-                    .show();
-        }
+        // Fresh install or update: notifications may already be waiting. Ask
+        // the observer to re-read the active ones (with the current filters)
+        // and publish them, so the AOD shows them right away.
+        sendLocal(notificationobserver.ACTION_REEVAL);
     }
 
     // ---- permissions -------------------------------------------------------
@@ -211,6 +205,58 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
     {
         String flat = Settings.Secure.getString(getContentResolver(), "enabled_accessibility_services");
         return flat != null && flat.contains(new ComponentName(this, overlayservice.class).flattenToString());
+    }
+
+    private boolean isBatteryExempt()
+    {
+        try
+        {
+            return ((PowerManager) getSystemService(POWER_SERVICE)).isIgnoringBatteryOptimizations(getPackageName());
+        }
+        catch (Exception e) { return true; }   // cannot tell -> do not nag
+    }
+
+    /** Ask for whatever is still missing, one dialog at a time. Driven from
+     *  onResume so the next permission is offered when the user comes back
+     *  from the settings screen they were sent to. Nothing shows once all
+     *  three are granted. */
+    private AlertDialog permissionDialog;
+
+    private void promptMissingPermissions()
+    {
+        if (permissionDialog != null && permissionDialog.isShowing()) { return; }
+        if (!isNotificationServiceEnabled())
+        {
+            permissionDialog = new AlertDialog.Builder(this)
+                    .setTitle(R.string.notification_listener_service)
+                    .setMessage(R.string.notification_listener_service_explanation)
+                    .setPositiveButton(R.string.yes,
+                            (d, w) -> startActivity(new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)))
+                    .setNegativeButton(R.string.no, null)
+                    .setOnDismissListener(d -> permissionDialog = null)
+                    .show();
+        }
+        else if (!isAccessibilityEnabled())
+        {
+            permissionDialog = new AlertDialog.Builder(this)
+                    .setTitle(R.string.accessibility_service)
+                    .setMessage(R.string.accessibility_service_explanation)
+                    .setPositiveButton(R.string.yes,
+                            (d, w) -> startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)))
+                    .setNegativeButton(R.string.no, null)
+                    .setOnDismissListener(d -> permissionDialog = null)
+                    .show();
+        }
+        else if (!isBatteryExempt())
+        {
+            permissionDialog = new AlertDialog.Builder(this)
+                    .setTitle(R.string.battery_exemption)
+                    .setMessage(R.string.battery_exemption_explanation)
+                    .setPositiveButton(R.string.yes, (d, w) -> requestBatteryExemption())
+                    .setNegativeButton(R.string.no, null)
+                    .setOnDismissListener(d -> permissionDialog = null)
+                    .show();
+        }
     }
 
     private void updateStatus()
@@ -1090,6 +1136,7 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
     {
         super.onResume();
         updateStatus();
+        promptMissingPermissions();
         updateBrightnessRows();
         if (brightnessObserver == null)
         {
