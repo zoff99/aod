@@ -58,6 +58,9 @@ public class GlowRendererView extends View
     private float shiftY = 0f;
 
     private boolean blackout = false;
+    /** Fade of the always-on items, 0..1 ("always-on visibility"). The black
+     *  field itself is never faded: it must keep hiding the system AOD. */
+    private float elementVisibility = 1f;
     private boolean running = false;
     private long startElapsed = 0L;
     private long lastFrame = 0L;
@@ -203,6 +206,20 @@ public class GlowRendererView extends View
         if (blackout != on)
         {
             blackout = on;
+            invalidate();
+        }
+    }
+
+    /** How visible the items are drawn, 0..1: 0 hides them completely, 1 is
+     *  the normal drawing at whatever brightness the panel itself uses. A
+     *  dozing panel pins its own fixed brightness that apps cannot reliably
+     *  change, so the items are faded here instead of requesting one. */
+    public void setElementVisibility(float v)
+    {
+        v = Math.max(0f, Math.min(1f, v));
+        if (elementVisibility != v)
+        {
+            elementVisibility = v;
             invalidate();
         }
     }
@@ -439,6 +456,25 @@ public class GlowRendererView extends View
         }
     }
 
+    /** Icons and clock with the visibility fade applied. The still image is
+     *  redrawn only on burn-in moves and clock ticks, so the offscreen layer
+     *  the fade needs is rare and cheap; at 100% no layer is used at all,
+     *  and at 0% nothing is drawn. */
+    private void drawItems(Canvas canvas)
+    {
+        if (elementVisibility <= 0f) { return; }
+        if (elementVisibility >= 1f)
+        {
+            drawIcons(canvas);
+            drawClock(canvas);
+            return;
+        }
+        int save = canvas.saveLayerAlpha(null, Math.round(255 * elementVisibility));
+        drawIcons(canvas);
+        drawClock(canvas);
+        canvas.restoreToCount(save);
+    }
+
     /** The number of notifications of one app, centered under its icon. */
     private void drawCount(Canvas canvas, int n, float cx, float iconBottom, float density)
     {
@@ -480,14 +516,13 @@ public class GlowRendererView extends View
             // and widgets; on OLED these pixels are effectively off, so a
             // static blackout costs almost nothing.
             canvas.drawRect(0f, 0f, screenW, screenH * blackoutFraction, blackPaint);
-            if (running && icons != null) { drawIcons(canvas); drawClock(canvas); }
+            if (running && icons != null) { drawItems(canvas); }
         }
         else if (running && icons != null && iconCfg.overUi)
         {
             // "Test light" while the app is on screen: show the icons as they
             // would look, without painting a black field over the UI
-            drawIcons(canvas);
-            drawClock(canvas);
+            drawItems(canvas);
         }
         if (!running) { return; }
         // App icons are a still image: no pulsing, no flashing, no frame loop.
@@ -523,6 +558,10 @@ public class GlowRendererView extends View
                 alpha = 0.30f + 0.70f * (0.5f + 0.5f * (float) Math.sin(t * 2 * Math.PI - Math.PI / 2));
                 break;
         }
+
+        // The visibility fade scales the animation alpha; at 0% nothing is
+        // drawn at all, while the black field above stays fully opaque.
+        alpha *= elementVisibility;
 
         if (alpha > 0.01f)
         {

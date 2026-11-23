@@ -66,6 +66,7 @@ public class SettingsSchemaTest
         assertTrue(SettingsSchema.isStateKey(Prefs.SEEN_PKGS));
         assertTrue(SettingsSchema.isStateKey(Prefs.ACCESS_SEEN));
         assertTrue(SettingsSchema.isStateKey(Prefs.IGNORE_PERSISTENT));
+        assertTrue(SettingsSchema.isStateKey(Prefs.BRIGHTNESS));
         assertFalse(SettingsSchema.isStateKey(Prefs.TIMEOUT_SEC));
     }
 
@@ -86,8 +87,8 @@ public class SettingsSchemaTest
     {
         assertEquals(10800, SettingsSchema.clamp(SettingsSchema.find(Prefs.TIMEOUT_SEC), 999999));
         assertEquals(60, SettingsSchema.clamp(SettingsSchema.find(Prefs.TIMEOUT_SEC), -5));
-        assertEquals(100, SettingsSchema.clamp(SettingsSchema.find(Prefs.BRIGHTNESS), 500));
-        assertEquals(5, SettingsSchema.clamp(SettingsSchema.find(Prefs.BRIGHTNESS), 0));
+        assertEquals(100, SettingsSchema.clamp(SettingsSchema.find(Prefs.AOD_VISIBILITY), 500));
+        assertEquals(0, SettingsSchema.clamp(SettingsSchema.find(Prefs.AOD_VISIBILITY), -3));
         assertEquals(96, SettingsSchema.clamp(SettingsSchema.find(Prefs.ICON_SIZE_DP), 4000));
         assertEquals(5, SettingsSchema.clamp(SettingsSchema.find(Prefs.ICON_SIZE_DP), -3));
         assertEquals(1439, SettingsSchema.clamp(SettingsSchema.find(Prefs.NIGHT_START), 9999));
@@ -196,7 +197,7 @@ public class SettingsSchemaTest
         // be a deliberate edit, not a side effect
         assertEquals(3600, SettingsSchema.defInt(Prefs.TIMEOUT_SEC));
         assertEquals(40, SettingsSchema.defInt(Prefs.ICON_SIZE_DP));
-        assertEquals(30, SettingsSchema.defInt(Prefs.BRIGHTNESS));
+        assertEquals(100, SettingsSchema.defInt(Prefs.AOD_VISIBILITY));
         assertEquals(Prefs.DEFAULT_COLOR, SettingsSchema.defInt(Prefs.COLOR));
         assertEquals(Prefs.STYLE_ICONS, SettingsSchema.defString(Prefs.STYLE));
         assertEquals(PersistentPolicy.CALLS_APPS, SettingsSchema.defString(Prefs.PERSISTENT_MODE));

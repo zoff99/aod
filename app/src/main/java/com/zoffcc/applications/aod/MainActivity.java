@@ -74,7 +74,6 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
     private DocumentImporter document_importer;
     private TextView status_text;
     private items_receiver itemsReceiver;
-    private android.database.ContentObserver brightnessObserver;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -109,7 +108,7 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
         prefs.edit().remove("preview").apply();
 
         bindSwitches();
-        bindBrightnessRow();
+        bindVisibilityRow();
         bindSpinners();
         bindPersistentRow();
         bindColorRow();
@@ -315,6 +314,7 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
         bindSwitch(R.id.sw_relight_relock, Prefs.RELIGHT_RELOCK);
         bindSwitch(R.id.sw_canvas_fallback, Prefs.CANVAS_FALLBACK);
         bindSwitch(R.id.sw_blackout_full, Prefs.BLACKOUT_FULL);
+        bindSwitch(R.id.sw_awake_panel, Prefs.AWAKE_PANEL);
         bindSwitch(R.id.sw_icon_plate, Prefs.ICON_PLATE);
         bindSwitch(R.id.sw_icon_shift, Prefs.ICON_SHIFT);
         bindSwitch(R.id.sw_icon_center_h, Prefs.ICON_CENTER_H);
@@ -336,17 +336,26 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
      * The brightness slider means two different things depending on the
      * switch, so it is bound here rather than with the plain sliders.
      */
-    private void bindBrightnessRow()
+    /**
+     * The visibility slider fades the always-on items themselves, 0..100%:
+     * 0% hides them, 100% draws them at whatever brightness the panel uses.
+     * The panel brightness is left to the phone - a dozing panel pins its
+     * own fixed always-on level that apps cannot reliably change - so fading
+     * the drawing is the one mechanism that works on every device.
+     */
+    private void bindVisibilityRow()
     {
-        SeekBar sb = findViewById(R.id.sb_brightness);
-        sb.setProgress(prefs.getInt(Prefs.BRIGHTNESS, SettingsSchema.defInt(Prefs.BRIGHTNESS)) - 5);
+        SeekBar sb = findViewById(R.id.sb_visibility);
+        TextView lbl = findViewById(R.id.lbl_visibility);
+        sb.setProgress(Prefs.visibility(this));
+        lbl.setText(getString(R.string.lbl_visibility, sb.getProgress()));
         sb.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener()
         {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser)
             {
-                updateBrightnessRows();
-                if (fromUser) { prefs.edit().putInt(Prefs.BRIGHTNESS, progress + 5).apply(); }
+                lbl.setText(getString(R.string.lbl_visibility, progress));
+                if (fromUser) { prefs.edit().putInt(Prefs.AOD_VISIBILITY, progress).apply(); }
             }
 
             @Override
@@ -355,58 +364,6 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {}
         });
-
-        SwitchCompat awake = findViewById(R.id.sw_awake_panel);
-        awake.setChecked(Prefs.awakePanel(this));
-        awake.setOnCheckedChangeListener((b, checked) -> {
-            prefs.edit().putBoolean(Prefs.AWAKE_PANEL, checked).apply();
-            updateBrightnessRows();
-        });
-
-        SwitchCompat sw = findViewById(R.id.sw_follow_brightness);
-        sw.setChecked(Prefs.followBrightness(this));
-        sw.setOnCheckedChangeListener((b, checked) -> {
-            prefs.edit().putBoolean(Prefs.FOLLOW_BRIGHTNESS, checked).apply();
-            updateBrightnessRows();
-        });
-        updateBrightnessRows();
-    }
-
-    /**
-     * Three possible states, and the rows have to say which one is active:
-     * awake + follow  -> the phone's brightness, slider live, no own value;
-     * awake + own     -> an own brightness on an awake panel;
-     * dozing          -> an own brightness on a dozing panel, following is
-     *                    not possible there at all.
-     */
-    private void updateBrightnessRows()
-    {
-        boolean awake = Prefs.awakePanel(this);
-        boolean system = Brightness.usesSystem(this);
-        SwitchCompat sw = findViewById(R.id.sw_follow_brightness);
-        sw.setEnabled(awake);
-        sw.setAlpha(awake ? 1f : 0.55f);
-
-        SeekBar sb = findViewById(R.id.sb_brightness);
-        TextView lbl = findViewById(R.id.lbl_brightness);
-        TextView note = findViewById(R.id.tv_brightness_auto);
-        // An own percentage cannot be combined with "let the phone decide":
-        // any request of ours would take the panel off the system slider.
-        sb.setEnabled(!system);
-        sb.setAlpha(system ? 0.5f : 1f);
-        lbl.setAlpha(system ? 0.6f : 1f);
-        lbl.setText(system ? getString(R.string.lbl_brightness_system)
-                : getString(R.string.lbl_brightness, sb.getProgress() + 5));
-        note.setVisibility(View.VISIBLE);
-        if (system)
-        {
-            note.setText(Brightness.auto(this)
-                    ? R.string.brightness_adaptive_on : R.string.brightness_adaptive_off);
-        }
-        else
-        {
-            note.setText(awake ? R.string.brightness_own_note : R.string.brightness_doze_note);
-        }
     }
 
     private void bindSpinners()
@@ -1178,19 +1135,6 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
         super.onResume();
         updateStatus();
         promptMissingPermissions();
-        updateBrightnessRows();
-        if (brightnessObserver == null)
-        {
-            brightnessObserver = Brightness.watch(this, this::updateBrightnessRows);
-        }
-    }
-
-    @Override
-    protected void onPause()
-    {
-        super.onPause();
-        Brightness.unwatch(this, brightnessObserver);
-        brightnessObserver = null;
     }
 
     @Override

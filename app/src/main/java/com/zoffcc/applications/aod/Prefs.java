@@ -31,8 +31,8 @@ public final class Prefs
     public static final String ECO = "eco";                         // reduced frame rate
     public static final String COLOR = "color";
     public static final String AUTO_COLOR = "auto_color";           // derive color from the app icon
-    public static final String BRIGHTNESS = "brightness";           // 5..100, own brightness
-    public static final String FOLLOW_BRIGHTNESS = "follow_brightness"; // track the brightness slider
+    public static final String BRIGHTNESS = "brightness";           // legacy own-brightness %, migrated to aod_visibility
+    public static final String AOD_VISIBILITY = "aod_visibility";   // 0..100, fade of the always-on items
     public static final String AWAKE_PANEL = "awake_panel";         // dark field on an awake panel
     public static final String STROKE_DP = "stroke_dp";             // light thickness
     public static final String DOT_X = "dot_x";                     // 0..100 horizontal dot position
@@ -174,17 +174,38 @@ public final class Prefs
     public static boolean eco(Context c) { return get(c).getBoolean(ECO, SettingsSchema.defBool(ECO)); }
     public static int color(Context c) { return get(c).getInt(COLOR, SettingsSchema.defInt(COLOR)); }
     public static boolean autoColor(Context c) { return get(c).getBoolean(AUTO_COLOR, SettingsSchema.defBool(AUTO_COLOR)); }
-    /** Own brightness of the always-on field, only used when the phone's
-     *  own brightness is not wanted. */
-    public static int brightness(Context c) { return get(c).getInt(BRIGHTNESS, SettingsSchema.defInt(BRIGHTNESS)); }
-    /** On by default: the always-on field asks for no brightness at all and
-     *  is painted on an awake panel, so the phone's own brightness drives
-     *  it. Off: the percentage below is requested as an own brightness. */
-    public static boolean followBrightness(Context c) { return get(c).getBoolean(FOLLOW_BRIGHTNESS, SettingsSchema.defBool(FOLLOW_BRIGHTNESS)); }
-    /** On by default: the dark always-on field is painted while the panel
-     *  stays awake, which is what lets the phone's own brightness drive it.
-     *  Off: the panel dozes - cheaper, but pinned to the phone's own fixed
-     *  always-on brightness unless an own brightness is requested. */
+    /**
+     * Visibility of the always-on items (the light, icons and clock), 0..100
+     * percent: 0 hides them completely, 100 draws them normally and leaves
+     * the brightness to whatever the panel itself uses. The items are faded
+     * while drawing, because a dozing panel pins its own fixed brightness
+     * that apps cannot reliably change.
+     *
+     * Migrates the legacy own-brightness percentage once: the number the
+     * user had dialled in carries over as the fade, so a dim setting stays
+     * dim. An untouched store keeps no entry, so a later change of the
+     * default still applies.
+     */
+    public static int visibility(Context c)
+    {
+        SharedPreferences p = get(c);
+        if (p.contains(AOD_VISIBILITY))
+        {
+            return p.getInt(AOD_VISIBILITY, SettingsSchema.defInt(AOD_VISIBILITY));
+        }
+        if (p.contains(BRIGHTNESS))
+        {
+            int migrated = Math.max(0, Math.min(100, p.getInt(BRIGHTNESS, SettingsSchema.defInt(AOD_VISIBILITY))));
+            p.edit().putInt(AOD_VISIBILITY, migrated).apply();
+            return migrated;
+        }
+        return SettingsSchema.defInt(AOD_VISIBILITY);
+    }
+
+    /** On: while a light is showing, the dark field asks the display to stay
+     *  awake instead of dozing, so it is shown at the phone's normal screen
+     *  brightness (slider included) rather than the fixed always-on level.
+     *  Costs more battery; the visibility fade works either way. */
     public static boolean awakePanel(Context c) { return get(c).getBoolean(AWAKE_PANEL, SettingsSchema.defBool(AWAKE_PANEL)); }
     public static int strokeDp(Context c) { return get(c).getInt(STROKE_DP, SettingsSchema.defInt(STROKE_DP)); }
     public static int dotX(Context c) { return get(c).getInt(DOT_X, SettingsSchema.defInt(DOT_X)); }

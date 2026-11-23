@@ -114,8 +114,6 @@ public class overlayservice extends AccessibilityService
     private boolean timersViaAlarm = false;
     private long burstEndsAt = 0L;
     private PowerManager.WakeLock drawLock;
-    private float appliedBrightness = Float.NaN;
-    private boolean brightnessDark = false;
     private PowerManager.WakeLock wakeBridge;
     private boolean drawCapable = false;
 
@@ -226,7 +224,6 @@ public class overlayservice extends AccessibilityService
     private void buildWindow()
     {
         if (viewAdded) { return; }
-        appliedBrightness = Float.NaN;
         view = new GlowRendererView(this);
         WindowManager.LayoutParams lp = new WindowManager.LayoutParams(
                 WindowManager.LayoutParams.MATCH_PARENT,
@@ -249,15 +246,17 @@ public class overlayservice extends AccessibilityService
             lp.setFitInsetsTypes(0);
             lp.setFitInsetsSides(0);
         }
-        // Ask for the right brightness from the very first frame, so the
-        // field never flashes at the phone's own doze level.
-        lp.screenBrightness = effectiveScreenOff() ? Brightness.requested(this)
-                : WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE;
+        // Never request a brightness of our own: a dozing panel pins its own
+        // fixed always-on level that requests cannot reliably change (some
+        // ROMs clamp them, a few ignore them completely), and any request
+        // would take an awake panel off the system slider. The items are
+        // faded while drawing instead ("always-on visibility"), and the panel
+        // brightness stays entirely the phone's business.
+        lp.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE;
         view.setVisibility(android.view.View.GONE);
         try
         {
             wm.addView(view, lp);
-            appliedBrightness = lp.screenBrightness;
             viewAdded = true;
         }
         catch (Exception e)
@@ -605,7 +604,7 @@ public class overlayservice extends AccessibilityService
                 + " relight=" + Prefs.relightRelock(this)
                 + " fallbackCanvas=" + Prefs.canvasFallback(this)
                 + " awakePanel=" + Prefs.awakePanel(this)
-                + " followBrightness=" + Prefs.followBrightness(this)
+                + " visibility=" + Prefs.visibility(this)
                 + " style=" + Prefs.style(this)
                 + " blackoutFull=" + Prefs.blackoutFull(this);
     }
@@ -1418,47 +1417,7 @@ public class overlayservice extends AccessibilityService
         {
             view.setVisibility(android.view.View.VISIBLE);
         }
-        applyBrightness();
         syncCpuLock();
-    }
-
-    /**
-     * Brightness of the always-on field.
-     *
-     * Android takes the display brightness from the topmost visible window
-     * that asks for one, and only falls back to its fixed doze brightness
-     * when nobody asks - that is why an always-on screen otherwise ignores
-     * the brightness slider. So while the black field is painted we ask for
-     * the phone's own brightness by asking for nothing, or our own fixed
-     * percentage. While the phone is awake we never ask for anything, so the
-     * lock screen and every app keep the system value.
-     *
-     * Asking for nothing only means "system brightness" on an awake panel:
-     * a dozing panel falls back to the ROM's fixed doze level. That is why
-     * {@link #canvasWanted()} paints the dark field with the awake canvas
-     * whenever the phone's brightness is wanted.
-     */
-    private void applyBrightness()
-    {
-        if (view == null || !viewAdded) { return; }
-        boolean dark = effectiveScreenOff();
-        float want = dark ? Brightness.requested(this)
-                : WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE;
-        if (want == appliedBrightness && dark == brightnessDark) { return; }
-        appliedBrightness = want;
-        brightnessDark = dark;
-        WindowManager.LayoutParams lp = (WindowManager.LayoutParams) view.getLayoutParams();
-        if (lp == null) { return; }
-        lp.screenBrightness = want;
-        try { wm.updateViewLayout(view, lp); }
-        catch (Exception e) { Log.w(TAG, "brightness: " + e); }
-        Dbg.log("overlay", "brightness: dark=" + dark
-                + " panel=" + (awakeHeld ? "awake (window flag)" : (canvasShown ? "awake canvas" : "dozing"))
-                + " mode=" + (Brightness.auto(this) ? "adaptive" : "manual")
-                + " awake=" + Prefs.awakePanel(this)
-                + " follow=" + Prefs.followBrightness(this)
-                + " pct=" + Prefs.brightness(this)
-                + " requested=" + (want < 0 ? "none (phone decides)" : String.format("%.3f", want)));
     }
 
     private void applyAppearance()
@@ -1469,6 +1428,7 @@ public class overlayservice extends AccessibilityService
         briefDraw(800L);
         view.configure(Prefs.style(this), Prefs.anim(this), color, Prefs.eco(this),
                 Prefs.speedMs(this), strokePx, Prefs.dotX(this));
+        view.setElementVisibility(Prefs.visibility(this) / 100f);
         syncIcons();
     }
 
@@ -1654,11 +1614,12 @@ public class overlayservice extends AccessibilityService
     }
 
     /**
-     * Does the dark field need the awake canvas? Either the user asked for
-     * it as a fallback, or they want the panel kept awake - which is what
-     * lets the phone's own brightness drive the field, and what makes an own
-     * brightness request reliably honoured. A dozing panel uses the ROM's
-     * fixed doze level and may not accept brightness changes at all.
+     * Does the dark field need the awake canvas? Only when the user asked
+     * for it as a fallback on phones that show nothing while the display is
+     * off. "Keep the panel awake" uses a window flag instead, not an
+     * activity. The panel brightness is the phone's business either way: a
+     * dozing panel uses the ROM's fixed doze level, and the items are faded
+     * by the visibility setting while drawing, never by a brightness request.
      */
     private boolean canvasWanted()
     {
@@ -1742,11 +1703,12 @@ public class overlayservice extends AccessibilityService
         {
             sendLocal(notificationobserver.ACTION_REEVAL);
         }
-        if (Prefs.BRIGHTNESS.equals(key) || Prefs.FOLLOW_BRIGHTNESS.equals(key)
-                || Prefs.AWAKE_PANEL.equals(key))
+        if (Prefs.AOD_VISIBILITY.equals(key) && view != null)
         {
-            appliedBrightness = Float.NaN;   // force a fresh request
-            applyBrightness();
+            view.setElementVisibility(Prefs.visibility(this) / 100f);
+        }
+        if (Prefs.AWAKE_PANEL.equals(key))
+        {
             if (canvasWanted() && !screenOn && !canvasShown && lightActive)
             {
                 Dbg.log("overlay", "awake panel wanted -> canvas needed now");

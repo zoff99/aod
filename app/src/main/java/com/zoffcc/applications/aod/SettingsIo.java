@@ -27,13 +27,15 @@ import java.util.TreeSet;
  * against whatever the defaults happened to be. On the way back only those
  * keys are accepted, with their type and range checked; keys this version
  * does not have are ignored, so files from newer versions still import.
+ * The one renamed setting is carried over: a pre-version-3 "brightness"
+ * percentage imports as the item visibility when no new key is present.
  */
 public final class SettingsIo
 {
     private SettingsIo() {}
 
     public static final String FORMAT = "aod-settings";
-    public static final int VERSION = 2;
+    public static final int VERSION = 3;
     public static final String FILE_NAME = "aod-settings.json";
     public static final String MIME = "application/json";
 
@@ -53,7 +55,11 @@ public final class SettingsIo
                     settings.put(f.key, p.getBoolean(f.key, SettingsSchema.defBool(f.key)));
                     break;
                 case SettingsSchema.INT:
-                    settings.put(f.key, p.getInt(f.key, SettingsSchema.defInt(f.key)));
+                    // the visibility has a migrating default (the legacy
+                    // brightness percentage), so ask for its effective value
+                    // rather than the raw store, like the always-allow list
+                    settings.put(f.key, Prefs.AOD_VISIBILITY.equals(f.key)
+                            ? Prefs.visibility(c) : p.getInt(f.key, SettingsSchema.defInt(f.key)));
                     break;
                 case SettingsSchema.STRING:
                     settings.put(f.key, p.getString(f.key, SettingsSchema.defString(f.key)));
@@ -153,10 +159,28 @@ public final class SettingsIo
         }
 
         SharedPreferences.Editor ed = Prefs.get(c).edit();
+
+        // Legacy (files before version 3): the slider was an own panel
+        // brightness request, stored as "brightness" (5..100). Its percentage
+        // carries over as the item visibility, so an old backup restores the
+        // dimness the user had dialled in. A file that already has the new
+        // key wins; a file with neither leaves the current value alone.
+        if (!settings.has(Prefs.AOD_VISIBILITY) && settings.has(Prefs.BRIGHTNESS))
+        {
+            try
+            {
+                SettingsSchema.Field f = SettingsSchema.find(Prefs.AOD_VISIBILITY);
+                ed.putInt(Prefs.AOD_VISIBILITY, SettingsSchema.clamp(f, settings.getInt(Prefs.BRIGHTNESS)));
+                r.applied++;
+            }
+            catch (Exception e) { r.skipped++; }
+        }
+
         Iterator<String> keys = settings.keys();
         while (keys.hasNext())
         {
             String key = keys.next();
+            if (Prefs.BRIGHTNESS.equals(key)) { continue; }   // legacy, handled above
             SettingsSchema.Field f = SettingsSchema.find(key);
             if (f == null)
             {

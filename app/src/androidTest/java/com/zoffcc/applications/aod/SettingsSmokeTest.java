@@ -57,6 +57,7 @@ public class SettingsSmokeTest
         {
             s.onActivity(a -> {
                 assertNotNull("awake panel switch missing", a.findViewById(R.id.sw_awake_panel));
+                assertNotNull("visibility slider missing", a.findViewById(R.id.sb_visibility));
                 assertNotNull("icon size slider missing", a.findViewById(R.id.sb_icon_size));
                 assertNotNull("app picker button missing", a.findViewById(R.id.btn_select_apps));
                 assertNotNull("persistent policy spinner missing", a.findViewById(R.id.sp_persistent_mode));
@@ -96,11 +97,11 @@ public class SettingsSmokeTest
 
                 EditText search = a.findViewById(R.id.et_settings_search);
                 assertNotNull("settings search field missing", search);
-                search.setText("brightness");
+                search.setText("visibility");
                 assertEquals("search must open the section that matches",
                         View.VISIBLE, a.findViewById(R.id.body_time).getVisibility());
                 assertEquals("the matching setting must be on screen",
-                        View.VISIBLE, a.findViewById(R.id.sw_follow_brightness).getVisibility());
+                        View.VISIBLE, a.findViewById(R.id.sb_visibility).getVisibility());
                 assertEquals("a section without a match must be hidden",
                         View.GONE, a.findViewById(R.id.hdr_cutout).getVisibility());
 
@@ -224,8 +225,8 @@ public class SettingsSmokeTest
                             ((TextView) a.findViewById(R.id.lbl_cutout_scale)).getText().toString());
                     assertEquals(a.getString(R.string.lbl_cutout_x, SettingsSchema.defInt(Prefs.CUTOUT_OFF_X)),
                             ((TextView) a.findViewById(R.id.lbl_cutout_x)).getText().toString());
-                    assertEquals(a.getString(R.string.lbl_brightness, SettingsSchema.defInt(Prefs.BRIGHTNESS)),
-                            ((TextView) a.findViewById(R.id.lbl_brightness)).getText().toString());
+                    assertEquals(a.getString(R.string.lbl_visibility, SettingsSchema.defInt(Prefs.AOD_VISIBILITY)),
+                            ((TextView) a.findViewById(R.id.lbl_visibility)).getText().toString());
                     int index = LightDuration.nearestIndex(SettingsSchema.defInt(Prefs.TIMEOUT_SEC));
                     assertEquals(a.getString(R.string.lbl_timeout, LightDuration.label(a, index)),
                             ((TextView) a.findViewById(R.id.lbl_timeout)).getText().toString());
@@ -344,6 +345,8 @@ public class SettingsSmokeTest
                     }
                     assertEquals(SettingsSchema.defInt(Prefs.TIMEOUT_SEC),
                             settings.getInt(Prefs.TIMEOUT_SEC));
+                    assertEquals(SettingsSchema.defInt(Prefs.AOD_VISIBILITY),
+                            settings.getInt(Prefs.AOD_VISIBILITY));
                     assertEquals(SettingsSchema.defBool(Prefs.AWAKE_PANEL),
                             settings.getBoolean(Prefs.AWAKE_PANEL));
                     assertEquals(SettingsSchema.defString(Prefs.STYLE),

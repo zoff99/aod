@@ -21,9 +21,10 @@ import androidx.core.content.ContextCompat;
 /**
  * A pure-black, lock-screen-visible activity that acts as the always-on
  * canvas. It is used on devices where overlays are not composited during
- * native doze (or which have no AOD at all), and whenever the phone's own
- * brightness is wanted: an awake panel uses the system brightness, while a
- * dozing panel is pinned to the ROM's fixed always-on level.
+ * native doze (or which have no AOD at all). An awake panel uses the system
+ * brightness, while a dozing panel is pinned to the ROM's fixed always-on
+ * level; the app requests no brightness of its own either way - the items
+ * are faded by the "always-on visibility" setting while drawing.
  *
  * Properties that make this work without root:
  *  - setShowWhenLocked(true) + setTurnScreenOn(true): visible over the keyguard;
@@ -47,7 +48,6 @@ public class AodScreenActivity extends Activity
     private FrameLayout root;
     private long lastTap = 0L;
     private boolean receiversRegistered = false;
-    private android.database.ContentObserver brightnessObserver;
 
     private final Runnable selfTimeout = new Runnable()
     {
@@ -80,8 +80,6 @@ public class AodScreenActivity extends Activity
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         getWindow().setLayout(WindowManager.LayoutParams.MATCH_PARENT,
                               WindowManager.LayoutParams.MATCH_PARENT);
-
-        applyBrightness();
 
         buildUi();
         overridePendingTransition(0, 0);
@@ -123,25 +121,6 @@ public class AodScreenActivity extends Activity
                 }
             });
         }
-    }
-
-    /**
-     * This activity keeps the panel awake, which is what makes brightness
-     * behave normally: asking for nothing here leaves the phone's own
-     * brightness in charge - adaptive, manual, slider, live - so the dark
-     * field is exactly as bright as the lock screen. Only an own brightness
-     * is requested explicitly.
-     */
-    private void applyBrightness()
-    {
-        WindowManager.LayoutParams attrs = getWindow().getAttributes();
-        float want = Brightness.requested(this);
-        attrs.screenBrightness = want;
-        getWindow().setAttributes(attrs);
-        Dbg.log("canvas", "brightness: panel=awake mode=" + (Brightness.auto(this) ? "adaptive" : "manual")
-                + " awake=" + Prefs.awakePanel(this)
-                + " follow=" + Prefs.followBrightness(this) + " pct=" + Prefs.brightness(this)
-                + " requested=" + (want < 0 ? "none (phone decides)" : String.format("%.3f", want)));
     }
 
     private void wakeUp()
@@ -196,11 +175,6 @@ public class AodScreenActivity extends Activity
                 catch (Exception ignored) {}
             }
         });
-        if (brightnessObserver == null)
-        {
-            brightnessObserver = Brightness.watch(this, this::applyBrightness);
-        }
-        applyBrightness();
         Dbg.log("canvas", "onResume -> AOD_SHOWN");
         sendLocal(notificationobserver.ACTION_AOD_SHOWN);
     }
@@ -222,8 +196,6 @@ public class AodScreenActivity extends Activity
     protected void onDestroy()
     {
         Dbg.log("canvas", "onDestroy");
-        Brightness.unwatch(this, brightnessObserver);
-        brightnessObserver = null;
         if (receiversRegistered)
         {
             try { unregisterReceiver(receiver); } catch (Exception ignored) {}

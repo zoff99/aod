@@ -303,22 +303,15 @@
                         android:text="@string/set_awake_panel" />
                     <TextView style="@style/SettingSummary" android:text="@string/set_awake_panel_sum" />
                 </LinearLayout>
-                <LinearLayout style="@style/SettingRow" android:tag="row|brightness dim adaptive system slider">
-                    <androidx.appcompat.widget.SwitchCompat android:id="@+id/sw_follow_brightness" style="@style/SettingSwitch"
-                        app:thumbTint="@color/switch_thumb" app:trackTint="@color/switch_track"
-                        android:text="@string/set_follow_brightness" />
-                    <TextView style="@style/SettingSummary" android:text="@string/set_follow_brightness_sum" />
-                    <TextView android:id="@+id/tv_brightness_auto" style="@style/SettingSummary"
-                        android:textColor="@color/hc_accent" android:visibility="gone"
-                        android:text="@string/brightness_adaptive_off" />
-                    <TextView android:id="@+id/lbl_brightness" style="@style/SliderLabel"
-                        android:labelFor="@+id/sb_brightness" />
-                    <SeekBar android:id="@+id/sb_brightness" android:layout_width="match_parent"
+                <LinearLayout style="@style/SettingRow" android:tag="row|visibility fade dim transparency alpha invisible items brightness">
+                    <TextView android:id="@+id/lbl_visibility" style="@style/SliderLabel"
+                        android:labelFor="@+id/sb_visibility" />
+                    <SeekBar android:id="@+id/sb_visibility" android:layout_width="match_parent"
                         android:layout_height="wrap_content" android:minHeight="48dp"
-                        android:max="95"
+                        android:max="100"
                         android:progressTint="@color/hc_accent" android:thumbTint="@color/hc_accent"
                         android:secondaryProgressTint="@color/hc_border" />
-                    <TextView style="@style/SettingSummary" android:text="@string/set_brightness_sum" />
+                    <TextView style="@style/SettingSummary" android:text="@string/set_visibility_sum" />
                 </LinearLayout>
             </LinearLayout>
 

@@ -11,6 +11,8 @@ package com.zoffcc.applications.aod;
  *   access_seen      whether the accessibility service was ever enabled
  *   seen_pkgs        the picker's memory of packages that once notified
  *   ignore_persistent  the legacy switch, superseded by persistent_mode
+ *   brightness       the legacy own-brightness percentage, superseded by
+ *                    aod_visibility (its value migrates once, on read)
  *   sec_open_*       which settings sections are folded
  */
 public final class SettingsSchema
@@ -66,8 +68,8 @@ public final class SettingsSchema
                     Prefs.ANIM_PULSE, Prefs.ANIM_ROTATE, Prefs.ANIM_FLASH, Prefs.ANIM_STEADY),
             b(Prefs.ECO, false), b(Prefs.AUTO_COLOR, true),
             i(Prefs.COLOR, Integer.MIN_VALUE, Integer.MAX_VALUE, Prefs.DEFAULT_COLOR),
-            i(Prefs.BRIGHTNESS, 5, 100, 30),
-            b(Prefs.FOLLOW_BRIGHTNESS, true), b(Prefs.AWAKE_PANEL, false),
+            i(Prefs.AOD_VISIBILITY, 0, 100, 100),
+            b(Prefs.AWAKE_PANEL, false),
             i(Prefs.STROKE_DP, 2, 16, 5), i(Prefs.DOT_X, 0, 100, 50),
             // timing
             i(Prefs.TIMEOUT_SEC, 60, 10800, 3600),
@@ -134,7 +136,7 @@ public final class SettingsSchema
 
     /** Keys that exist in the store but are deliberately not part of a backup. */
     public static final String[] NOT_EXPORTED = {
-            Prefs.ACCESS_SEEN, Prefs.SEEN_PKGS, Prefs.IGNORE_PERSISTENT
+            Prefs.ACCESS_SEEN, Prefs.SEEN_PKGS, Prefs.IGNORE_PERSISTENT, Prefs.BRIGHTNESS
     };
 
     /**

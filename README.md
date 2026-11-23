@@ -136,10 +136,11 @@ bursts the pixels differ. Switch *Move icons* off to pin them to one spot.
 - Persistent notifications: ignore all, allow calls, allow calls + selected
   apps, or allow all; optional dismiss-on-unlock
 - Camera-ring calibration: automatic cutout detection + manual offset/size
-- Always-on brightness that follows the system brightness slider
+- Always-on visibility: fade the light, icons and clock from 0% (hidden)
+  to 100% (normal drawing), independent of the panel brightness
 - Light duration on a snapped slider: 1, 2, 5, 10, 15, 20, 30, 45 min,
   1 h, 1.5 h, 2 h, 3 h -- twelve stops, each one a tick mark, no odd
-  second counts; brightness percentage and thickness stay free sliders
+  second counts; visibility percentage and thickness stay free sliders
 - Settings in nine foldable sections with a small search line on top
 - Settings backup: export and import as readable JSON (SAF folder/file
   picker, no storage permission)
@@ -157,7 +158,7 @@ every section remembers how you left it, so the screen stays as short as you
 made it.
 
 The search line above the list is one small row that never scrolls away. It
-filters all sections at once: type `night`, `count` or `brightness` and only
+filters all sections at once: type `night`, `count` or `visibility` and only
 the matching settings remain, in sections that open themselves. Clearing the
 field brings back your own folded state. The search reads the setting names,
 their plain-language explanations and the choices inside the dropdowns, so
@@ -209,7 +210,7 @@ part of Android -- nothing to add, nothing to download:
 ```json
 {
   "format": "aod-settings",
-  "version": 2,
+  "version": 3,
   "app": "1.1.0",
   "exported": "2026-11-20T12:34:56",
   "settings": {
@@ -238,6 +239,10 @@ characters and non-ASCII text survive a round trip unchanged.
   this version knows and silently counts the rest as ignored. Settings the
   file does not mention keep their current value. A file that is not a
   settings backup at all is refused before anything is written.
+- **Renamed settings carry over.** The old own-brightness percentage
+  (`brightness`, files before version 3) imports as the always-on visibility
+  when the file has no new key, so an old backup restores the dimness the
+  user had dialled in.
 - Exported: every setting, both app lists, the per-app colors and the camera
   calibration (which is device specific -- re-detect it on another phone).
   Not exported: transient state such as which sections are folded, whether
@@ -456,9 +461,10 @@ printf '#!/bin/sh\nexec tools/find_non_ascii_chars_in_source.sh --staged\n' \
 `--staged` reads the staged blobs, not the working tree, so editing a file
 after `git add` cannot smuggle anything past it.
 
-## Brightness of the always-on screen
+## Visibility of the always-on items
 
-Three rules in Android's `DisplayPowerController` decide everything here:
+Three rules in Android's `DisplayPowerController` explain why the app does
+not touch the panel brightness at all:
 
 1. A window that sets `LayoutParams.screenBrightness` wins over every other
    source -- **and asking switches auto brightness off entirely**
@@ -478,8 +484,16 @@ Android writes its *own sensor-computed* value into that setting
 is being dragged it uses a temporary value that is never published at all
 (`REASON_TEMPORARY`). There is no public API for the live brightness.
 
-So matching the phone is not a value to compute, it is interference to
-avoid. Two switches decide what happens:
+And even a brightness request is not reliable where it matters: some ROMs
+run their own always-on display outside the framework path and pin its
+backlight themselves. On those, neither a window brightness request nor the
+system slider changes the dark screen -- measured on one such device:
+requesting 100 % and 5 % looked identical.
+
+So the app never requests a brightness of its own: every window carries
+`BRIGHTNESS_OVERRIDE_NONE`, all the time, and rule 1 never kicks in. The
+panel brightness stays entirely the phone's business -- dozing at the ROM's
+fixed always-on level, or awake at the phone's normal brightness:
 
 - **Keep the panel awake for the dark screen** (`AWAKE_PANEL`, **off by
   default** and recommended off): the overlay window itself carries
@@ -489,10 +503,6 @@ avoid. Two switches decide what happens:
   sent per burst and the flag then holds it. No activity is involved: a
   `showWhenLocked` activity used for this was dismissed by some ROMs within
   milliseconds of appearing, which produced a wake/sleep loop.
-- **Use the system brightness** (`FOLLOW_BRIGHTNESS`, on by default, only
-  available while the panel is kept awake): the overlay asks for no
-  brightness of its own (`BRIGHTNESS_OVERRIDE_NONE`), so rule 1 never kicks
-  in either.
 
 Any `ACTION_SCREEN_OFF` that arrives while the flag is held clears it at
 once. How long the panel stayed up tells the two causes apart: under 12 s is
@@ -501,18 +511,12 @@ or 2 minutes after three presses in a row). A genuine unlock resets both. A
 wake by the user deliberately does *not* shorten the pause, or the next power
 press would be answered by waking the panel again. No wake loops.
 
-That gives three states:
+That gives two states:
 
-| keep awake | use system | panel | brightness | cost |
-|---|---|---|---|---|
-| on | on | awake | the phone's own, slider live | highest |
-| on | off | awake | own percentage, usually honoured | middle |
-| off | -- | dozing | own percentage, ROM may clamp or ignore it | lowest |
-
-In the first state the always-on screen is literally driven by the same
-brightness as the lock screen, and the status-bar slider moves it live.
-Following is impossible on a dozing panel, which is why that switch is
-disabled when the panel is allowed to doze.
+| keep awake | panel | brightness | cost |
+|---|---|---|---|
+| on | awake | the phone's own, slider live | highest |
+| off | dozing | the ROM's fixed always-on level | lowest |
 
 What the awake panel costs: a dozing panel refreshes itself and lets the SoC
 sleep, an awake one keeps the display pipeline running -- roughly 100-400 mW
@@ -524,16 +528,20 @@ screen-off while holding it backs off for two minutes so the power button
 stays authoritative (the light keeps working on the dozing panel meanwhile).
 That time also shows up as screen-on time in Android's battery stats.
 
-Some ROMs run their own always-on display outside the framework path and pin
-its backlight themselves. On those, neither a window brightness request nor
-the system slider changes the dark screen -- measured on one such device:
-requesting 100 % and 5 % looked identical. There is no app-side fix for that;
-the brightness lives in the ROM's own settings (Lock screen / Always-on
-display). The settings screen says so instead of pretending otherwise.
+Dimming is done where it always works: **the items themselves are drawn with
+transparency**. The **Always-on visibility** slider (`AOD_VISIBILITY`,
+0-100 %, default 100 %) fades the light, the app icons and the clock while
+drawing -- 100 % is the normal drawing at whatever brightness the panel has,
+lower values make the items fainter, 0 % hides them completely. The opaque
+black field is never faded, so the system AOD clock stays covered either
+way. This works identically on every phone, never disconnects adaptive
+brightness, and lower values are gentler against burn-in. The old "own
+brightness" percentage (`brightness`, 5-100) migrates once on read: the
+number a user had dialled in carries over as the fade, so a dim setting
+stays dim.
 
-The debug log prints `dark`, `panel` (`awake (window flag)` / `awake canvas` /
-`dozing`), `mode`, `awake`, `follow`, `pct` and `requested` for every change,
-plus `awake panel: HOLDING display awake` / `released` / `off after ...ms -> pause ...s`.
+The debug log prints `visibility` in the state dump, plus
+`awake panel: HOLDING display awake` / `released` / `off after ...ms -> pause ...s`.
 
 ## Battery and CPU
 
@@ -589,12 +597,14 @@ exactAlarms=...` and `cpu lock HELD|released animated=... dark=... alarms=...`.
   the OEM; where it is not, an opt-in dark canvas fallback is available.
 - The light geometry is portrait-only.
 - Keeping any light active costs battery; use ECO / interval mode and
-  short timeouts. The dark canvas keeps the panel technically "on" at low
-  brightness -- on OLED this is cheap, on LCD it is not.
-- Matching the system brightness needs the panel kept awake while the light
-  is up, which costs more battery than a dozing always-on screen. Switch
-  **Keep the panel awake for the dark screen** off to let the panel doze
-  and use an own, fixed brightness instead.
+  short timeouts. The dark canvas keeps the panel technically "on" --
+  a black field is cheap on OLED, but on LCD the backlight lights the whole
+  panel.
+- The panel brightness is the phone's own: a dozing panel uses its fixed
+  always-on level, an awake one (**Keep the panel awake for the dark
+  screen**, which costs more battery) the normal system brightness. The
+  **Always-on visibility** slider fades the items themselves and works
+  either way.
 - Long-term static light can contribute to burn-in; the built-in position
   shifting mitigates this, but use at your own risk.
 
