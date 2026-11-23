@@ -33,11 +33,13 @@ Pure Java, no Kotlin, no tracking, **no internet permission at all**.
 The app combines three standard Android mechanisms:
 
 1. **NotificationListenerService** (`notificationobserver`)
-   Reads posted notifications (title, text, package), filters out noise
+   Reads posted notifications (metadata only: package, key, time -- never
+   title or text), filters out noise
    (foreground/persistent notifications, progress bars, media sessions,
    group summaries), resolves a light color per app (manual override ->
    dominant color of the app icon -> default), and injects synthetic
-   *charging / full / low-battery* events. Do-Not-Disturb is respected.
+   *charging / full / low-battery* and *pending-alarm* events.
+   Do-Not-Disturb is respected.
 
 2. **AccessibilityService used only as an overlay privilege** (`overlayservice`)
    The light is drawn into a `TYPE_ACCESSIBILITY_OVERLAY` window. Such
@@ -125,6 +127,8 @@ bursts the pixels differ. Switch *Move icons* off to pin them to one spot.
   the app icon, or one global color
 - Double tap to wake (on the fallback canvas)
 - Charging / battery-full / low-battery light
+- Pending-alarm light: your next alarm, read from the system alarm clock
+  (on by default), even on phones that post no alarm notification
 - Night quiet hours, Do-Not-Disturb respect (on by default)
 - App filter (all apps or a selected set). The picker lists every launchable
   app -- the manifest declares `<queries>` for `ACTION_MAIN`, which Android 11+
@@ -196,6 +200,32 @@ timer), and it is a second selection mode of the app picker.
 Calls look like every other notification: same style, same animation, same
 per-app color, and the light duration ends them like any other burst. The
 app filter still wins: an app you excluded there never lights up.
+
+## Pending alarms
+
+Many phones show the next alarm only as a small status-bar symbol and post
+**no notification** for it, so a notification listener can never see it --
+no app allow-list can make that icon appear. The *Pending alarm light*
+switch (on by default) therefore reads the same source the status bar
+uses: `AlarmManager.getNextAlarmClock()`.
+
+While an alarm is pending, a synthetic item is injected, exactly like the
+battery events:
+
+- the light styles use the alarm app's color (per-app override -> icon
+  dominant color -> default)
+- the app-icons style shows the alarm app's icon, merged with that app's
+  real notifications into one icon, and it **never adds to the notification
+  count** -- a pending alarm is not a notification
+- it survives *clear all* and listener reconnects, disappears when the
+  alarm fires or is dismissed, and a snooze just updates it
+
+Only two pieces of metadata are read: the trigger time and the package
+that set the alarm (`getCreatorPackage()` of the show-intent -- the intent
+is never opened or sent). The app filter still applies to that package,
+and Do-Not-Disturb and night quiet hours suppress the alarm light like any
+other item. The receiver for `ACTION_NEXT_ALARM_CLOCK_CHANGED` only exists
+while the switch is on, and the switch is part of the settings backup.
 
 ## Settings backup
 
@@ -575,7 +605,9 @@ timing is built around that:
   `Runnable` rather than a fresh allocation every 100 ms.
 - **The battery receiver only exists while the battery light is on.**
   `ACTION_BATTERY_CHANGED` arrives on every level and charge change; with
-  the feature off it was waking the process for nothing.
+  the feature off it was waking the process for nothing. Same for the
+  alarm receiver (`ACTION_NEXT_ALARM_CLOCK_CHANGED`) and the pending-alarm
+  light.
 - **No keyguard polling while the panel is off.** An unlock always arrives as
   `ACTION_SCREEN_ON`, which re-arms the 300 ms watch; polling a dozing phone
   every two seconds only woke the CPU (~145 needless wakeups per burst).
@@ -637,7 +669,10 @@ What is read is metadata only: the posting package, the system key, the post
 time, the clearable/foreground/group flags, `Notification.number` (the
 counter the app itself publishes), and four non-text extras keys used for
 suppression (`android.progress`, `android.progressMax`,
-`android.mediaSession`, `android.template`).
+`android.mediaSession`, `android.template`). The one non-notification
+source is the system alarm clock (`AlarmManager.getNextAlarmClock()`): only
+the trigger time and the package that set the alarm, for the synthetic
+pending-alarm item.
 
 This is enforced at build time, not just promised in a document: the
 `verifyNoMessageTextAccess` task (`gradle/privacy-guard.gradle`) runs before

@@ -1487,6 +1487,14 @@ public class overlayservice extends AccessibilityService
             {
                 if (n.batteryEvent || n.pkg == null || n.pkg.isEmpty()) { continue; }
                 if (!first.containsKey(n.pkg)) { first.put(n.pkg, n); }
+                if (n.alarmEvent)
+                {
+                    // a pending alarm shows the setting app's icon, but it is
+                    // not a notification: it never adds to the counts
+                    if (!perApp.containsKey(n.pkg)) { perApp.put(n.pkg, 0); }
+                    if (!own.containsKey(n.pkg)) { own.put(n.pkg, 0); }
+                    continue;
+                }
                 Integer have = perApp.get(n.pkg);
                 perApp.put(n.pkg, have == null ? 1 : have + 1);
                 Integer num = own.get(n.pkg);
@@ -1701,6 +1709,12 @@ public class overlayservice extends AccessibilityService
         }
         if (Prefs.NIGHT.equals(key) || Prefs.NIGHT_START.equals(key) || Prefs.NIGHT_END.equals(key))
         {
+            sendLocal(notificationobserver.ACTION_REEVAL);
+        }
+        if (Prefs.ALARM_LIGHT.equals(key) || Prefs.BATTERY_LIGHT.equals(key))
+        {
+            // the observer owns these receivers and synthetic items: make it
+            // re-sync (and re-publish) right away, not on the next re-eval
             sendLocal(notificationobserver.ACTION_REEVAL);
         }
         if (Prefs.AOD_VISIBILITY.equals(key) && view != null)

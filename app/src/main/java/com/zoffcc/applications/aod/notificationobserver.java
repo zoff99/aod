@@ -1,5 +1,6 @@
 package com.zoffcc.applications.aod;
 
+import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
@@ -31,8 +32,8 @@ import java.util.Map;
  *
  * It keeps an ordered map of actionable notifications, enriches them with a
  * light color (per-app override -> icon dominant color -> default), injects
- * synthetic battery events, and broadcasts the resulting list to the overlay
- * renderer and to the UI.
+ * synthetic battery and pending-alarm events, and broadcasts the resulting
+ * list to the overlay renderer and to the UI.
  *
  * Suppression rules applied here: foreground/persistent notifications,
  * progress updates, media sessions, group summaries, system packages,
@@ -44,7 +45,10 @@ import java.util.Map;
  * clearable/foreground/group flags, Notification.number, Notification.smallIcon
  * (a resource id, never a bitmap), Notification.color (an accent), and - out of the
  * extras bundle - the progress numbers, the media-session token and the
- * style class name. It never reads, parses, copies, logs or stores any
+ * style class name. The one non-notification source is the system alarm
+ * clock (AlarmManager.getNextAlarmClock): only the trigger time and the
+ * package that set the alarm, for the synthetic pending-alarm item.
+ * It never reads, parses, copies, logs or stores any
  * notification title or message text: not EXTRA_TITLE, EXTRA_TEXT,
  * EXTRA_BIG_TEXT, EXTRA_SUB_TEXT, EXTRA_INFO_TEXT, EXTRA_SUMMARY_TEXT,
  * EXTRA_TEXT_LINES, EXTRA_MESSAGES, tickerText or anything similar. No such
@@ -72,6 +76,9 @@ public class notificationobserver extends NotificationListenerService
     public static final String PKG_CHARGING = "aod.battery.charging";
     public static final String PKG_FULL = "aod.battery.full";
     public static final String PKG_LOW = "aod.battery.low";
+    /** Map key of the synthetic pending-alarm item. Unlike the battery
+     *  events, the item's pkg is the real package that set the alarm. */
+    public static final String PKG_ALARM = "aod.alarm.pending";
 
     /** Latest snapshot, also used by the UI. Never null. */
     public static volatile List<NotificationItem> latest = new ArrayList<>();
@@ -84,8 +91,10 @@ public class notificationobserver extends NotificationListenerService
     private final Handler handler = new Handler(Looper.getMainLooper());
     private PowerManager.WakeLock briefLock;
     private battery_receiver batteryReceiver;
+    private alarm_receiver alarmReceiver;
     private command_receiver commandReceiver;
     private String batteryState = "";
+    private String alarmState = "";
     private boolean connected = false;
 
     private final Runnable publishRunnable = new Runnable()
@@ -109,6 +118,7 @@ public class notificationobserver extends NotificationListenerService
         briefLock.setReferenceCounted(false);
 
         syncBatteryReceiver();
+        syncAlarmReceiver();
 
         commandReceiver = new command_receiver();
         IntentFilter cf = new IntentFilter();
@@ -135,6 +145,9 @@ public class notificationobserver extends NotificationListenerService
         try { if (batteryReceiver != null) { unregisterReceiver(batteryReceiver); } }
         catch (Exception ignored) {}
         batteryReceiver = null;
+        try { if (alarmReceiver != null) { unregisterReceiver(alarmReceiver); } }
+        catch (Exception ignored) {}
+        alarmReceiver = null;
         try { if (commandReceiver != null) { unregisterReceiver(commandReceiver); } }
         catch (Exception ignored) {}
         commandReceiver = null;
@@ -453,6 +466,104 @@ public class notificationobserver extends NotificationListenerService
         catch (Exception e) { Log.w(TAG, "battery: " + e); }
     }
 
+    // ---- pending alarm ---------------------------------------------------------
+
+    /**
+     * ACTION_NEXT_ALARM_CLOCK_CHANGED is broadcast whenever the system's
+     * next alarm clock changes (set, snoozed, dismissed, fired). Like the
+     * battery receiver it exists only while its light is switched on.
+     */
+    private class alarm_receiver extends BroadcastReceiver
+    {
+        @Override
+        public void onReceive(Context context, Intent intent)
+        {
+            if (AlarmManager.ACTION_NEXT_ALARM_CLOCK_CHANGED.equals(intent.getAction()))
+            {
+                syncAlarmItem();
+            }
+        }
+    }
+
+    private void syncAlarmReceiver()
+    {
+        boolean want = Prefs.alarmLight(this);
+        if (want && alarmReceiver == null)
+        {
+            alarmReceiver = new alarm_receiver();
+            IntentFilter f = new IntentFilter(AlarmManager.ACTION_NEXT_ALARM_CLOCK_CHANGED);
+            registerReceiver(alarmReceiver, f);
+            Dbg.log("observer", "alarm receiver: registered (pending alarm on)");
+        }
+        else if (!want && alarmReceiver != null)
+        {
+            try { unregisterReceiver(alarmReceiver); } catch (Exception ignored) {}
+            alarmReceiver = null;
+            Dbg.log("observer", "alarm receiver: unregistered (pending alarm off)");
+        }
+        syncAlarmItem();
+    }
+
+    /**
+     * The pending alarm, straight from the system alarm clock: metadata only
+     * (the trigger time and the package that set it), never any content.
+     * Many phones show the next alarm as a status-bar symbol without posting
+     * a notification, so the listener could never see it; this reads the
+     * same source the status bar uses. Injected as a synthetic item like the
+     * battery events, but it carries the setting app's package so the icons
+     * style draws that app's icon - without adding to its notification count.
+     */
+    private void syncAlarmItem()
+    {
+        try
+        {
+            String pkg = "";
+            long trigger = 0L;
+            if (Prefs.alarmLight(this))
+            {
+                AlarmManager am = (AlarmManager) getSystemService(ALARM_SERVICE);
+                AlarmManager.AlarmClockInfo info = am != null ? am.getNextAlarmClock() : null;
+                if (info != null)
+                {
+                    trigger = info.getTriggerTime();
+                    PendingIntent show = info.getShowIntent();
+                    String creator = show != null ? show.getCreatorPackage() : null;
+                    if (creator != null && !creator.isEmpty()
+                            && !creator.equals(getPackageName())
+                            && Prefs.appAllowed(this, creator))
+                    {
+                        pkg = creator;
+                    }
+                }
+            }
+            String newState = pkg.isEmpty() ? "" : pkg + "@" + trigger;
+            int color = pkg.isEmpty() ? Prefs.DEFAULT_COLOR : resolveColor(pkg);
+            synchronized (items)
+            {
+                // also re-inject when the map was wiped (reload / clear-all)
+                // even though the alarm itself did not change
+                boolean have = items.containsKey(PKG_ALARM);
+                if (newState.equals(alarmState) && have == !pkg.isEmpty()) { return; }
+                alarmState = newState;
+                items.remove(PKG_ALARM);
+                if (!pkg.isEmpty())
+                {
+                    NotificationItem a = new NotificationItem();
+                    a.pkg = pkg;
+                    a.key = PKG_ALARM;
+                    a.alarmEvent = true;
+                    a.postTime = System.currentTimeMillis();
+                    a.color = color;
+                    items.put(a.key, a);
+                }
+            }
+            Dbg.log("observer", "alarmState=" + (newState.isEmpty() ? "(none)" : newState));
+            handler.removeCallbacks(publishRunnable);
+            handler.post(publishRunnable);
+        }
+        catch (Exception e) { Log.w(TAG, "alarm: " + e); }
+    }
+
     // ---- publishing ---------------------------------------------------------------
 
     private boolean dndSuppressed()
@@ -484,6 +595,8 @@ public class notificationobserver extends NotificationListenerService
             Dbg.log("observer", "reloadActive: " + (active == null ? 0 : active.length) + " active");
         }
         catch (Exception e) { Log.w(TAG, "reload active: " + e); }
+        // the pending alarm is not a notification: it survives the wipe
+        syncAlarmItem();
     }
 
     private void publish()
@@ -570,6 +683,7 @@ public class notificationobserver extends NotificationListenerService
             else if (ACTION_REEVAL.equals(a))
             {
                 syncBatteryReceiver();
+                syncAlarmReceiver();
                 iconColorCache.clear();
                 batteryState = "";
                 reloadActive();
@@ -588,6 +702,8 @@ public class notificationobserver extends NotificationListenerService
         {
             cancelAllNotifications();
             synchronized (items) { items.clear(); }
+            // the pending alarm is not a notification: it survives clear-all
+            syncAlarmItem();
             publish();
         }
         catch (Exception e) { Log.w(TAG, "clearAll: " + e); }

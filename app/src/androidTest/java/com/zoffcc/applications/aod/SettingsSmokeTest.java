@@ -57,6 +57,7 @@ public class SettingsSmokeTest
         {
             s.onActivity(a -> {
                 assertNotNull("awake panel switch missing", a.findViewById(R.id.sw_awake_panel));
+                assertNotNull("pending alarm switch missing", a.findViewById(R.id.sw_alarm_light));
                 assertNotNull("visibility slider missing", a.findViewById(R.id.sb_visibility));
                 assertNotNull("icon size slider missing", a.findViewById(R.id.sb_icon_size));
                 assertNotNull("app picker button missing", a.findViewById(R.id.btn_select_apps));

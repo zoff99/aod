@@ -80,6 +80,7 @@ public final class SettingsSchema
             b(Prefs.NIGHT, false), i(Prefs.NIGHT_START, 0, 1439, 23 * 60),
             i(Prefs.NIGHT_END, 0, 1439, 7 * 60),
             b(Prefs.RESPECT_DND, true), b(Prefs.BATTERY_LIGHT, false),
+            b(Prefs.ALARM_LIGHT, true),
             s(Prefs.PERSISTENT_MODE, PersistentPolicy.CALLS_APPS,
                     PersistentPolicy.NONE, PersistentPolicy.CALLS,
                     PersistentPolicy.CALLS_APPS, PersistentPolicy.ALL),

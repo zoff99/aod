@@ -50,6 +50,7 @@ public final class Prefs
     public static final String NIGHT_END = "night_end";
     public static final String RESPECT_DND = "respect_dnd";
     public static final String BATTERY_LIGHT = "battery_light";     // charging / full / low battery
+    public static final String ALARM_LIGHT = "alarm_light";         // pending alarm (system alarm clock)
     public static final String IGNORE_PERSISTENT = "ignore_persistent"; // legacy switch, migrated
     public static final String PERSISTENT_MODE = "persistent_mode";   // see PersistentPolicy
     public static final String PERSISTENT_APPS = "persistent_apps";   // always-allow package names
@@ -283,6 +284,7 @@ public final class Prefs
     public static int nightEnd(Context c) { return get(c).getInt(NIGHT_END, SettingsSchema.defInt(NIGHT_END)); }
     public static boolean respectDnd(Context c) { return get(c).getBoolean(RESPECT_DND, SettingsSchema.defBool(RESPECT_DND)); }
     public static boolean batteryLight(Context c) { return get(c).getBoolean(BATTERY_LIGHT, SettingsSchema.defBool(BATTERY_LIGHT)); }
+    public static boolean alarmLight(Context c) { return get(c).getBoolean(ALARM_LIGHT, SettingsSchema.defBool(ALARM_LIGHT)); }
     /**
      * Persistent-notification policy. Migrates the old on/off switch once:
      * "ignore" becomes "allow calls and the apps you pick", because a phone

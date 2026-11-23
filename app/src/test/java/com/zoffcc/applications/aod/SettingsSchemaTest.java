@@ -203,6 +203,8 @@ public class SettingsSchemaTest
         assertEquals(PersistentPolicy.CALLS_APPS, SettingsSchema.defString(Prefs.PERSISTENT_MODE));
         assertTrue(SettingsSchema.defBool(Prefs.ENABLED));
         assertTrue(SettingsSchema.defBool(Prefs.RESPECT_DND));
+        assertFalse(SettingsSchema.defBool(Prefs.BATTERY_LIGHT));
+        assertTrue(SettingsSchema.defBool(Prefs.ALARM_LIGHT));
         assertFalse(SettingsSchema.defBool(Prefs.AWAKE_PANEL));
         assertFalse(SettingsSchema.defBool(Prefs.ICON_COUNT_BADGE));
         assertEquals(Prefs.CLOCK_NONE, SettingsSchema.defString(Prefs.CLOCK_MODE));

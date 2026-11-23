@@ -4,8 +4,8 @@ import android.os.Parcel;
 import android.os.Parcelable;
 
 /**
- * One actionable notification (or a synthetic battery event) that the
- * notification listener hands over to the overlay renderer.
+ * One actionable notification (or a synthetic battery / pending-alarm
+ * event) that the notification listener hands over to the overlay renderer.
  *
  * It carries no message content at all: only which app posted, the system
  * key, when, the light color and the counter the app itself publishes.
@@ -19,6 +19,12 @@ public final class NotificationItem implements Parcelable
     public int color = Prefs.DEFAULT_COLOR;
     public long postTime = 0L;
     public boolean batteryEvent = false;
+    /** Synthetic pending-alarm event, read from the system alarm clock
+     *  (AlarmManager.getNextAlarmClock): metadata only - trigger time and
+     *  the package that set the alarm. Unlike a battery event it carries
+     *  the setting app's package, so the icons style draws that app's icon,
+     *  but it never adds to any notification count. */
+    public boolean alarmEvent = false;
     /** Notification.number: what the app says this notification stands for
      *  (e.g. unread messages). 0 when the app does not publish a counter. */
     public int number = 0;
@@ -42,6 +48,7 @@ public final class NotificationItem implements Parcelable
         number = in.readInt();
         iconRes = in.readInt();
         accent = in.readInt();
+        alarmEvent = in.readByte() != 0;
     }
 
     @Override
@@ -55,6 +62,7 @@ public final class NotificationItem implements Parcelable
         dest.writeInt(number);
         dest.writeInt(iconRes);
         dest.writeInt(accent);
+        dest.writeByte((byte) (alarmEvent ? 1 : 0));
     }
 
     @Override
