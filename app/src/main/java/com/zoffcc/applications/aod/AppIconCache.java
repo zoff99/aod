@@ -81,70 +81,6 @@ public final class AppIconCache
         return made;
     }
 
-    /**
-     * The pending-alarm symbol: always the OS alarm-clock glyph, never the
-     * alarm app's launcher icon and never an app-supplied drawable (the
-     * privacy guard forbids loading app Icons; the alarm app's own
-     * status-bar source, AlarmClockInfo.getIcon(), is exactly such a hidden
-     * app-supplied drawable). Instead the AOD draws the symbol modern
-     * Android uses in its status bar: the Google Material "alarm" glyph
-     * (Material Symbols Outlined), bundled verbatim as a vector - the same
-     * artwork the OS status bar shows on AOSP-family ROMs.
-     */
-    public static Bitmap getAlarmIcon(Context c, String tint, int sizePx, int color)
-    {
-        int work = Math.max(MIN_PX, Math.min(MAX_PX, sizePx));
-        String key = "aod.alarm|" + tint + "|" + work + "|" + color;
-        Bitmap hit = CACHE.get(key);
-        if (hit != null) { return hit; }
-        Bitmap made = rasteriseAlarm(c, tint, work, color);
-        if (made != null) { CACHE.put(key, made); }
-        return made;
-    }
-
-    private static Bitmap rasteriseAlarm(Context c, String tint, int work, int color)
-    {
-        Bitmap raw = null;
-        try
-        {
-            Drawable d = androidx.core.content.ContextCompat.getDrawable(c, R.drawable.aod_ic_alarm);
-            if (d == null) { return null; }
-
-            raw = Bitmap.createBitmap(work, work, Bitmap.Config.ARGB_8888);
-            Canvas cv = new Canvas(raw);
-            d.setBounds(0, 0, work, work);
-            d.draw(cv);
-            return tintGlyph(raw, tint, color);
-        }
-        catch (Throwable t)
-        {
-            if (raw != null) { raw.recycle(); }
-            return null;
-        }
-    }
-
-    /**
-     * Shared tint path for flat status-bar glyphs (notification symbols,
-     * the alarm clock): "color" fills a monochrome mask with the app's
-     * accent, "white"/"black" run through the luminance matrices, artwork
-     * with real hues is kept as it is.
-     */
-    private static Bitmap tintGlyph(Bitmap raw, String tint, int color)
-    {
-        ColorMatrix m = matrix(tint);
-        if (m == null && Prefs.ICON_TINT_COLOR.equals(tint) && isMonochrome(raw))
-        {
-            m = flat(visible(color));
-        }
-        if (m == null) { return raw; }
-        Bitmap out = Bitmap.createBitmap(raw.getWidth(), raw.getHeight(), Bitmap.Config.ARGB_8888);
-        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
-        p.setColorFilter(new ColorMatrixColorFilter(m));
-        new Canvas(out).drawBitmap(raw, 0f, 0f, p);
-        raw.recycle();
-        return out;
-    }
-
     public static void clear()
     {
         CACHE.evictAll();
@@ -165,7 +101,20 @@ public final class AppIconCache
             Canvas cv = new Canvas(raw);
             d.setBounds(0, 0, work, work);
             d.draw(cv);
-            return tintGlyph(raw, tint, color);
+
+            ColorMatrix m = matrix(tint);
+            if (m == null && Prefs.ICON_TINT_COLOR.equals(tint) && isMonochrome(raw))
+            {
+                m = flat(visible(color));
+            }
+            if (m == null) { return raw; }
+
+            Bitmap out = Bitmap.createBitmap(work, work, Bitmap.Config.ARGB_8888);
+            Paint p = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
+            p.setColorFilter(new ColorMatrixColorFilter(m));
+            new Canvas(out).drawBitmap(raw, 0f, 0f, p);
+            raw.recycle();
+            return out;
         }
         catch (Throwable t)
         {

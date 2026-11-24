@@ -128,9 +128,7 @@ bursts the pixels differ. Switch *Move icons* off to pin them to one spot.
 - Double tap to wake (on the fallback canvas)
 - Charging / battery-full / low-battery light
 - Pending-alarm light: your next alarm, read from the system alarm clock
-  (on by default), even on phones that post no alarm notification; like
-  the lock screen it only appears once the alarm is under two hours away,
-  drawn as the OS alarm-clock symbol
+  (on by default), even on phones that post no alarm notification
 - Night quiet hours, Do-Not-Disturb respect (on by default)
 - App filter (all apps or a selected set). The picker lists every launchable
   app -- the manifest declares `<queries>` for `ACTION_MAIN`, which Android 11+
@@ -212,27 +210,15 @@ switch (on by default) therefore reads the same source the status bar
 uses: `AlarmManager.getNextAlarmClock()`.
 
 While an alarm is pending, a synthetic item is injected, exactly like the
-battery events -- but only while the alarm is **nearing**, mimicking the
-lock screen: it appears less than **two hours** before the trigger (or
-while the alarm is already ringing) and disappears again if the alarm is
-moved further away. No system broadcast fires when that boundary is
-crossed, so the observer schedules its own one-shot re-check for the
-moment the window opens.
+battery events:
 
 - the light styles use the alarm app's color (per-app override -> icon
   dominant color -> default)
-- the app-icons style always shows the **OS alarm-clock symbol** - the
-  Google Material "alarm" glyph (Material Symbols Outlined), the same
-  artwork modern Android's status bar uses, bundled verbatim as a vector
-  (Apache-2.0). The alarm app's own status-bar drawable is deliberately
-  **not** used: loading app-supplied Icons is what the project's privacy
-  guard forbids. The alarm app's launcher icon is never drawn, and a
-  pending alarm **never adds to the notification count** - it is not a
-  notification. If the same app also has real notifications, one of those
-  owns the app's icon slot as usual
+- the app-icons style shows the alarm app's icon, merged with that app's
+  real notifications into one icon, and it **never adds to the notification
+  count** -- a pending alarm is not a notification
 - it survives *clear all* and listener reconnects, disappears when the
-  alarm fires or is dismissed (or leaves the two-hour window), and a
-  snooze just updates it
+  alarm fires or is dismissed, and a snooze just updates it
 
 Only two pieces of metadata are read: the trigger time and the package
 that set the alarm (`getCreatorPackage()` of the show-intent -- the intent

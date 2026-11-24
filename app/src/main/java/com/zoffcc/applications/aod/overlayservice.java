@@ -1487,15 +1487,9 @@ public class overlayservice extends AccessibilityService
             {
                 if (n.batteryEvent || n.pkg == null || n.pkg.isEmpty()) { continue; }
                 if (!first.containsKey(n.pkg)) { first.put(n.pkg, n); }
-                else if (first.get(n.pkg).alarmEvent && !n.alarmEvent)
-                {
-                    // a real notification wins the app's icon slot over the
-                    // synthetic alarm: the app's own symbol is more topical
-                    first.put(n.pkg, n);
-                }
                 if (n.alarmEvent)
                 {
-                    // a pending alarm draws the OS alarm-clock symbol, but it is
+                    // a pending alarm shows the setting app's icon, but it is
                     // not a notification: it never adds to the counts
                     if (!perApp.containsKey(n.pkg)) { perApp.put(n.pkg, 0); }
                     if (!own.containsKey(n.pkg)) { own.put(n.pkg, 0); }
@@ -1510,33 +1504,18 @@ public class overlayservice extends AccessibilityService
             }
         }
 
-            String tint = Prefs.iconTint(this);
-            boolean notifIcons = Prefs.iconFromNotification(this);
-            ArrayList<android.graphics.Bitmap> list = new ArrayList<>();
-            ArrayList<Integer> counts = new ArrayList<>();
-            StringBuilder numbers = new StringBuilder();
-            StringBuilder symbols = new StringBuilder();
-            for (java.util.Map.Entry<String, Integer> e : perApp.entrySet())
-            {
-                String pkg = e.getKey();
-                NotificationItem item = first.get(pkg);
-                android.graphics.Bitmap b = null;
-                boolean alarmGlyph = item != null && item.alarmEvent;
-                if (alarmGlyph)
-                {
-                    // a pending alarm always draws the OS alarm-clock symbol
-                    // (the one the status bar shows) - never the alarm app's
-                    // launcher icon, whatever the icon source setting says
-                    int color = iconColorFor(pkg, item);
-                    b = AppIconCache.getAlarmIcon(this, tint, cfg.sizePx, color);
-                    if (b != null)
-                    {
-                        if (symbols.length() > 0) { symbols.append(','); }
-                        symbols.append(pkg).append('=')
-                                .append(String.format("#%08X", color));
-                    }
-                }
-                else if (notifIcons && item != null && item.iconRes != 0)
+        String tint = Prefs.iconTint(this);
+        boolean notifIcons = Prefs.iconFromNotification(this);
+        ArrayList<android.graphics.Bitmap> list = new ArrayList<>();
+        ArrayList<Integer> counts = new ArrayList<>();
+        StringBuilder numbers = new StringBuilder();
+        StringBuilder symbols = new StringBuilder();
+        for (java.util.Map.Entry<String, Integer> e : perApp.entrySet())
+        {
+            String pkg = e.getKey();
+            NotificationItem item = first.get(pkg);
+            android.graphics.Bitmap b = null;
+            if (notifIcons && item != null && item.iconRes != 0)
             {
                 int color = iconColorFor(pkg, item);
                 b = AppIconCache.getNotificationIcon(this, pkg, item.iconRes, tint, cfg.sizePx, color);

@@ -77,10 +77,7 @@ public class notificationobserver extends NotificationListenerService
     public static final String PKG_FULL = "aod.battery.full";
     public static final String PKG_LOW = "aod.battery.low";
     /** Map key of the synthetic pending-alarm item. Unlike the battery
-     *  events, the item's pkg is the real package that set the alarm -
-     *  used for its color and the app filter only: the icons style draws
-     *  the OS alarm-clock symbol for this item, never that app's icon.
-     *  The item exists only while the alarm is nearing (ALARM_SHOW_WINDOW_MS). */
+     *  events, the item's pkg is the real package that set the alarm. */
     public static final String PKG_ALARM = "aod.alarm.pending";
 
     /** Latest snapshot, also used by the UI. Never null. */
@@ -472,36 +469,6 @@ public class notificationobserver extends NotificationListenerService
     // ---- pending alarm ---------------------------------------------------------
 
     /**
-     * How close the alarm must be for the item to be shown: the lock screen
-     * (and the status bar) only draw the alarm symbol once it is nearing, so
-     * the AOD item appears only within this window before the trigger - and
-     * while the alarm is actually ringing (a past trigger time counts).
-     * Two hours, as specified by the maintainer, mirroring the spirit of
-     * AOSP's rule without needing the internals it consults.
-     */
-    public static final long ALARM_SHOW_WINDOW_MS = 2L * 60L * 60L * 1000L;
-
-    /**
-     * Pure window test, no Android types: show the pending alarm when it
-     * rings less than windowMs ahead. A trigger time in the past (the alarm
-     * is firing/snoozing) is still "near"; trigger 0 means no alarm at all.
-     */
-    public static boolean alarmNear(long triggerMs, long nowMs, long windowMs)
-    {
-        return triggerMs > 0L && triggerMs - nowMs < windowMs;
-    }
-
-    /** Re-runs the alarm sync exactly when the window opens: no system
-     *  broadcast fires at "trigger minus two hours", so the app schedules
-     *  its own one-shot check. Cheap even when starved by doze: a handler
-     *  message that simply runs late just redraws the same decision. */
-    private final Runnable alarmBoundary = new Runnable()
-    {
-        @Override
-        public void run() { syncAlarmItem(); }
-    };
-
-    /**
      * ACTION_NEXT_ALARM_CLOCK_CHANGED is broadcast whenever the system's
      * next alarm clock changes (set, snoozed, dismissed, fired). Like the
      * battery receiver it exists only while its light is switched on.
@@ -532,7 +499,6 @@ public class notificationobserver extends NotificationListenerService
         {
             try { unregisterReceiver(alarmReceiver); } catch (Exception ignored) {}
             alarmReceiver = null;
-            handler.removeCallbacks(alarmBoundary);
             Dbg.log("observer", "alarm receiver: unregistered (pending alarm off)");
         }
         syncAlarmItem();
@@ -544,16 +510,8 @@ public class notificationobserver extends NotificationListenerService
      * Many phones show the next alarm as a status-bar symbol without posting
      * a notification, so the listener could never see it; this reads the
      * same source the status bar uses. Injected as a synthetic item like the
-     * battery events. It carries the setting app's package - for the per-app
-     * color and the app filter only: the icons style never draws that app's
-     * launcher icon, it draws the OS alarm-clock symbol (the one the status
-     * bar shows), and the item adds nothing to any notification count.
-     *
-     * Like the lock screen, the item only appears when the alarm is nearing:
-     * less than ALARM_SHOW_WINDOW_MS (two hours) ahead, or already ringing.
-     * Because no system broadcast fires when that boundary is crossed, the
-     * sync schedules its own one-shot re-check for the moment the window
-     * opens.
+     * battery events, but it carries the setting app's package so the icons
+     * style draws that app's icon - without adding to its notification count.
      */
     private void syncAlarmItem()
     {
@@ -577,26 +535,6 @@ public class notificationobserver extends NotificationListenerService
                         pkg = creator;
                     }
                 }
-            }
-            boolean near = alarmNear(trigger, System.currentTimeMillis(), ALARM_SHOW_WINDOW_MS);
-            if (!pkg.isEmpty() && !near)
-            {
-                long mins = (trigger - System.currentTimeMillis()) / 60000L;
-                Dbg.log("observer", "alarm: in " + mins + " min - beyond the 2h window, hidden"
-                        + " (re-check scheduled)");
-                pkg = "";
-            }
-            handler.removeCallbacks(alarmBoundary);
-            if (trigger > 0L && !near)
-            {
-                long when = (trigger - ALARM_SHOW_WINDOW_MS) - System.currentTimeMillis();
-                if (when > 0L)
-                {
-                    handler.postDelayed(alarmBoundary, when);
-                    Dbg.log("observer", "alarm: window opens in " + (when / 60000L)
-                            + " min - re-check scheduled");
-                }
-                else { handler.post(alarmBoundary); }
             }
             String newState = pkg.isEmpty() ? "" : pkg + "@" + trigger;
             int color = pkg.isEmpty() ? Prefs.DEFAULT_COLOR : resolveColor(pkg);
