@@ -330,7 +330,6 @@ public class MainActivity extends AppCompatActivity implements CustomListAdapter
         bindSwitch(R.id.sw_night, Prefs.NIGHT);
         bindSwitch(R.id.sw_dnd, Prefs.RESPECT_DND);
         bindSwitch(R.id.sw_battery_light, Prefs.BATTERY_LIGHT);
-        bindSwitch(R.id.sw_alarm_light, Prefs.ALARM_LIGHT);
     }
 
     /**

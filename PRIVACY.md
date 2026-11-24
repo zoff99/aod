@@ -55,14 +55,6 @@ Everything it takes from a notification is metadata:
 | `extras.getParcelable("android.mediaSession")` | skip media players (a token, no text) |
 | `extras.getString("android.template")` | the style **class name**, e.g. `android.app.Notification$MediaStyle` or `$CallStyle`; compared inline, never kept |
 
-Two synthetic items are not notifications at all. The battery events come
-from the `ACTION_BATTERY_CHANGED` broadcast (charge status, level, plugged
-state). The pending-alarm item comes from the system alarm clock,
-`AlarmManager.getNextAlarmClock()`: only the trigger time and
-`getCreatorPackage()` of the show-intent (which app set the alarm) are
-read -- the intent is never opened or sent, and there is no content to
-read in the first place.
-
 The settings backup contains configuration only: switches, numbers, style
 names, the two app lists (package names) and the per-app colors. There is no
 notification content in it, for the simple reason that the app never has
@@ -80,7 +72,7 @@ requested from it, and no key outside that list is ever named in the code.
 
 Everything downstream — the overlay service, the renderer, the settings
 screen, the fallback canvas — receives only `NotificationItem`: package,
-key, post time, color, battery/alarm-event flags and a number. It has no field
+key, post time, color, a battery-event flag and a number. It has no field
 that could hold text.
 
 Logs (`adb logcat -s AODDBG`) print package names, keys, counters and state

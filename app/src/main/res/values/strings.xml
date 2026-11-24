@@ -160,8 +160,6 @@
     <string name="set_night_end">To</string>
     <string name="set_dnd">Respect Do Not Disturb</string>
     <string name="set_battery_light">Charging / full / low battery light</string>
-    <string name="set_alarm_light">Pending alarm light</string>
-    <string name="set_alarm_light_sum">Shows your next alarm while one is pending: the light styles use the alarm app\u2019s color, the app-icons style shows that app\u2019s icon without adding a notification count. Read straight from the system alarm clock, so it works even on phones that show the next alarm only as a small status-bar symbol and post no notification. Only the alarm time and which app set it are read -- never any notification content. The app filter still applies, and Do Not Disturb and quiet hours still suppress it.</string>
     <string name="set_persistent">Persistent notifications</string>
     <string name="set_persistent_sum">Ongoing notifications that cannot be swiped away: players, downloads, navigation -- and phone calls. A call counts when it is tagged as a call, when it takes over the screen (an incoming call does), or when it uses the system call layout. The AOSP dialer tags only its incoming call, so its ongoing call is covered by the app list below, which already contains your dialer. That list is used by the \u201cCalls + selected apps\u201d choice. The app filter above still applies: an app excluded there never lights up.</string>
     <string-array name="persistent_mode_entries">

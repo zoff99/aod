@@ -673,12 +673,6 @@
                         app:thumbTint="@color/switch_thumb" app:trackTint="@color/switch_track"
                         android:text="@string/set_battery_light" />
                 </LinearLayout>
-                <LinearLayout style="@style/SettingRow" android:tag="row|alarm pending next alarm clock wake morning">
-                    <androidx.appcompat.widget.SwitchCompat android:id="@+id/sw_alarm_light" style="@style/SettingSwitch"
-                        app:thumbTint="@color/switch_thumb" app:trackTint="@color/switch_track"
-                        android:text="@string/set_alarm_light" />
-                    <TextView style="@style/SettingSummary" android:text="@string/set_alarm_light_sum" />
-                </LinearLayout>
                 <LinearLayout style="@style/SettingRow" android:tag="row|persistent ongoing foreground service call phone incoming dialer allow">
                     <TextView style="@style/SliderLabel" android:text="@string/set_persistent"
                         android:labelFor="@+id/sp_persistent_mode" />
