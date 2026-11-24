@@ -129,7 +129,15 @@ public class overlayservice extends AccessibilityService
     private String lastBurstKey = "";
     private CountDownTimer timeoutTimer;
     private int shiftIndex = 0;
+    // ---
+    // HINT: regular tiny movement (for burn in protection)
     private static final float[][] SHIFTS = {{0, 0}, {2, 1}, {-1, 2}, {-2, -1}, {1, -2}};
+    // HINT: regular tiny movement (for burn in protection)
+    // ---
+    // HINT: LARGE DEBUG movement (for burn in protection)
+    // private static final float[][] SHIFTS = {{0, 0}, {50, 0}, {0, 50}, {-50, 0}, {0, -50}};
+    // HINT: LARGE DEBUG movement (for burn in protection)
+    // ---
 
     // ---- lifecycle -----------------------------------------------------------
 
